@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "DAO_Launcher_Kit_backend": {
+      "candid": "src/DAO_Launcher_Kit_backend/DAO_Launcher_Kit_backend.did",
+      "package": "DAO_Launcher_Kit_backend",
+      "type": "rust"
+    },
+    "DAO_Launcher_Kit_frontend": {
+      "dependencies": [
+        "DAO_Launcher_Kit_backend"
+      ],
+      "source": [
+        "src/DAO_Launcher_Kit_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "DAO_Launcher_Kit_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
