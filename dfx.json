@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "dao2_backend": {
+      "candid": "src/dao2_backend/dao2_backend.did",
+      "package": "dao2_backend",
+      "type": "rust"
+    },
+    "dao2_frontend": {
+      "dependencies": [
+        "dao2_backend"
+      ],
+      "source": [
+        "src/dao2_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "dao2_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
