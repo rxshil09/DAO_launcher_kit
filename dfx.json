@@ -1,19 +1,19 @@
 {
   "canisters": {
-    "dao2_backend": {
-      "candid": "src/dao2_backend/dao2_backend.did",
-      "package": "dao2_backend",
+    "DAO_Launcher_Kit_backend": {
+      "candid": "src/DAO_Launcher_Kit_backend/DAO_Launcher_Kit_backend.did",
+      "package": "DAO_Launcher_Kit_backend",
       "type": "rust"
     },
-    "dao2_frontend": {
+    "DAO_Launcher_Kit_frontend": {
       "dependencies": [
-        "dao2_backend"
+        "DAO_Launcher_Kit_backend"
       ],
       "source": [
-        "src/dao2_frontend/dist"
+        "src/DAO_Launcher_Kit_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "dao2_frontend"
+      "workspace": "DAO_Launcher_Kit_frontend"
     }
   },
   "defaults": {

@@ -1,5 +1,5 @@
 [package]
-name = "dao2_backend"
+name = "DAO_Launcher_Kit_backend"
 version = "0.1.0"
 edition = "2021"
 
