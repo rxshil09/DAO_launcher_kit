@@ -1,0 +1,34 @@
+{
+  "canisters": {
+    "governance_canister_backend": {
+      "candid": "src/governance_canister_backend/governance_canister_backend.did",
+      "package": "governance_canister_backend",
+      "type": "rust"
+    },
+    "governance_canister_frontend": {
+      "dependencies": [
+        "governance_canister_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/governance_canister_frontend/src/index.html"
+      },
+      "source": [
+        "src/governance_canister_frontend/assets",
+        "dist/governance_canister_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "scripts": {
+  "prebuild": "dfx generate",
+  "build": "webpack"
+},
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
