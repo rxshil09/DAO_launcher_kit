@@ -59,7 +59,7 @@ If you are hosting frontend code somewhere without using DFX, you may need to ma
 - Write your own `createActor` constructor
 
 
-## Module Registry Canister for DAO Governance
+# Module Registry Canister for DAO Governance
 The Module Registry Canister is a core component in modular DAO architecture, responsible for managing and governing DAO modules (such as voting, treasury, staking, or analytics). It serves as a decentralized registry where modules can be registered, upgraded, deprecated, or replaced through transparent governance proposals.
 
 🛠 Key Functions
@@ -72,3 +72,27 @@ The Module Registry Canister is a core component in modular DAO architecture, re
 - Access Control: Ensure only authorized entities or DAO decisions can modify the registry.
 
 This canister ensures plug-and-play flexibility, allowing a DAO to evolve its functionality without compromising core integrity. It lays the foundation for a sustainable, upgradable, and community-driven governance framework.
+
+
+# 🗳️ Governance Canister for DAO Module Management
+
+This canister handles decentralized governance for managing and evolving modular components of a DAO, such as treasury, staking, and voting modules. It enables transparent proposal creation, voting, and module upgrades via community consensus.
+
+## 🔧 Key Features
+
+- **Proposal System**: Members can propose upgrades or additions to DAO modules.
+- **Voting Mechanism**: Weighted or 1-person-1-vote style voting on proposals.
+- **Module Registry**: Tracks registered modules with metadata, versions, and canister IDs.
+- **Execution Logic**: Applies approved proposals to upgrade or register modules.
+
+## 📝 Interface Summary (Candid)
+
+```candid
+service : {
+  propose_module_change : (ModuleProposal) -> (nat);
+  vote_on_proposal : (nat, principal, variant { yes; no }) -> (variant { ok : text; err : text });
+  execute_proposal : (nat) -> (variant { ok : text; err : text });
+  get_module : (text) -> (opt ModuleInfo) query;
+  list_modules : () -> (vec ModuleInfo) query;
+  list_proposals : () -> (vec Proposal) query;
+}
