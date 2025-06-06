@@ -133,3 +133,31 @@ service : {
   get_transaction_log : () -> (vec record { principal; nat; text }) query;
 }
 ```
+<br>
+
+# 🔒 Staking Canister for DAO Participation and Rewards
+
+This canister manages staking operations within the DAO, allowing users to stake tokens, earn rewards, and participate in governance. It ensures that only active stakers can vote and enables fair reward distribution.
+
+## 🔧 Key Features
+
+- **Token Staking**: Members can lock tokens to gain voting rights.
+- **Reward Distribution**: Periodic rewards based on staked amount and duration.
+- **Unstaking Mechanism**: Allows safe withdrawal after a cooldown period.
+- **Governance Integration**: Validates voter eligibility for proposals.
+
+## 📝 Interface Summary (Candid)
+
+```candid
+service : {
+  stake : (nat) -> (variant { ok : text; err : text });
+  
+  unstake : (nat) -> (variant { ok : text; err : text });
+
+  get_stake : (principal) -> (opt nat) query;
+
+  distribute_rewards : () -> (variant { ok : text; err : text });
+
+  list_stakers : () -> (vec record { principal; staked : nat }) query;
+}
+```
