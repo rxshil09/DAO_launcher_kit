@@ -161,3 +161,31 @@ service : {
   list_stakers : () -> (vec record { principal; staked : nat }) query;
 }
 ```
+<br>
+
+# 📄 Proposals Canister for DAO Decision Making
+
+This canister handles the lifecycle of proposals within the DAO, allowing members to submit ideas, discuss them, and track voting outcomes. It ensures transparency and traceability in DAO governance.
+
+## 🔧 Key Features
+
+- **Proposal Submission**: DAO members can submit proposals for changes or actions.
+- **Status Tracking**: Maintains the state of each proposal (e.g., open, accepted, rejected).
+- **Metadata Storage**: Stores descriptions, timestamps, and proposer details.
+- **Governance Sync**: Interfaces with Governance and Staking to validate and route decisions.
+
+## 📝 Interface Summary (Candid)
+
+```candid
+service : {
+  submit_proposal : (ProposalInput) -> (variant { ok : nat; err : text });
+
+  get_proposal : (nat) -> (opt Proposal) query;
+
+  list_proposals : () -> (vec Proposal) query;
+
+  update_proposal_status : (nat, ProposalStatus) -> (variant { ok : text; err : text });
+
+  get_open_proposals : () -> (vec Proposal) query;
+}
+```
