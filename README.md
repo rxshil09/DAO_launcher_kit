@@ -105,6 +105,13 @@ service : {
 }
 ```
 
+## 🔌 Integration
+Use __@dfinity/agent__ in frontend or other canisters to interact with the governance logic. 
+
+
+## 📚 Purpose
+Designed for flexible, upgradeable, and community-controlled DAO infrastructure on the Internet Computer (ICP). Supports plug-and-play module architecture with full transparency and version control.
+
 <br>
 
 # 💰 Treasury Canister for DAO Fund Management
@@ -133,6 +140,13 @@ service : {
   get_transaction_log : () -> (vec record { principal; nat; text }) query;
 }
 ```
+
+## 🔌 Integration Protocol
+Use __@dfinity/agent__ or cross-canister calls from Governance to initiate transfers.
+
+## 📚 Purpose
+Ensures DAO funds are handled securely and only spent through governance-approved workflows, maintaining transparency and accountability in decentralized operations.
+
 <br>
 
 # 🔒 Staking Canister for DAO Participation and Rewards
@@ -161,6 +175,13 @@ service : {
   list_stakers : () -> (vec record { principal; staked : nat }) query;
 }
 ```
+
+## 🔌 Integration Protocol
+Use __@dfinity/agent__ or connect via cross-canister calls to verify staking status or distribute rewards.
+
+## 📚 Purpose
+Empowers decentralized participation by incentivizing long-term engagement and enabling weighted voting, while keeping the staking process transparent and tamper-proof.
+
 <br>
 
 # 📄 Proposals Canister for DAO Decision Making
@@ -189,3 +210,9 @@ service : {
   get_open_proposals : () -> (vec Proposal) query;
 }
 ```
+
+## 🔌 Integration Protocol
+Use __@dfinity/agent__ or cross-canister calls to fetch or submit proposals.
+
+## 📚 Purpose
+Drives decentralized governance by giving the community a structured and transparent way to propose, track, and influence decisions within the DAO.
