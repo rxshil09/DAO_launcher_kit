@@ -108,6 +108,16 @@ service : {
 ## 🔌 Integration
 Use __@dfinity/agent__ in frontend or other canisters to interact with the governance logic. 
 
+[TS](#code-section)
+```
+const proposal = await governanceActor.propose_module_change({
+  proposer: myPrincipal,
+  target_module: "Treasury",
+  new_version: 2n,
+  new_canister: Principal.fromText("abcde-..."),
+  metadata_hash: [],
+});
+```
 
 ## 📚 Purpose
 Designed for flexible, upgradeable, and community-controlled DAO infrastructure on the Internet Computer (ICP). Supports plug-and-play module architecture with full transparency and version control.
