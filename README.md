@@ -154,6 +154,14 @@ service : {
 ## 🔌 Integration Protocol
 Use __@dfinity/agent__ or cross-canister calls from Governance to initiate transfers.
 
+[TS](#code-section)
+```
+const result = await treasuryActor.execute_transfer(
+  Principal.fromText("aaaaa-aa"),
+  100_000_000n // amount in cycles or token units
+);
+```
+
 ## 📚 Purpose
 Ensures DAO funds are handled securely and only spent through governance-approved workflows, maintaining transparency and accountability in decentralized operations.
 
