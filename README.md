@@ -197,6 +197,11 @@ service : {
 ## 🔌 Integration Protocol
 Use __@dfinity/agent__ or connect via cross-canister calls to verify staking status or distribute rewards.
 
+[TS](#code-section)
+```
+const stakeResult = await stakingActor.stake(500_000_000n); // amount in token units
+```
+
 ## 📚 Purpose
 Empowers decentralized participation by incentivizing long-term engagement and enabling weighted voting, while keeping the staking process transparent and tamper-proof.
 
@@ -231,6 +236,16 @@ service : {
 
 ## 🔌 Integration Protocol
 Use __@dfinity/agent__ or cross-canister calls to fetch or submit proposals.
+
+[TS](#code-section)
+```
+const proposalId = await proposalsActor.submit_proposal({
+  title: "Add new Staking Rewards Module",
+  description: "Proposing implementation of periodic reward distribution.",
+  proposer: myPrincipal,
+  timestamp: BigInt(Date.now()),
+});
+```
 
 ## 📚 Purpose
 Drives decentralized governance by giving the community a structured and transparent way to propose, track, and influence decisions within the DAO.
