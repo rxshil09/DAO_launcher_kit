@@ -105,18 +105,42 @@ service : {
 }
 ```
 
-## 🔌 Integration
-Use __@dfinity/agent__ in frontend or other canisters to interact with the governance logic. 
+## 🔌 Integration Protocol
 
-[TS](#code-section)
+The Governance Canister exposes Candid interfaces that other canisters or frontend clients can interact with using HTTP or cross-canister calls.
+
+#### __🧩 Cross-Canister Integration (Rust → Rust)__
+
+Use `ic_cdk::call` to invoke governance functions from other Rust-based canisters:
+
+[📦 Frontend Integration (TypeScript)](#code-section)
+
+```rust
+use ic_cdk::call;
+let (result,): (Result<String, String>,) = call(
+    governance_canister_id,
+    "propose_module_change",
+    (proposal_payload,),
+).await?;
+});
 ```
-const proposal = await governanceActor.propose_module_change({
+
+#### __🌐 Frontend Integration (@dfinity/agent)__
+From a JavaScript/TypeScript frontend, connect using the Candid interface:
+
+```
+const result = await governanceActor.propose_module_change({
   proposer: myPrincipal,
-  target_module: "Treasury",
-  new_version: 2n,
-  new_canister: Principal.fromText("abcde-..."),
+  target_module: "Staking",
+  new_version: 1n,
+  new_canister: Principal.fromText("aaaaa-aa"),
   metadata_hash: [],
 });
+```
+
+Use dfx canister call for manual interaction:
+```
+dfx canister call governance_canister propose_module_change '(record { ... })'
 ```
 
 ## 📚 Purpose
