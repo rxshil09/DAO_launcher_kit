@@ -176,14 +176,35 @@ service : {
 ```
 
 ## 🔌 Integration Protocol
-Use __@dfinity/agent__ or cross-canister calls from Governance to initiate transfers.
+The Treasury Canister exposes Candid interfaces for securely managing DAO funds. It supports contributions, disbursements, and audit logs accessible via frontend or cross-canister calls.
 
-[TS](#code-section)
+#### __🧩 Cross-Canister Integration (Rust → Rust)__
+
+Use `ic_cdk::call` to request or transfer funds from other Rust-based canisters:
+
+```rust
+use ic_cdk::call;
+let (result,): (Result <String, String>, ) = call(
+    treasury_canister_id,
+    "execute_transfer",
+    (recipient_principal, amount),
+).await?;
+```
+
+#### __🌐 Frontend Integration (@dfinity/agent)__
+From a JavaScript/TypeScript frontend, interact with the canister as follows:
+
 ```
 const result = await treasuryActor.execute_transfer(
   Principal.fromText("aaaaa-aa"),
-  100_000_000n // amount in cycles or token units
+  100_000_000n // amount in token units or cycles
 );
+```
+
+Use dfx canister call for quick CLI testing:
+
+```sql
+dfx canister call treasury_canister execute_transfer '(principal "aaaaa-aa", 100000000)'
 ```
 
 ## 📚 Purpose
