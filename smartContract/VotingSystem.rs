@@ -30,7 +30,7 @@ fn create_proposal(description: String) -> u64 {
     // Generate a new unique ID
     let id = NEXT_ID.with(|c| {
         let mut ctr = c.borrow_mut();
-        let current = *ctr;
+        let current = *ctr;    
         *ctr += 1;
         current
     });
