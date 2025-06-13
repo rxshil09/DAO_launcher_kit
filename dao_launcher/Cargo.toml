@@ -1,0 +1,4 @@
+[workspace]
+members = [
+    "src/dao_launcher_backend",
+]
