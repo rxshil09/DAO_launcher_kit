@@ -1,0 +1,14 @@
+type Proposal = record {
+  id: nat64;
+  description: text;
+  votes_yes: nat64;
+  votes_no: nat64;
+  executed: bool;
+};
+
+service : {
+  submit_proposal: (text) -> (nat64);
+  vote: (nat64, bool) -> ();
+  execute_proposal: (nat64) -> (bool);
+  get_proposals: () -> (vec Proposal) query;
+};
