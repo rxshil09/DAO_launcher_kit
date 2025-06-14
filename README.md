@@ -240,11 +240,34 @@ service : {
 ```
 
 ## 🔌 Integration Protocol
-Use __@dfinity/agent__ or connect via cross-canister calls to verify staking status or distribute rewards.
 
-[TS](#code-section)
+The Staking Canister exposes Candid interfaces for locking tokens, managing rewards, and enabling DAO participation. It allows access via frontend calls or Rust-based canister logic.
+
+#### __🧩 Cross-Canister Integration (Rust → Rust)__
+
+Use `ic_cdk::call` to allow other canisters to stake, unstake, or query stake status:
+
+```rust
+use ic_cdk::call;
+let (result,): (Result<String, String>,) = call(
+    staking_canister_id,
+    "stake",
+    (amount,),
+).await?;
 ```
-const stakeResult = await stakingActor.stake(500_000_000n); // amount in token units
+
+__🌐 Frontend Integration (@dfinity/agent)__
+
+From a JavaScript/TypeScript frontend, stake tokens like this:
+
+```
+const result = await stakingActor.stake(
+  500_000_000n // amount in token units
+);
+```
+Use dfx canister call to manually test interactions:
+```
+dfx canister call staking_canister stake '(500000000)'
 ```
 
 ## 📚 Purpose
