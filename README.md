@@ -256,7 +256,7 @@ let (result,): (Result<String, String>,) = call(
 ).await?;
 ```
 
-__🌐 Frontend Integration (@dfinity/agent)__
+#### __🌐 Frontend Integration (@dfinity/agent)__
 
 From a JavaScript/TypeScript frontend, stake tokens like this:
 
@@ -303,16 +303,33 @@ service : {
 ```
 
 ## 🔌 Integration Protocol
-Use __@dfinity/agent__ or cross-canister calls to fetch or submit proposals.
+The Proposal Canister provides interfaces for submitting, tracking, and managing governance proposals. It can be accessed from other canisters or frontend apps to coordinate DAO decision-making.
 
-[TS](#code-section)
+#### __🧩 Cross-Canister Integration (Rust → Rust)__
+
+Use `ic_cdk::call` to submit or update proposals from other Rust-based canisters:
+
+```rust
+use ic_cdk::call;
+let (result,): (Result<nat, String>,) = call(
+    proposal_canister_id,
+    "submit_proposal",
+    (proposal_input,),
+).await?;
 ```
-const proposalId = await proposalsActor.submit_proposal({
-  title: "Add new Staking Rewards Module",
-  description: "Proposing implementation of periodic reward distribution.",
+#### __🌐 Frontend Integration (@dfinity/agent)__
+From a JavaScript/TypeScript frontend, submit a proposal like this:
+```
+const result = await proposalActor.submit_proposal({
+  title: "Add new voting module",
+  description: "Proposal to integrate advanced voting strategy",
   proposer: myPrincipal,
-  timestamp: BigInt(Date.now()),
+  timestamp: BigInt(Date.now())
 });
+``` 
+Use dfx canister call to manually test proposal submission:
+```
+dfx canister call proposal_canister submit_proposal '(record { title = "Upgrade"; description = "Add new module"; proposer = principal "aaaaa-aa"; timestamp = 1718069400000 })'
 ```
 
 ## 📚 Purpose
