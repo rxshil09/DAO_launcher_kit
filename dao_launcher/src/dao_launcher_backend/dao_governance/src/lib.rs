@@ -17,7 +17,7 @@ thread_local! {
 }
 
 #[update]
-fn submit_proposal(description: String) -> u64 {
+fn submit_proposal(description: String) -> u64{
     let id = NEXT_ID.with(|id_ref| {
         let mut id = id_ref.borrow_mut();
         let current = *id;
@@ -40,7 +40,7 @@ fn submit_proposal(description: String) -> u64 {
 #[update]
 fn vote(proposal_id: u64, yes: bool) {
     PROPOSALS.with(|map| {
-        if let Some(p) = map.borrow_mut().get_mut(&proposal_id) {
+        if let Some(p) = map.borrow_mut().get_mut(&proposal_id){
             if yes {
                 p.votes_yes += 1;
             } else {

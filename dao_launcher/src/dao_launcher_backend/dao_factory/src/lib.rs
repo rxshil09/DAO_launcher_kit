@@ -19,7 +19,7 @@ async fn create_dao(name: String) -> Principal {
         None,
     )
     .await
-    .expect("Failed to install DAO logic");
+    .expect("Failed to install DAO ");
 
     canister_id
 }

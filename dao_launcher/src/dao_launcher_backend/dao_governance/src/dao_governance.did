@@ -5,7 +5,6 @@ type Proposal = record {
   votes_no: nat64;
   executed: bool;
 };
-
 service : {
   submit_proposal: (text) -> (nat64);
   vote: (nat64, bool) -> ();
