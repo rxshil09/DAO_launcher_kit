@@ -334,3 +334,19 @@ dfx canister call proposal_canister submit_proposal '(record { title = "Upgrade"
 
 ## 📚 Purpose
 Drives decentralized governance by giving the community a structured and transparent way to propose, track, and influence decisions within the DAO.
+
+
+## 🌐 What is IPFS?
+
+[IPFS (InterPlanetary File System)](https://ipfs.tech/) is a decentralized, peer-to-peer file storage protocol designed to make the web more distributed and resilient. Instead of relying on centralized servers, IPFS stores files across a global network of nodes.
+
+### 🔧 Key Benefits
+
+- **Content Addressing**: Files are accessed via their cryptographic hash, ensuring immutability and integrity.
+- **Decentralization**: Eliminates single points of failure by distributing data.
+- **Efficient Delivery**: Supports deduplication and caching, improving performance and reducing bandwidth.
+- **Permanent Storage**: Ideal for storing static assets, metadata, and off-chain content in blockchain or DAO ecosystems.
+
+### 📦 Use Case in DAO
+
+In the context of a DAO, IPFS can be used to store module metadata, proposal documents, or governance records off-chain, while referencing them on-chain via their hash.
