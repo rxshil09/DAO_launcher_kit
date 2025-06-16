@@ -7,7 +7,7 @@ use std::cell::RefCell;
 // Replace this with the actual principal of the owner when deploying
 const OWNER_PRINCIPAL: &str = "aaaaa-aa";
 
-// In-memory storage of the owner Principal and last withdrawal record
+
 thread_local! {
     static OWNER: Principal = Principal::from_text(OWNER_PRINCIPAL).unwrap();
     // Track last withdrawal call for transparency (optional)
