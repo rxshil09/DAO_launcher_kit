@@ -14,5 +14,8 @@
   "type": "module",
   "workspaces": [
     "src/DAO_Launcher_Kit_frontend"
-  ]
+  ],
+  "dependencies": {
+    "framer-motion": "^12.17.3"
+  }
 }
