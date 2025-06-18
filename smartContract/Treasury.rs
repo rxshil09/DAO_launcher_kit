@@ -55,7 +55,7 @@ fn treasury_balance() -> u128 {
     ic_cdk::api::canister_balance128()
 }
 
-/// Query the last withdrawal record (if any).
+
 #[query]
 fn last_withdrawal() -> Option<Withdrawal> {
     LAST_WITHDRAWAL.with(|cell| cell.borrow().clone())
