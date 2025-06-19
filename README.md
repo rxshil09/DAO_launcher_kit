@@ -11,13 +11,6 @@ To learn more before you start working with `dao2`, see the following documentat
 - [ic-cdk-macros](https://docs.rs/ic-cdk-macros)
 - [Candid Introduction](https://internetcomputer.org/docs/current/developer-docs/backend/candid/)
 
-If you want to start working on your project right away, you might want to try the following commands:
-
-```bash
-cd dao2/
-dfx help
-dfx canister --help
-```
 
 ## Running the project locally
 
