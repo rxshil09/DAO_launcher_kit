@@ -1,4 +1,4 @@
-// src/SignIn.jsx
+
 import React, { useEffect, useState } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
