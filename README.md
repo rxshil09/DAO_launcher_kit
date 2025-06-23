@@ -1,7 +1,5 @@
-# `dao2`
-
-Welcome to your our `dao launcher kit` project and to the Internet Computer development community. 
-
+# `Dao Launcher Kit`
+Welcome to the Dao Launcher Kit Platform
 
 
 ## Running the project locally
