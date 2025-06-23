@@ -39,7 +39,7 @@ const moduleTypes = {
   },
   analytics: {
     name: 'Analytics',
-    description: 'Monitoring and reporting tools',
+    description: 'Monitoring  and reporting tools',
     modules: [
       { id: 'dashboard', name: 'Analytics Dashboard', description: 'Real-time DAO metrics and KPIs' },
       { id: 'notifications', name: 'Alert System', description: 'Automated notifications for key events' },

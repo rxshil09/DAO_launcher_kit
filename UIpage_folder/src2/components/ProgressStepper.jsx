@@ -34,6 +34,7 @@ export default function ProgressStepper({ steps, currentStep, onStepClick, isSte
               </p>
               <p className="text-xs text-gray-600">{step.description}</p>
             </div>
+            
           </div>
         ))}
       </nav>
