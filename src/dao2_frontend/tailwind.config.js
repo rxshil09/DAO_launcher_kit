@@ -15,9 +15,10 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
       }
     },
   },
   plugins: [],
 }
+
