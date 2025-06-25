@@ -14,7 +14,7 @@ dfx start --background
 dfx deploy
 ```
 
-If you have made changes to your backend canister, you can generate a new candid interface with
+If you've updated your backend canister, you can regenerate the Candid interface by running:
 
 ```bash
 npm run generate
