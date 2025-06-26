@@ -7,7 +7,7 @@ export default function DeploymentStatus({ status, progress, onClose }) {
       case 'deploying':
         return <Loader className="h-6 w-6 text-blue-500 animate-spin" />;
       case 'success':
-        return <CheckCircle className="h-6 w-6 text-green-500" />;
+        return <CheckCircle className="h-6 w-6 text-green-500"/>;
       case 'error':
         return <AlertCircle className="h-6 w-6 text-red-500" />;
       default:

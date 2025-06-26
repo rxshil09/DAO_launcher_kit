@@ -7,7 +7,6 @@ const moduleIcons = {
   staking: Zap,
   analytics: BarChart3
 };
-
 export default function ModuleSelector({ modules, selectedModules, onModuleToggle }) {
   return (
     <div className="space-y-6">

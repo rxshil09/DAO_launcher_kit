@@ -11,7 +11,7 @@ export default function NetworkSelector({ selectedNetwork, onNetworkSelect }) {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Network</h3>
       <div className="grid gap-4">
-        {networks.map((network) => (
+        {networks.map((network) =>(
           <div
             key={network.id}
             onClick={() => onNetworkSelect(network.id)}

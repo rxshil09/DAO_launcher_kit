@@ -56,7 +56,7 @@ const steps = [
   { id: 5, name: 'Review', description: 'Review and deploy' }
 ];
 
-export default function DAOLauncherApp() {
+export default function DAOLauncherApp(){
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedModules, setSelectedModules] = useState({});
   const [deploymentStatus, setDeploymentStatus] = useState(null);
