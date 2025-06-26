@@ -320,3 +320,20 @@ Drives decentralized governance by giving the community a structured and transpa
 ### 📦 Use Case in DAO
 
 In the context of a DAO, IPFS can be used to store module metadata, proposal documents, or governance records off-chain, while referencing them on-chain via their hash.
+
+
+## IPFS vs ICP Asset Canister
+
+| Feature              | IPFS                                 | ICP Asset Canister                        |
+|----------------------|---------------------------------------|--------------------------------------------|
+| 🛠 Type              | Decentralized file system             | Smart contract canister on Internet Computer |
+| 📡 Hosting Model    | Peer-to-peer network of nodes         | Hosted on the Internet Computer (ICP)       |
+| 🧾 File Access      | Content hash (CID)                    | URL-based or via canister methods           |
+| 🔐 Integrity        | Guaranteed via cryptographic hash     | Guaranteed by ICP’s consensus & WebAssembly sandbox |
+| 💡 Use Case         | Off-chain storage (metadata, media)   | On-chain storage for static frontend assets |
+| 🧩 DAO Integration  | Ideal for metadata or proposal docs   | Ideal for hosting UIs or serving frontend dApps |
+
+### ✅ Summary
+
+- **Use IPFS** to store large, off-chain files or metadata that can be referenced from proposals or modules.
+- **Use ICP Asset Canister** to host and serve static websites, dApp frontends, or on-chain assets within the Internet Computer ecosystem.
