@@ -100,27 +100,6 @@ const LandingPage = () => {
       {/* Animated Background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-blue-900/20 to-cyan-900/20"></div>
-        
-        {/* Floating Particles */}
-        {[...Array(30)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-cyan-400 rounded-full"
-            initial={{
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200),
-              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
-            }}
-            animate={{
-              x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1200),
-              y: Math.random() * (typeof window !== 'undefined' ? window.innerHeight : 800),
-            }}
-            transition={{
-              duration: Math.random() * 20 + 10,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-          />
-        ))}
 
         {/* Grid Pattern */}
         <div className="absolute inset-0 opacity-5">
@@ -283,20 +262,20 @@ const LandingPage = () => {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 whileHover={{ scale: 1.05, rotateY: 5 }}
-                className="group relative bg-gray-900/50 border border-cyan-500/30 rounded-lg p-8 backdrop-blur-sm hover:border-cyan-400/50 transition-all duration-300 overflow-hidden"
+                className="group relative bg-gray-900/80 border border-gray-700/50 rounded-lg p-8 backdrop-blur-sm hover:border-cyan-400/50 transition-all duration-300 overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className={`w-16 h-16 bg-gradient-to-r ${feature.color} rounded-lg flex items-center justify-center mb-6 group-hover:scale-110 transition-transform relative z-10`}>
                   <feature.icon className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3 font-mono relative z-10">
                   {feature.title}
                 </h3>
-                <p className="text-gray-400 relative z-10">{feature.description}</p>
+                <p className="text-gray-200 relative z-10 leading-relaxed">{feature.description}</p>
                 
                 {/* Animated border */}
                 <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="absolute inset-0 rounded-lg border-2 border-transparent bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-border"></div>
+                  <div className="absolute inset-0 rounded-lg border-2 border-transparent bg-gradient-to-r from-cyan-400/20 to-purple-500/20 bg-clip-border"></div>
                 </div>
               </motion.div>
             ))}
