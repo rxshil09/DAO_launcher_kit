@@ -1,5 +1,6 @@
 # `Dao Launcher Kit`
-Welcome to the Dao Launcher Kit Platform
+Welcome to  our Dao Launcher Kit Platform - DAOVerse. 
+Here you can create and deploy your very own DAO on ICP.
 
 
 ## Running the project locally
