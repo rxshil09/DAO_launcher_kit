@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Shield, Zap, Users, TrendingUp, Star, CheckCircle, Gamepad2, Coins, Rocket, Globe, Lock, Sparkles, ChevronDown } from 'lucide-react';
 
-const LandingPage = () => {
+const LandingPage =() => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ const LandingPage = () => {
       icon: Zap,
       title: 'Lightning Fast',
       description: 'Instant transactions and real-time updates',
-      color: 'from-yellow-400 to-orange-500'
+      color:'from-yellow-400 to-orange-500'
     },
     {
       icon: Users,
