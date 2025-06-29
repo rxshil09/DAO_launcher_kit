@@ -72,3 +72,4 @@ The Module Registry Canister is a core component in modular DAO architecture, re
 - Access Control: Ensure only authorized entities or DAO decisions can modify the registry.
 
 This canister ensures plug-and-play flexibility, allowing a DAO to evolve its functionality without compromising core integrity. It lays the foundation for a sustainable, upgradable, and community-driven governance framework.
+

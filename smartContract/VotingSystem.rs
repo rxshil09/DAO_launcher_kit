@@ -1,14 +1,4 @@
 use std::io;
-// #[derive(Debug)]
-
-//      take number as input
-//     let mut number = String::new();
-//     println!("Enter the number : ");
-//     io::stdin().read_line(&mut number).expect("Failed");
-//     let num :i32 = number.trim().parse().expect("Enter the number");
-
-// use std::io::{self, Write};
-
 struct Account {
     name: String,
     balance: f64,
