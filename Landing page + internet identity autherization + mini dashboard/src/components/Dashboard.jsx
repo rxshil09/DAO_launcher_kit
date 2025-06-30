@@ -21,6 +21,7 @@ import {
   Shield
 } from 'lucide-react';
 
+// This is the code for Dashboard Section of our DAO Maker Kit.
 const Dashboard = () => {
   const { isAuthenticated, principal } = useAuth();
   const navigate = useNavigate();
