@@ -138,7 +138,7 @@ body {
               0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Button Focus States */
+
 button:focus {
   outline: 2px solid #3B82F6;
   outline-offset: 2px;

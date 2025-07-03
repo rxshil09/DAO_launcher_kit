@@ -37,7 +37,7 @@ const Dashboard = () => {
   const connectWallet = async () => {
     // Simulate wallet connection
     setWalletConnected(true);
-    // In a real app, you would integrate with actual wallet providers
+    //# In a real app, you would integrate with actual wallet providers
   };
 
   const categories = ['All', 'DeFi', 'NFT', 'Gaming', 'Infrastructure', 'Social'];
