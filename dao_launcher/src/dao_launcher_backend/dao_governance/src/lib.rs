@@ -49,7 +49,6 @@ fn vote(proposal_id: u64, yes: bool) {
         }
     });
 }
-
 #[update]
 fn execute_proposal(proposal_id: u64) -> bool {
     PROPOSALS.with(|map| {
