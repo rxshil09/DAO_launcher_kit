@@ -1,111 +1,122 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
+// Create the AuthContext
 const AuthContext = createContext();
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
+// AuthProvider component to wrap the app and provide auth state
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
-  const [authClient, setAuthClient] = useState(null);
+  const [userSettings, setUserSettings] = useState({
+    displayName: 'Anonymous User'
+  });
   const [loading, setLoading] = useState(true);
+  const [authClient, setAuthClient] = useState(null);
 
+  // Initialize auth client and check authentication status
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const client = await AuthClient.create();
+        setAuthClient(client);
+
+        // Check if user is already authenticated
+        const isAuthenticated = await client.isAuthenticated();
+        
+        if (isAuthenticated) {
+          const identity = client.getIdentity();
+          const principalId = identity.getPrincipal().toString();
+          
+          setIsAuthenticated(true);
+          setPrincipal(principalId);
+          setUserSettings({
+            displayName: `User ${principalId.slice(0, 8)}`
+          });
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth client:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     initAuth();
   }, []);
 
-  const initAuth = async () => {
+  // Login function with Internet Identity using popup
+  const login = async () => {
+    if (!authClient) {
+      throw new Error('Auth client not initialized');
+    }
+
     try {
-      const client = await AuthClient.create({
-        idleOptions: {
-          disableIdle: true,
-          disableDefaultIdleCallback: true
-        }
-      });
-      setAuthClient(client);
+      setLoading(true);
       
-      const authenticated = await client.isAuthenticated();
-      if (authenticated) {
-        const identity = client.getIdentity();
-        const principalId = identity.getPrincipal().toText();
-        setPrincipal(principalId);
-        setIsAuthenticated(true);
-      }
+      await new Promise((resolve, reject) => {
+        authClient.login({
+          // Always use the live Internet Identity service
+          identityProvider: "https://identity.ic0.app",
+          // Configure to use popup window instead of redirect
+          windowOpenerFeatures: "toolbar=0,location=0,menubar=0,width=500,height=500,left=100,top=100",
+          onSuccess: resolve,
+          onError: reject,
+        });
+      });
+
+      const identity = authClient.getIdentity();
+      const principalId = identity.getPrincipal().toString();
+      
+      setIsAuthenticated(true);
+      setPrincipal(principalId);
+      
+      // Create user settings with display name derived from principal
+      const newUserSettings = {
+        displayName: `User ${principalId.slice(0, 8)}`
+      };
+      setUserSettings(newUserSettings);
+      
+      return true;
     } catch (error) {
-      console.error('Failed to initialize auth:', error);
+      console.error('Login failed:', error);
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const login = async () => {
-    if (!authClient) {
-      console.error('Auth client not initialized');
-      throw new Error('Auth client not initialized');
-    }
-    
-    try {
-      const APP_NAME = "DAOVerse";
-      const APP_LOGO = "https://via.placeholder.com/150x150/6366f1/ffffff?text=DAO";
-      const MAX_TIME_TO_LIVE = BigInt(7 * 24 * 60 * 60 * 1000 * 1000 * 1000); // 7 days in nanoseconds
-      
-      return new Promise((resolve, reject) => {
-        authClient.login({
-          identityProvider: import.meta.env.VITE_DFX_NETWORK === "local" 
-            ? `http://localhost:4943/?canisterId=${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}` 
-            : "https://identity.ic0.app",
-          maxTimeToLive: MAX_TIME_TO_LIVE,
-          windowOpenerFeatures: "toolbar=0,location=0,menubar=0,width=500,height=500,left=100,top=100",
-          onSuccess: async () => {
-            try {
-              const identity = authClient.getIdentity();
-              const principalId = identity.getPrincipal().toText();
-              setPrincipal(principalId);
-              setIsAuthenticated(true);
-              resolve();
-            } catch (error) {
-              console.error('Error after successful login:', error);
-              reject(error);
-            }
-          },
-          onError: (error) => {
-            console.error('Login failed:', error);
-            reject(error);
-          }
-        });
-      });
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
-  };
-
+  // Logout function
   const logout = async () => {
-    if (!authClient) return;
-    
+    if (!authClient) {
+      return;
+    }
+
     try {
+      setLoading(true);
       await authClient.logout();
+      
       setIsAuthenticated(false);
       setPrincipal(null);
+      setUserSettings({
+        displayName: 'Anonymous User'
+      });
     } catch (error) {
       console.error('Logout failed:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Auth context value
   const value = {
     isAuthenticated,
     principal,
+    userSettings,
+    loading,
     login,
     logout,
-    loading
+    authClient
   };
 
   return (
@@ -114,3 +125,16 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+// Custom hook to use the AuthContext
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  
+  return context;
+};
+
+export default AuthContext;

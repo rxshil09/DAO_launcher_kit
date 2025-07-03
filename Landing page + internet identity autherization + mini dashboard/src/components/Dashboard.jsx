@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import BackgroundParticles from './BackgroundParticles';
 import { 
   TrendingUp, 
   Wallet, 
@@ -18,22 +19,26 @@ import {
   BarChart3,
   Plus,
   ExternalLink,
-  Shield
+  Shield,
+  Rocket,
+  Zap,
+  Globe,
+  Settings,
+  Loader2
 } from 'lucide-react';
 
-
 const Dashboard = () => {
-  const { isAuthenticated, principal } = useAuth();
+  const { isAuthenticated, principal, loading } = useAuth();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [walletConnected, setWalletConnected] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!loading && !isAuthenticated) {
       navigate('/signin');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
   const connectWallet = async () => {
     // Simulate wallet connection
@@ -150,13 +155,32 @@ const Dashboard = () => {
     return matchesCategory && matchesSearch;
   });
 
+  // Show loading spinner while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black text-white relative overflow-hidden">
+        <BackgroundParticles />
+        <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
+            <p className="text-cyan-400 font-mono">Loading dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to signin if not authenticated
   if (!isAuthenticated) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      {/* Background Particles */}
+      <BackgroundParticles />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -169,7 +193,7 @@ const Dashboard = () => {
                 WELCOME TO DAOVERSE! 🚀
               </h1>
               <p className="text-cyan-400 font-mono">
-                &gt; Principal: {principal?.slice(0, 12)}...{principal?.slice(-8)}
+                {'>'} Principal: {principal?.slice(0, 12)}...{principal?.slice(-8)}
               </p>
             </div>
             <div className="flex items-center space-x-4 mt-4 md:mt-0">
@@ -187,6 +211,13 @@ const Dashboard = () => {
                   <span>WALLET CONNECTED</span>
                 </div>
               )}
+              <button 
+                onClick={() => navigate('/launch')}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 transition-all font-mono"
+              >
+                <Rocket className="w-4 h-4" />
+                <span>LAUNCH DAO</span>
+              </button>
               <button className="flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-cyan-500/30 text-cyan-400 rounded-lg hover:bg-gray-700 transition-colors font-mono">
                 <Plus className="w-4 h-4" />
                 <span>ADD FUNDS</span>
@@ -195,7 +226,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Portfolio Stats */}
+        {/* Portfolio Stats - INSTANT HOVER SCALING */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -203,8 +234,17 @@ const Dashboard = () => {
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
           {portfolioStats.map((stat, index) => (
-            <div key={index} className="bg-gray-900/50 border border-cyan-500/30 p-6 rounded-xl backdrop-blur-sm">
-              <div className="flex items-center justify-between">
+            <motion.div 
+              key={index} 
+              className="bg-gray-900/50 border border-cyan-500/30 p-6 rounded-xl backdrop-blur-sm relative overflow-hidden group"
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: "0 20px 40px rgba(6, 182, 212, 0.2)"
+              }}
+              transition={{ duration: 0 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex items-center justify-between relative z-10">
                 <div>
                   <p className="text-sm text-gray-400 mb-1 font-mono">{stat.label}</p>
                   <p className="text-2xl font-bold text-white font-mono">{stat.value}</p>
@@ -216,7 +256,7 @@ const Dashboard = () => {
                   <ArrowUpRight className={`w-4 h-4 ${stat.trend === 'down' ? 'rotate-180' : ''}`} />
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </motion.div>
 
@@ -230,9 +270,12 @@ const Dashboard = () => {
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
-                <button
+                <motion.button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ duration: 0 }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors font-mono ${
                     selectedCategory === category
                       ? 'bg-gradient-to-r from-cyan-500 to-purple-600 text-white'
@@ -240,7 +283,7 @@ const Dashboard = () => {
                   }`}
                 >
                   {category}
-                </button>
+                </motion.button>
               ))}
             </div>
             
@@ -257,7 +300,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        {/* Projects Grid */}
+        {/* Projects Grid - INSTANT HOVER SCALING */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -270,7 +313,12 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 * index }}
-              className="bg-gray-900/50 border border-purple-500/30 rounded-xl backdrop-blur-sm overflow-hidden hover:border-purple-400/50 transition-all group"
+              whileHover={{ 
+                scale: 1.02, 
+                y: -5,
+                boxShadow: "0 25px 50px rgba(139, 92, 246, 0.2)"
+              }}
+              className="bg-gray-900/50 border border-purple-500/30 rounded-xl backdrop-blur-sm overflow-hidden hover:border-purple-400/50 transition-all group relative"
             >
               {/* Project Header */}
               <div className="h-48 bg-gradient-to-br from-cyan-500/20 to-purple-600/20 relative overflow-hidden">
@@ -287,6 +335,27 @@ const Dashboard = () => {
                 <div className="absolute top-4 right-4 flex items-center space-x-1 bg-black/30 backdrop-blur-sm rounded-lg px-2 py-1">
                   <Star className="w-4 h-4 text-yellow-400 fill-current" />
                   <span className="text-white text-sm font-medium font-mono">{project.rating}</span>
+                </div>
+                
+                {/* Floating Icons */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div
+                    animate={{ 
+                      rotate: 360,
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{ 
+                      rotate: { duration: 20, repeat: Infinity, ease: "linear" },
+                      scale: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                    }}
+                    className="w-16 h-16 bg-gradient-to-r from-cyan-400/30 to-purple-500/30 rounded-full flex items-center justify-center backdrop-blur-sm"
+                  >
+                    {project.category === 'DeFi' && <DollarSign className="w-8 h-8 text-cyan-400" />}
+                    {project.category === 'Gaming' && <Target className="w-8 h-8 text-purple-400" />}
+                    {project.category === 'NFT' && <Award className="w-8 h-8 text-pink-400" />}
+                    {project.category === 'Social' && <Users className="w-8 h-8 text-green-400" />}
+                    {project.category === 'Infrastructure' && <Settings className="w-8 h-8 text-blue-400" />}
+                  </motion.div>
                 </div>
               </div>
 
@@ -323,10 +392,12 @@ const Dashboard = () => {
                     <span className="font-medium text-cyan-400">{project.progress}%</span>
                   </div>
                   <div className="w-full bg-gray-800 rounded-full h-2">
-                    <div 
+                    <motion.div 
                       className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${project.progress}%` }}
-                    ></div>
+                      initial={{ width: 0 }}
+                      animate={{ width: `${project.progress}%` }}
+                      transition={{ duration: 1, delay: 0.5 }}
+                    ></motion.div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm font-mono">
@@ -362,12 +433,22 @@ const Dashboard = () => {
 
                 {/* Action Buttons */}
                 <div className="flex space-x-3">
-                  <button className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white py-2 px-4 rounded-lg transition-all text-sm font-medium font-mono">
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0 }}
+                    className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-600 hover:to-purple-700 text-white py-2 px-4 rounded-lg transition-all text-sm font-medium font-mono"
+                  >
                     INVEST NOW
-                  </button>
-                  <button className="px-4 py-2 border border-gray-600 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors text-sm font-mono">
+                  </motion.button>
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ duration: 0 }}
+                    className="px-4 py-2 border border-gray-600 text-gray-300 hover:bg-gray-800 rounded-lg transition-colors text-sm font-mono"
+                  >
                     DETAILS
-                  </button>
+                  </motion.button>
                 </div>
               </div>
             </motion.div>
@@ -385,7 +466,7 @@ const Dashboard = () => {
               <Search className="w-12 h-12 mx-auto" />
             </div>
             <h3 className="text-lg font-medium text-white mb-2 font-mono">NO PROJECTS FOUND</h3>
-            <p className="text-gray-400 font-mono">&gt; Try adjusting your filters or search terms</p>
+            <p className="text-gray-400 font-mono">{'>'} Try adjusting your filters or search terms</p>
           </motion.div>
         )}
       </div>
