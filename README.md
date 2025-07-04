@@ -25,9 +25,10 @@ at any time. This is recommended before starting the frontend development server
 If you are making frontend changes, you can start a development server with the following command and the server will will start at `http://localhost:8080`, proxying API requests to the replica at port 4943.
 
 ```bash
-npm start
+npm run dev
 ```
 
+We have made the canisters in Motoko for simplicity!
 <br>
 
 # Module Registry Canister for DAO Governance
