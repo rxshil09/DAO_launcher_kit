@@ -38,7 +38,6 @@
   .btn-secondary {
     @apply inline-flex items-center px-6 py-3 border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold rounded-lg transition-all duration-200;
   }
-  
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300;
   }

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
-const AuthContext = createContext();
+const AuthContext =createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
