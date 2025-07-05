@@ -26,7 +26,21 @@ import {
   Loader2,
   Save,
   Eye,
-  EyeOff
+  EyeOff,
+  Vote,
+  Coins,
+  BarChart3,
+  Lock,
+  Wallet,
+  TrendingUp,
+  Clock,
+  Award,
+  Database,
+  Activity,
+  PieChart,
+  Bell,
+  FileBarChart,
+  Layers
 } from 'lucide-react';
 
 const LaunchDAO = () => {
@@ -43,6 +57,26 @@ const LaunchDAO = () => {
     category: 'DeFi',
     website: '',
     logo: null,
+    
+    // Module Selection
+    selectedModules: {
+      governance: {
+        enabled: true,
+        subModules: ['tokenWeightedVoting']
+      },
+      treasury: {
+        enabled: true,
+        subModules: ['multiSigWallet']
+      },
+      staking: {
+        enabled: false,
+        subModules: []
+      },
+      analytics: {
+        enabled: false,
+        subModules: []
+      }
+    },
     
     // Tokenomics
     tokenName: '',
@@ -73,6 +107,7 @@ const LaunchDAO = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [selectedMainModule, setSelectedMainModule] = useState('governance');
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -82,21 +117,182 @@ const LaunchDAO = () => {
 
   const steps = [
     { id: 1, title: 'Basic Info', icon: FileText },
-    { id: 2, title: 'Tokenomics', icon: DollarSign },
-    { id: 3, title: 'Governance', icon: Users },
-    { id: 4, title: 'Funding', icon: Target },
-    { id: 5, title: 'Team', icon: Users },
-    { id: 6, title: 'Review', icon: CheckCircle }
+    { id: 2, title: 'Module Selection', icon: Layers },
+    { id: 3, title: 'Tokenomics', icon: DollarSign },
+    { id: 4, title: 'Governance', icon: Users },
+    { id: 5, title: 'Funding', icon: Target },
+    { id: 6, title: 'Team', icon: Users },
+    { id: 7, title: 'Review', icon: CheckCircle }
   ];
 
   const categories = ['DeFi', 'NFT', 'Gaming', 'Infrastructure', 'Social', 'Other'];
 
+  const moduleDefinitions = {
+    governance: {
+      name: 'Governance',
+      description: 'Voting mechanisms and proposal systems',
+      icon: Vote,
+      color: 'from-blue-500 to-cyan-500',
+      required: true,
+      subModules: {
+        tokenWeightedVoting: {
+          name: 'Token Weighted Voting',
+          description: 'Traditional token-based voting power',
+          required: true
+        },
+        quadraticVoting: {
+          name: 'Quadratic Voting',
+          description: 'Quadratic voting to prevent whale dominance',
+          required: false
+        },
+        delegatedVoting: {
+          name: 'Delegated Voting',
+          description: 'Allow token holders to delegate their votes',
+          required: false
+        },
+        timeLockedVoting: {
+          name: 'Time-Locked Voting',
+          description: 'Increased voting power for longer token locks',
+          required: false
+        }
+      }
+    },
+    treasury: {
+      name: 'Treasury',
+      description: 'Fund management and financial operations',
+      icon: Wallet,
+      color: 'from-green-500 to-emerald-500',
+      required: true,
+      subModules: {
+        multiSigWallet: {
+          name: 'Multi-Signature Wallet',
+          description: 'Secure treasury with multiple approvers',
+          required: true
+        },
+        streamingPayments: {
+          name: 'Streaming Payments',
+          description: 'Continuous payment streams for contributors',
+          required: false
+        },
+        tokenVesting: {
+          name: 'Token Vesting',
+          description: 'Time-locked token distribution',
+          required: false
+        },
+        budgetManagement: {
+          name: 'Budget Management',
+          description: 'Automated budget allocation and tracking',
+          required: false
+        }
+      }
+    },
+    staking: {
+      name: 'Staking',
+      description: 'Token staking and reward mechanisms',
+      icon: Coins,
+      color: 'from-purple-500 to-pink-500',
+      required: false,
+      subModules: {
+        simpleStaking: {
+          name: 'Simple Staking',
+          description: 'Basic staking with fixed rewards',
+          required: false
+        },
+        liquidityMining: {
+          name: 'Liquidity Mining',
+          description: 'Rewards for providing liquidity',
+          required: false
+        },
+        governanceStaking: {
+          name: 'Governance Staking',
+          description: 'Stake tokens for voting power',
+          required: false
+        },
+        yieldFarming: {
+          name: 'Yield Farming',
+          description: 'Advanced yield generation strategies',
+          required: false
+        }
+      }
+    },
+    analytics: {
+      name: 'Analytics',
+      description: 'Monitoring and reporting tools',
+      icon: BarChart3,
+      color: 'from-orange-500 to-red-500',
+      required: false,
+      subModules: {
+        analyticsDashboard: {
+          name: 'Analytics Dashboard',
+          description: 'Real-time DAO metrics and KPIs',
+          required: false
+        },
+        alertSystem: {
+          name: 'Alert System',
+          description: 'Automated notifications for key events',
+          required: false
+        },
+        financialReports: {
+          name: 'Financial Reports',
+          description: 'Comprehensive financial reporting',
+          required: false
+        },
+        membershipAnalytics: {
+          name: 'Membership Analytics',
+          description: 'Member engagement and activity tracking',
+          required: false
+        }
+      }
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleModuleToggle = (moduleKey) => {
+    const module = moduleDefinitions[moduleKey];
+    if (module.required) return; // Can't disable required modules
+
+    setFormData(prev => ({
+      ...prev,
+      selectedModules: {
+        ...prev.selectedModules,
+        [moduleKey]: {
+          ...prev.selectedModules[moduleKey],
+          enabled: !prev.selectedModules[moduleKey].enabled,
+          subModules: !prev.selectedModules[moduleKey].enabled 
+            ? [] 
+            : prev.selectedModules[moduleKey].subModules
+        }
+      }
+    }));
+  };
+
+  const handleSubModuleToggle = (moduleKey, subModuleKey) => {
+    const subModule = moduleDefinitions[moduleKey].subModules[subModuleKey];
+    if (subModule.required) return; // Can't disable required sub-modules
+
+    setFormData(prev => {
+      const currentSubModules = prev.selectedModules[moduleKey].subModules;
+      const isSelected = currentSubModules.includes(subModuleKey);
+      
+      return {
+        ...prev,
+        selectedModules: {
+          ...prev.selectedModules,
+          [moduleKey]: {
+            ...prev.selectedModules[moduleKey],
+            subModules: isSelected
+              ? currentSubModules.filter(sm => sm !== subModuleKey)
+              : [...currentSubModules, subModuleKey]
+          }
+        }
+      };
+    });
   };
 
   const handleTeamMemberChange = (index, field, value) => {
@@ -127,17 +323,17 @@ const LaunchDAO = () => {
         if (!formData.name.trim()) newErrors.name = 'DAO name is required';
         if (!formData.description.trim()) newErrors.description = 'Description is required';
         break;
-      case 2:
+      case 3:
         if (!formData.tokenName.trim()) newErrors.tokenName = 'Token name is required';
         if (!formData.tokenSymbol.trim()) newErrors.tokenSymbol = 'Token symbol is required';
         if (!formData.totalSupply) newErrors.totalSupply = 'Total supply is required';
         if (!formData.initialPrice) newErrors.initialPrice = 'Initial price is required';
         break;
-      case 4:
+      case 5:
         if (!formData.fundingGoal) newErrors.fundingGoal = 'Funding goal is required';
         if (!formData.minInvestment) newErrors.minInvestment = 'Minimum investment is required';
         break;
-      case 5:
+      case 6:
         formData.teamMembers.forEach((member, index) => {
           if (!member.name.trim()) newErrors[`teamMember${index}Name`] = 'Name is required';
           if (!member.role.trim()) newErrors[`teamMember${index}Role`] = 'Role is required';
@@ -164,16 +360,22 @@ const LaunchDAO = () => {
     
     setIsSubmitting(true);
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Navigate to success page or dashboard
       navigate('/dashboard');
     } catch (error) {
       console.error('Failed to launch DAO:', error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const getSelectedModulesCount = () => {
+    return Object.values(formData.selectedModules).filter(module => module.enabled).length;
+  };
+
+  const getSelectedSubModulesCount = () => {
+    return Object.values(formData.selectedModules)
+      .reduce((total, module) => total + module.subModules.length, 0);
   };
 
   if (loading) {
@@ -198,9 +400,8 @@ const LaunchDAO = () => {
     <div className="h-screen bg-black text-white relative overflow-hidden">
       <BackgroundParticles />
       
-      {/* Main Content Container - Fixed Height with Scroll */}
       <div className="relative z-10 h-full flex flex-col">
-        {/* Header - Fixed */}
+        {/* Header */}
         <div className="flex-shrink-0 pt-20 pb-4">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
@@ -227,7 +428,7 @@ const LaunchDAO = () => {
                     LAUNCH YOUR DAO
                   </h1>
                   <p className="text-cyan-400 font-mono text-sm">
-                    {'>'} Create your decentralized organization
+                    > Create your decentralized organization
                   </p>
                 </div>
                 <button
@@ -245,7 +446,7 @@ const LaunchDAO = () => {
         {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-            {/* Progress Steps - Compact */}
+            {/* Enhanced Progress Steps */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -260,35 +461,43 @@ const LaunchDAO = () => {
                   </span>
                 </div>
                 
-                {/* Desktop Steps */}
-                <div className="hidden md:flex items-center justify-between">
-                  {steps.map((step, index) => (
-                    <div key={step.id} className="flex items-center">
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
-                        currentStep >= step.id
-                          ? 'bg-cyan-500 border-cyan-500 text-white'
-                          : 'border-gray-600 text-gray-400'
-                      }`}>
-                        {currentStep > step.id ? (
-                          <CheckCircle className="w-4 h-4" />
-                        ) : (
-                          <step.icon className="w-4 h-4" />
+                {/* Desktop Steps with Names Below */}
+                <div className="hidden md:block">
+                  <div className="flex items-center justify-between mb-2">
+                    {steps.map((step, index) => (
+                      <div key={step.id} className="flex items-center">
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
+                          currentStep >= step.id
+                            ? 'bg-cyan-500 border-cyan-500 text-white'
+                            : 'border-gray-600 text-gray-400'
+                        }`}>
+                          {currentStep > step.id ? (
+                            <CheckCircle className="w-4 h-4" />
+                          ) : (
+                            <step.icon className="w-4 h-4" />
+                          )}
+                        </div>
+                        {index < steps.length - 1 && (
+                          <div className={`w-8 lg:w-16 h-0.5 mx-3 ${
+                            currentStep > step.id ? 'bg-cyan-500' : 'bg-gray-600'
+                          }`} />
                         )}
                       </div>
-                      <div className="ml-2 hidden lg:block">
-                        <p className={`text-xs font-medium ${
-                          currentStep >= step.id ? 'text-cyan-400' : 'text-gray-400'
+                    ))}
+                  </div>
+                  
+                  {/* Step Names Below Progress Bar */}
+                  <div className="flex items-center justify-between">
+                    {steps.map((step) => (
+                      <div key={`name-${step.id}`} className="flex-1 text-center">
+                        <p className={`text-xs font-medium font-mono ${
+                          currentStep >= step.id ? 'text-cyan-400' : 'text-gray-500'
                         }`}>
                           {step.title}
                         </p>
                       </div>
-                      {index < steps.length - 1 && (
-                        <div className={`w-8 lg:w-16 h-0.5 mx-3 ${
-                          currentStep > step.id ? 'bg-cyan-500' : 'bg-gray-600'
-                        }`} />
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
 
                 {/* Mobile Steps */}
@@ -336,7 +545,7 @@ const LaunchDAO = () => {
                         
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div className="sm:col-span-2">
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">DAO Name *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">DAO Name *</label>
                             <input
                               type="text"
                               value={formData.name}
@@ -350,7 +559,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Category</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Category</label>
                             <select
                               value={formData.category}
                               onChange={(e) => handleInputChange('category', e.target.value)}
@@ -363,7 +572,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Website</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Website</label>
                             <input
                               type="url"
                               value={formData.website}
@@ -374,7 +583,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Description *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Description *</label>
                             <textarea
                               value={formData.description}
                               onChange={(e) => handleInputChange('description', e.target.value)}
@@ -390,10 +599,157 @@ const LaunchDAO = () => {
                       </motion.div>
                     )}
 
-                    {/* Step 2: Tokenomics */}
+                    {/* Step 2: Enhanced Module Selection */}
                     {currentStep === 2 && (
                       <motion.div
                         key="step2"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-4"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h2 className="text-lg font-bold text-white font-mono">Module Selection</h2>
+                          <div className="text-sm text-cyan-400 font-mono">
+                            {getSelectedModulesCount()} modules, {getSelectedSubModulesCount()} features
+                          </div>
+                        </div>
+                        
+                        <div className="grid lg:grid-cols-2 gap-6">
+                          {/* Left: Main Modules */}
+                          <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-white font-mono mb-3">Core Modules</h3>
+                            {Object.entries(moduleDefinitions).map(([moduleKey, module]) => {
+                              const isSelected = formData.selectedModules[moduleKey].enabled;
+                              const isActive = selectedMainModule === moduleKey;
+                              
+                              return (
+                                <div
+                                  key={moduleKey}
+                                  className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                                    isActive 
+                                      ? 'border-cyan-500 bg-cyan-500/10' 
+                                      : isSelected
+                                      ? 'border-gray-600 bg-gray-800/50'
+                                      : 'border-gray-700 bg-gray-800/30'
+                                  } ${module.required ? 'opacity-100' : 'hover:border-gray-500'}`}
+                                  onClick={() => setSelectedMainModule(moduleKey)}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${module.color} flex items-center justify-center`}>
+                                        <module.icon className="w-4 h-4 text-white" />
+                                      </div>
+                                      <div>
+                                        <h4 className="text-white font-semibold font-mono text-sm">
+                                          {module.name}
+                                          {module.required && <span className="text-orange-400 ml-1">*</span>}
+                                        </h4>
+                                        <p className="text-gray-400 text-xs">{module.description}</p>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-2">
+                                      {!module.required && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleModuleToggle(moduleKey);
+                                          }}
+                                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                            isSelected ? 'bg-cyan-500' : 'bg-gray-600'
+                                          }`}
+                                        >
+                                          <span
+                                            className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                              isSelected ? 'translate-x-5' : 'translate-x-1'
+                                            }`}
+                                          />
+                                        </button>
+                                      )}
+                                      {module.required && (
+                                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                                          <CheckCircle className="w-3 h-3 text-white" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {isSelected && (
+                                    <div className="mt-2 text-xs text-cyan-400 font-mono">
+                                      {formData.selectedModules[moduleKey].subModules.length} features selected
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Right: Sub-modules */}
+                          <div className="space-y-3">
+                            <h3 className="text-sm font-semibold text-white font-mono mb-3">
+                              {moduleDefinitions[selectedMainModule]?.name} Features
+                            </h3>
+                            
+                            {formData.selectedModules[selectedMainModule]?.enabled ? (
+                              <div className="space-y-2">
+                                {Object.entries(moduleDefinitions[selectedMainModule].subModules).map(([subModuleKey, subModule]) => {
+                                  const isSelected = formData.selectedModules[selectedMainModule].subModules.includes(subModuleKey);
+                                  
+                                  return (
+                                    <div
+                                      key={subModuleKey}
+                                      className={`p-3 rounded-lg border transition-all ${
+                                        isSelected 
+                                          ? 'border-cyan-500/50 bg-cyan-500/10' 
+                                          : 'border-gray-600 bg-gray-800/30 hover:border-gray-500'
+                                      } ${subModule.required ? 'opacity-100' : 'cursor-pointer'}`}
+                                      onClick={() => !subModule.required && handleSubModuleToggle(selectedMainModule, subModuleKey)}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex-1">
+                                          <h5 className="text-white font-medium font-mono text-sm">
+                                            {subModule.name}
+                                            {subModule.required && <span className="text-orange-400 ml-1">*</span>}
+                                          </h5>
+                                          <p className="text-gray-400 text-xs mt-1">{subModule.description}</p>
+                                        </div>
+                                        
+                                        <div className="ml-3">
+                                          {subModule.required ? (
+                                            <div className="w-4 h-4 bg-green-500 rounded flex items-center justify-center">
+                                              <CheckCircle className="w-3 h-3 text-white" />
+                                            </div>
+                                          ) : (
+                                            <div className={`w-4 h-4 border-2 rounded transition-colors ${
+                                              isSelected 
+                                                ? 'bg-cyan-500 border-cyan-500' 
+                                                : 'border-gray-500'
+                                            }`}>
+                                              {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-center py-8 text-gray-500">
+                                <Settings className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm font-mono">Enable {moduleDefinitions[selectedMainModule]?.name} to configure features</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Step 3: Tokenomics */}
+                    {currentStep === 3 && (
+                      <motion.div
+                        key="step3"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
@@ -403,7 +759,7 @@ const LaunchDAO = () => {
                         
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Token Name *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Token Name *</label>
                             <input
                               type="text"
                               value={formData.tokenName}
@@ -417,7 +773,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Token Symbol *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Token Symbol *</label>
                             <input
                               type="text"
                               value={formData.tokenSymbol}
@@ -432,7 +788,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Total Supply *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Total Supply *</label>
                             <input
                               type="number"
                               value={formData.totalSupply}
@@ -446,7 +802,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Initial Price (USD) *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Initial Price (USD) *</label>
                             <input
                               type="number"
                               step="0.01"
@@ -463,10 +819,10 @@ const LaunchDAO = () => {
                       </motion.div>
                     )}
 
-                    {/* Step 3: Governance */}
-                    {currentStep === 3 && (
+                    {/* Step 4: Governance */}
+                    {currentStep === 4 && (
                       <motion.div
-                        key="step3"
+                        key="step4"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
@@ -476,7 +832,7 @@ const LaunchDAO = () => {
                         
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Voting Period (days)</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Voting Period (days)</label>
                             <input
                               type="number"
                               value={formData.votingPeriod}
@@ -488,7 +844,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Quorum Threshold (%)</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Quorum Threshold (%)</label>
                             <input
                               type="number"
                               value={formData.quorumThreshold}
@@ -500,7 +856,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div className="sm:col-span-2">
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Proposal Threshold (%)</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Proposal Threshold (%)</label>
                             <input
                               type="number"
                               value={formData.proposalThreshold}
@@ -516,10 +872,10 @@ const LaunchDAO = () => {
                       </motion.div>
                     )}
 
-                    {/* Step 4: Funding */}
-                    {currentStep === 4 && (
+                    {/* Step 5: Funding */}
+                    {currentStep === 5 && (
                       <motion.div
-                        key="step4"
+                        key="step5"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
@@ -529,7 +885,7 @@ const LaunchDAO = () => {
                         
                         <div className="grid sm:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Funding Goal (USD) *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Funding Goal (USD) *</label>
                             <input
                               type="number"
                               value={formData.fundingGoal}
@@ -543,7 +899,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Funding Duration (days)</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Funding Duration (days)</label>
                             <input
                               type="number"
                               value={formData.fundingDuration}
@@ -555,7 +911,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Min Investment (USD) *</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Min Investment (USD) *</label>
                             <input
                               type="number"
                               value={formData.minInvestment}
@@ -569,7 +925,7 @@ const LaunchDAO = () => {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Max Investment (USD)</label>
+                            <label className="block text-sm font-semibold text-white mb-2 font-mono">Max Investment (USD)</label>
                             <input
                               type="number"
                               value={formData.maxInvestment}
@@ -582,10 +938,10 @@ const LaunchDAO = () => {
                       </motion.div>
                     )}
 
-                    {/* Step 5: Team */}
-                    {currentStep === 5 && (
+                    {/* Step 6: Team */}
+                    {currentStep === 6 && (
                       <motion.div
-                        key="step5"
+                        key="step6"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
@@ -619,7 +975,7 @@ const LaunchDAO = () => {
                               
                               <div className="grid sm:grid-cols-2 gap-3">
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-300 mb-1 font-mono">Name *</label>
+                                  <label className="block text-xs font-semibold text-white mb-1 font-mono">Name *</label>
                                   <input
                                     type="text"
                                     value={member.name}
@@ -635,7 +991,7 @@ const LaunchDAO = () => {
                                 </div>
 
                                 <div>
-                                  <label className="block text-xs font-semibold text-gray-300 mb-1 font-mono">Role *</label>
+                                  <label className="block text-xs font-semibold text-white mb-1 font-mono">Role *</label>
                                   <input
                                     type="text"
                                     value={member.role}
@@ -651,7 +1007,7 @@ const LaunchDAO = () => {
                                 </div>
 
                                 <div className="sm:col-span-2">
-                                  <label className="block text-xs font-semibold text-gray-300 mb-1 font-mono">Bio</label>
+                                  <label className="block text-xs font-semibold text-white mb-1 font-mono">Bio</label>
                                   <textarea
                                     value={member.bio}
                                     onChange={(e) => handleTeamMemberChange(index, 'bio', e.target.value)}
@@ -667,56 +1023,208 @@ const LaunchDAO = () => {
                       </motion.div>
                     )}
 
-                    {/* Step 6: Review */}
-                    {currentStep === 6 && (
+                    {/* Step 7: Enhanced Review */}
+                    {currentStep === 7 && (
                       <motion.div
-                        key="step6"
+                        key="step7"
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="space-y-4"
+                        className="space-y-6"
                       >
                         <h2 className="text-lg font-bold text-white mb-4 font-mono">Review & Launch</h2>
                         
-                        <div className="space-y-4">
-                          {/* Summary Cards */}
-                          <div className="grid sm:grid-cols-2 gap-3">
-                            <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-                              <h3 className="text-sm font-semibold text-cyan-400 mb-2 font-mono">Basic Info</h3>
-                              <div className="space-y-1 text-xs">
-                                <p><span className="text-gray-400">Name:</span> <span className="text-white">{formData.name}</span></p>
-                                <p><span className="text-gray-400">Category:</span> <span className="text-white">{formData.category}</span></p>
+                        {/* Comprehensive Review Sections */}
+                        <div className="space-y-6">
+                          {/* Basic Information */}
+                          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <FileText className="w-4 h-4 mr-2" />
+                              BASIC INFORMATION
+                            </h3>
+                            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-400 font-mono">Name:</span>
+                                <span className="text-white ml-2">{formData.name || 'Not specified'}</span>
                               </div>
-                            </div>
-
-                            <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-                              <h3 className="text-sm font-semibold text-cyan-400 mb-2 font-mono">Tokenomics</h3>
-                              <div className="space-y-1 text-xs">
-                                <p><span className="text-gray-400">Token:</span> <span className="text-white">{formData.tokenName} ({formData.tokenSymbol})</span></p>
-                                <p><span className="text-gray-400">Supply:</span> <span className="text-white">{formData.totalSupply?.toLocaleString()}</span></p>
+                              <div>
+                                <span className="text-gray-400 font-mono">Category:</span>
+                                <span className="text-white ml-2">{formData.category}</span>
                               </div>
-                            </div>
-
-                            <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-                              <h3 className="text-sm font-semibold text-cyan-400 mb-2 font-mono">Governance</h3>
-                              <div className="space-y-1 text-xs">
-                                <p><span className="text-gray-400">Voting:</span> <span className="text-white">{formData.votingPeriod} days</span></p>
-                                <p><span className="text-gray-400">Quorum:</span> <span className="text-white">{formData.quorumThreshold}%</span></p>
+                              <div className="sm:col-span-2">
+                                <span className="text-gray-400 font-mono">Description:</span>
+                                <p className="text-white mt-1 text-xs">{formData.description || 'Not specified'}</p>
                               </div>
+                              {formData.website && (
+                                <div className="sm:col-span-2">
+                                  <span className="text-gray-400 font-mono">Website:</span>
+                                  <span className="text-cyan-400 ml-2">{formData.website}</span>
+                                </div>
+                              )}
                             </div>
+                          </div>
 
-                            <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-3">
-                              <h3 className="text-sm font-semibold text-cyan-400 mb-2 font-mono">Funding</h3>
-                              <div className="space-y-1 text-xs">
-                                <p><span className="text-gray-400">Goal:</span> <span className="text-white">${formData.fundingGoal?.toLocaleString()}</span></p>
-                                <p><span className="text-gray-400">Min:</span> <span className="text-white">${formData.minInvestment}</span></p>
+                          {/* Selected Modules */}
+                          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <Layers className="w-4 h-4 mr-2" />
+                              SELECTED MODULES & FEATURES
+                            </h3>
+                            <div className="space-y-3">
+                              {Object.entries(formData.selectedModules)
+                                .filter(([_, module]) => module.enabled)
+                                .map(([moduleKey, module]) => {
+                                  const moduleDef = moduleDefinitions[moduleKey];
+                                  return (
+                                    <div key={moduleKey} className="bg-gray-900/50 rounded-lg p-3">
+                                      <div className="flex items-center mb-2">
+                                        <div className={`w-6 h-6 rounded bg-gradient-to-r ${moduleDef.color} flex items-center justify-center mr-2`}>
+                                          <moduleDef.icon className="w-3 h-3 text-white" />
+                                        </div>
+                                        <span className="text-white font-semibold font-mono text-sm">
+                                          {moduleDef.name}
+                                          {moduleDef.required && <span className="text-orange-400 ml-1">*</span>}
+                                        </span>
+                                      </div>
+                                      <div className="ml-8">
+                                        <p className="text-gray-400 text-xs mb-2">{moduleDef.description}</p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {module.subModules.map(subModuleKey => {
+                                            const subModule = moduleDef.subModules[subModuleKey];
+                                            return (
+                                              <span
+                                                key={subModuleKey}
+                                                className="text-xs px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded border border-cyan-500/30 font-mono"
+                                              >
+                                                {subModule.name}
+                                                {subModule.required && <span className="text-orange-400 ml-1">*</span>}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          </div>
+
+                          {/* Tokenomics */}
+                          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <Coins className="w-4 h-4 mr-2" />
+                              TOKENOMICS
+                            </h3>
+                            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-400 font-mono">Token:</span>
+                                <span className="text-white ml-2">
+                                  {formData.tokenName || 'Not specified'} ({formData.tokenSymbol || 'N/A'})
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Total Supply:</span>
+                                <span className="text-white ml-2">{formData.totalSupply?.toLocaleString() || 'Not specified'}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Initial Price:</span>
+                                <span className="text-white ml-2">${formData.initialPrice || 'Not specified'}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Market Cap:</span>
+                                <span className="text-white ml-2">
+                                  {formData.totalSupply && formData.initialPrice 
+                                    ? `$${(parseFloat(formData.totalSupply) * parseFloat(formData.initialPrice)).toLocaleString()}`
+                                    : 'Not calculated'
+                                  }
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Legal Checkboxes */}
+                          {/* Governance */}
                           <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
-                            <h3 className="text-sm font-semibold text-white mb-3 font-mono">Legal & Compliance</h3>
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <Vote className="w-4 h-4 mr-2" />
+                              GOVERNANCE PARAMETERS
+                            </h3>
+                            <div className="grid sm:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-400 font-mono">Voting Period:</span>
+                                <span className="text-white ml-2">{formData.votingPeriod} days</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Quorum:</span>
+                                <span className="text-white ml-2">{formData.quorumThreshold}%</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Proposal Threshold:</span>
+                                <span className="text-white ml-2">{formData.proposalThreshold}%</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Funding */}
+                          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <Target className="w-4 h-4 mr-2" />
+                              FUNDING DETAILS
+                            </h3>
+                            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-400 font-mono">Funding Goal:</span>
+                                <span className="text-white ml-2">${formData.fundingGoal?.toLocaleString() || 'Not specified'}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Duration:</span>
+                                <span className="text-white ml-2">{formData.fundingDuration} days</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Min Investment:</span>
+                                <span className="text-white ml-2">${formData.minInvestment || 'Not specified'}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Max Investment:</span>
+                                <span className="text-white ml-2">
+                                  {formData.maxInvestment ? `$${formData.maxInvestment}` : 'No limit'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Team */}
+                          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <Users className="w-4 h-4 mr-2" />
+                              TEAM MEMBERS ({formData.teamMembers.length})
+                            </h3>
+                            <div className="space-y-2">
+                              {formData.teamMembers.map((member, index) => (
+                                <div key={index} className="bg-gray-900/50 rounded-lg p-3">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <span className="text-white font-semibold font-mono text-sm">
+                                        {member.name || `Member ${index + 1}`}
+                                      </span>
+                                      <span className="text-cyan-400 ml-2 text-xs">
+                                        {member.role || 'Role not specified'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {member.bio && (
+                                    <p className="text-gray-400 text-xs mt-1">{member.bio}</p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Legal & Compliance */}
+                          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-white mb-3 font-mono flex items-center">
+                              <Shield className="w-4 h-4 mr-2" />
+                              LEGAL & COMPLIANCE
+                            </h3>
                             <div className="space-y-3">
                               <label className="flex items-start space-x-3">
                                 <input
@@ -725,7 +1233,7 @@ const LaunchDAO = () => {
                                   onChange={(e) => handleInputChange('termsAccepted', e.target.checked)}
                                   className="mt-1 w-4 h-4 text-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-500"
                                 />
-                                <span className="text-xs text-gray-300">
+                                <span className="text-xs text-white">
                                   I agree to the Terms of Service and confirm all information is accurate.
                                 </span>
                               </label>
@@ -737,10 +1245,36 @@ const LaunchDAO = () => {
                                   onChange={(e) => handleInputChange('kycRequired', e.target.checked)}
                                   className="mt-1 w-4 h-4 text-cyan-500 bg-gray-800 border-gray-600 rounded focus:ring-cyan-500"
                                 />
-                                <span className="text-xs text-gray-300">
+                                <span className="text-xs text-white">
                                   Require KYC verification for investors.
                                 </span>
                               </label>
+                            </div>
+                          </div>
+
+                          {/* Launch Summary */}
+                          <div className="bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-lg p-4">
+                            <h3 className="text-sm font-semibold text-cyan-400 mb-3 font-mono flex items-center">
+                              <Rocket className="w-4 h-4 mr-2" />
+                              LAUNCH SUMMARY
+                            </h3>
+                            <div className="grid sm:grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-400 font-mono">Modules Selected:</span>
+                                <span className="text-white ml-2">{getSelectedModulesCount()}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Features Enabled:</span>
+                                <span className="text-white ml-2">{getSelectedSubModulesCount()}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Team Size:</span>
+                                <span className="text-white ml-2">{formData.teamMembers.length} members</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400 font-mono">Estimated Launch:</span>
+                                <span className="text-white ml-2">~5 minutes</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -818,6 +1352,19 @@ const LaunchDAO = () => {
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
                           <Info className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-gray-300">Select multiple features within each module.</p>
+                        </div>
+                        <div className="flex items-start space-x-2">
+                          <Info className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
+                          <p className="text-gray-300">Required modules are pre-selected for security.</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {currentStep === 3 && (
+                      <div className="space-y-2">
+                        <div className="flex items-start space-x-2">
+                          <Info className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
                           <p className="text-gray-300">Token symbol should be 3-5 characters.</p>
                         </div>
                         <div className="flex items-start space-x-2">
@@ -827,7 +1374,7 @@ const LaunchDAO = () => {
                       </div>
                     )}
                     
-                    {currentStep === 3 && (
+                    {currentStep === 4 && (
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
                           <Info className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -840,7 +1387,7 @@ const LaunchDAO = () => {
                       </div>
                     )}
                     
-                    {currentStep === 4 && (
+                    {currentStep === 5 && (
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
                           <Info className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -853,7 +1400,7 @@ const LaunchDAO = () => {
                       </div>
                     )}
                     
-                    {currentStep === 5 && (
+                    {currentStep === 6 && (
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
                           <Info className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
@@ -866,7 +1413,7 @@ const LaunchDAO = () => {
                       </div>
                     )}
                     
-                    {currentStep === 6 && (
+                    {currentStep === 7 && (
                       <div className="space-y-2">
                         <div className="flex items-start space-x-2">
                           <CheckCircle className="w-3 h-3 text-green-400 mt-0.5 flex-shrink-0" />
