@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "canisters": {
+    "governance": {
+      "type": "motoko",
+      "main": "src/backend/governance/main.mo"
+    },
+    "treasury": {
+      "type": "motoko", 
+      "main": "src/backend/treasury/main.mo"
+    },
+    "staking": {
+      "type": "motoko",
+      "main": "src/backend/staking/main.mo"
+    },
+    "proposals": {
+      "type": "motoko",
+      "main": "src/backend/proposals/main.mo"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8000",
+      "type": "ephemeral"
+    },
+    "ic": {
+      "providers": ["https://ic0.app"],
+      "type": "persistent"
+    }
+  }
+}
