@@ -15,7 +15,6 @@ function App() {
         <div className="App">
           <Navbar />
           <Routes>
-            
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<Dashboard />}/>
             <Route path="/signin" element={<SignIn />} />

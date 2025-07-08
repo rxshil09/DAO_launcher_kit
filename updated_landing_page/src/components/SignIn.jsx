@@ -17,7 +17,7 @@ const SignIn = () =>{
       // Navigate to dashboard after successful login
       setTimeout(() => {
         navigate('/dashboard');
-      }, 1000);
+      },1000);
     } catch (error) {
       console.error('Login failed:', error);
       setError('Failed to connect with Internet Identity. Please try again.');
@@ -38,8 +38,7 @@ const SignIn = () =>{
       setIsLoading(false);
     }
   };
-
-  const slideVariants = {
+const slideVariants = {
     initial: (direction) => ({
       x: direction > 0 ? 300 : -300,
       opacity: 0,
