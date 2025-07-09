@@ -50,7 +50,6 @@ export const AuthProvider = ({ children }) => {
       console.error('Auth client not initialized');
       throw new Error('Auth client not initialized');
     }
-    
     try {
       const APP_NAME = "DAOVerse";
       const APP_LOGO = "https://via.placeholder.com/150x150/6366f1/ffffff?text=DAO";

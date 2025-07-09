@@ -96,7 +96,7 @@ body {
   @apply bg-blue-100 text-blue-900;
 }
 
-/* Focus styles */
+/* Focus  styles */
 *:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
@@ -195,7 +195,7 @@ body {
   }
 }
 
-/* Dark mode support */
+/*  Dark mode support */
 @media (prefers-color-scheme: dark) {
   .dark-mode {
     @apply bg-gray-900 text-white;
