@@ -371,7 +371,7 @@ const LandingPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5"></div>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-purple-500"></div>
               
-              <div className="relative z-10">
+               <div className="relative z-10">
                 <div className="flex items-center justify-center mb-6">
                   <Lock className="w-8 h-8 text-cyan-400 mr-2" />
                   <h2 className="text-4xl md:text-5xl font-bold text-white font-mono">

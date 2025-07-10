@@ -7,7 +7,6 @@ import SignIn from './components/SignIn';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
 import './App.css';
-
 function App() {
   return (
     <AuthProvider>

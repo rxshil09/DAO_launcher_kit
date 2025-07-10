@@ -144,7 +144,7 @@ button:focus {
   outline-offset: 2px;
 }
 
-/* Responsive Design Helpers */
+/*Responsive Design Helpers */
 @media (max-width: 640px) {
   .container {
     padding-left: 1rem;

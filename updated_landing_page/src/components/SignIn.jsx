@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Wallet, Shield, Zap, ArrowRight, Loader2, CheckCircle, AlertCircle, Globe, Lock } from 'lucide-react';
-const SignIn = () =>{
+const SignIn = ()=>{
   const { isAuthenticated, principal, login, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);

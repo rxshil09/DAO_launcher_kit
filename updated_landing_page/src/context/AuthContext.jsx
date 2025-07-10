@@ -45,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   const login = async () => {
     if (!authClient) {
       console.error('Auth client not initialized');
@@ -80,6 +81,7 @@ export const AuthProvider = ({ children }) => {
           }
         });
       });
+      
     } catch (error) {
       console.error('Login failed:', error);
       throw error;
