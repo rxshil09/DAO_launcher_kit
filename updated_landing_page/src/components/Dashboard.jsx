@@ -89,6 +89,7 @@ const Dashboard = () => {
       tags: ['AI', 'Marketplace', 'Art']
     },
     {
+      
       id: 4,
       name: 'SocialDAO Network',
       category: 'Social',
