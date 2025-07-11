@@ -14,6 +14,11 @@ dfx start --clean --background
 dfx deploy
 ```
 
+To stop the canisters, use the following command
+```bash
+dfx stop
+```
+
 If you've updated your backend canister, you can regenerate the Candid interface by running:
 
 ```bash
