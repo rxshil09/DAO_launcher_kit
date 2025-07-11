@@ -1,0 +1,15 @@
+type Proposal = record {
+  id: nat64;
+  title: text;
+  description: text;
+  yes_votes: nat64;
+  no_votes: nat64;
+  voters: vec text;
+};
+
+service : {
+  create_proposal: (text, text) -> (nat64);
+  vote: (nat64, bool) -> (variant { Ok: null; Err: text });
+  get_proposal: (nat64) -> (opt Proposal);
+  list_proposals: () -> (vec Proposal);
+};

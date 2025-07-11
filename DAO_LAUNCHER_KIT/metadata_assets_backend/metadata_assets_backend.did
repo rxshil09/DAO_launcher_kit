@@ -1,0 +1,7 @@
+service : {
+  "set_metadata": (text, text) -> ();
+  "get_metadata": (text) -> (opt text) query;
+  "delete_metadata": (text) -> (bool);
+  "has_key": (text) -> (bool) query;
+  "list_keys": () -> (vec text) query;
+}
