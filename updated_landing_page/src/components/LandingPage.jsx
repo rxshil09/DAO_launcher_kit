@@ -377,7 +377,7 @@ const LandingPage = () => {
                   <h2 className="text-4xl md:text-5xl font-bold text-white font-mono">
                     READY TO{' '}
                     <span className="bg-gradient-to-r from-cyan-400 to-purple-500 text-transparent bg-clip-text">
-                      LEVEL UP?
+                      LEVEL UP ?
                     </span>
                   </h2>
                   <Sparkles className="w-8 h-8 text-purple-400 ml-2" />
