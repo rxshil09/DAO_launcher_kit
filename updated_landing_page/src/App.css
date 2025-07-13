@@ -143,6 +143,7 @@ button:focus {
   outline: 2px solid #c7d1e1;
   outline-offset: 2px;
 }
+
 /*Responsive Design Helpers */
 @media (max-width: 640px) {
   .container {
