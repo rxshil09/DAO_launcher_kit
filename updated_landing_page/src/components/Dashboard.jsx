@@ -150,7 +150,6 @@ const Dashboard = () => {
                          project.description.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
   if (!isAuthenticated) {
     return null;
   }

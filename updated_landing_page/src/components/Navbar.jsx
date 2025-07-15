@@ -50,6 +50,7 @@ const Navbar = () => {
             ))}
           </div>
 
+
           {/* User Actions */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
@@ -61,6 +62,7 @@ const Navbar = () => {
                   </span>
                 </div>
                 <button
+                
                   onClick={logout}
                   className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
                 >
