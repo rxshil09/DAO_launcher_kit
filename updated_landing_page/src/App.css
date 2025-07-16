@@ -179,7 +179,7 @@ button:focus {
   transition: width 0.8s ease-in-out;
 }
 
-/* Fade in animation for page transitions */
+
 .fade-in {
   animation: fadeIn 0.5s ease-in;
 }
