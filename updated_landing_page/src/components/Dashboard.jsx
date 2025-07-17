@@ -144,7 +144,7 @@ const Dashboard = () => {
     { label: 'DAO Tokens', value: '1,247', change: '-3.1%', trend: 'down' }
   ];
 
-  const filteredProjects = projects.filter(project => {
+const filteredProjects = projects.filter(project => {
     const matchesCategory = selectedCategory === 'All' || project.category === selectedCategory;
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.description.toLowerCase().includes(searchTerm.toLowerCase());
