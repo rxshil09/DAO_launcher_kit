@@ -10,6 +10,7 @@ const SignIn = ()=>{
   const navigate = useNavigate();
   const handleLogin = async () => {
     setIsLoading(true);
+    
     setError(null);
     try {
       await login();

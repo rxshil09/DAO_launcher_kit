@@ -380,6 +380,7 @@ const LandingPage = () => {
                       LEVEL UP ?
                     </span>
                     
+                    
                 </h2>
                   <Sparkles className="w-8 h-8 text-purple-400 ml-2" />
                 </div>

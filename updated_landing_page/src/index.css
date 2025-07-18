@@ -204,6 +204,7 @@ body {
 /* Print styles */
 @media print {
   .no-print {
+    
     display: none !important;
   }
 }
