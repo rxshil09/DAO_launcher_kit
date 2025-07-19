@@ -51,7 +51,7 @@ const Navbar = () => {
           </div>
 
 
-          {/* User Actions */}
+        {/* User Actions */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <div className="flex items-center space-x-3">
