@@ -1,9 +1,0 @@
-[workspace]
-members = [
-<<<<<<< HEAD
-    "src/dao2_backend"
-=======
-    "src/DAO_Launcher_Kit_backend"
->>>>>>> ccd0dcbbad576a72b667a7c0ce316dadfc334dcd
-]
-resolver = "2"
