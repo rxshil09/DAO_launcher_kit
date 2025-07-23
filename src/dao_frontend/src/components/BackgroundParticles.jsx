@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+// this file contains the background particles
+
 // COMPLETELY INDEPENDENT BACKGROUND COMPONENT - NEVER RE-RENDERS
 const BackgroundParticles = React.memo(() => {
   // Generate particles with truly random but well-distributed positions
