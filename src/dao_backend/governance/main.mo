@@ -238,7 +238,7 @@ actor GovernanceCanister {
     };
 
     // Execute a proposal
-    public shared(msg) func executeProposal(proposalId: ProposalId) : async Result<(), Text> {
+    public shared(_msg) func executeProposal(proposalId: ProposalId) : async Result<(), Text> {
         let proposal = switch (proposals.get(proposalId)) {
             case (?p) p;
             case null return #err("Proposal not found");
@@ -386,7 +386,7 @@ actor GovernanceCanister {
     };
 
     // Update governance configuration (admin only)
-    public shared(msg) func updateConfig(newConfig: GovernanceConfig) : async Result<(), Text> {
+    public shared(_msg) func updateConfig(newConfig: GovernanceConfig) : async Result<(), Text> {
         // In a real implementation, you'd check if the caller is an admin
         config.put("default", newConfig);
         #ok()

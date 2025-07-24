@@ -216,7 +216,7 @@ actor ProposalsCanister {
     };
 
     // Create proposal from template
-    public shared(msg) func createProposalFromTemplate(
+    public shared(_msg) func createProposalFromTemplate(
         templateId: Nat,
         title: Text,
         parameters: [(Text, Text)],
@@ -252,7 +252,7 @@ actor ProposalsCanister {
     };
 
     // Batch vote on multiple proposals
-    public shared(msg) func batchVote(
+    public shared(_msg) func batchVote(
         votes: [(ProposalId, Types.VoteChoice, Nat, ?Text)]
     ) : async [Result<(), Text>] {
         let results = Buffer.Buffer<Result<(), Text>>(votes.size());
@@ -438,7 +438,7 @@ actor ProposalsCanister {
     // Administrative functions
 
     // Add new template
-    public shared(msg) func addTemplate(
+    public shared(_msg) func addTemplate(
         name: Text,
         description: Text,
         category: Text,
@@ -462,7 +462,7 @@ actor ProposalsCanister {
     };
 
     // Add new category
-    public shared(msg) func addCategory(
+    public shared(_msg) func addCategory(
         id: Text,
         name: Text,
         description: Text,

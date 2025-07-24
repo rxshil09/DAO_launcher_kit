@@ -393,7 +393,7 @@ actor TreasuryCanister {
     // Administrative functions
 
     // Add authorized principal
-    public shared(msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
+    public shared(_msg) func addAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
         // In real implementation, only governance or admin should be able to do this
         let principals = Buffer.fromArray<Principal>(authorizedPrincipals);
         principals.add(principal);
@@ -402,7 +402,7 @@ actor TreasuryCanister {
     };
 
     // Remove authorized principal
-    public shared(msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
+    public shared(_msg) func removeAuthorizedPrincipal(principal: Principal) : async Result<(), Text> {
         // In real implementation, only governance or admin should be able to do this
         authorizedPrincipals := Array.filter<Principal>(authorizedPrincipals, func(p) = p != principal);
         #ok()
@@ -418,7 +418,7 @@ actor TreasuryCanister {
         Array.find<Principal>(authorizedPrincipals, func(p) = p == principal) != null
     };
 
-    private func executeWithdrawal(transactionId: Nat) : async Result<(), Text> {
+    private func executeWithdrawal(_transactionId: Nat) : async Result<(), Text> {
         // In a real implementation, this would interact with the ledger canister
         // For now, we'll simulate a successful withdrawal
         #ok()

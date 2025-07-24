@@ -394,21 +394,21 @@ actor StakingCanister {
     // Administrative functions
 
     // Enable/disable staking
-    public shared(msg) func setStakingEnabled(enabled: Bool) : async Result<(), Text> {
+    public shared(_msg) func setStakingEnabled(enabled: Bool) : async Result<(), Text> {
         // In real implementation, only governance should be able to do this
         stakingEnabled := enabled;
         #ok()
     };
 
     // Update minimum stake amount
-    public shared(msg) func setMinimumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
+    public shared(_msg) func setMinimumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
         // In real implementation, only governance should be able to do this
         minimumStakeAmount := amount;
         #ok()
     };
 
     // Update maximum stake amount
-    public shared(msg) func setMaximumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
+    public shared(_msg) func setMaximumStakeAmount(amount: TokenAmount) : async Result<(), Text> {
         // In real implementation, only governance should be able to do this
         maximumStakeAmount := amount;
         #ok()
