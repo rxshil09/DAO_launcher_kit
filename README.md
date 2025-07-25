@@ -1,3 +1,4 @@
+
 # DAO Platform - Decentralized Investment & Governance
 
 [![Internet Computer](https://img.shields.io/badge/Internet%20Computer-Protocol-29ABE2?style=flat-square)](https://internetcomputer.org/)
@@ -347,3 +348,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Built with ❤️ on the Internet Computer**
+
