@@ -1,345 +1,351 @@
-# `Dao Launcher Kit`
-Welcome to  our Dao Launcher Kit Platform - DAOVerse. 
-Here you can create and deploy your very own DAO on ICP.
 
+# DAO Platform - Decentralized Investment & Governance
 
-## Running the project locally
+[![Internet Computer](https://img.shields.io/badge/Internet%20Computer-Protocol-29ABE2?style=flat-square)](https://internetcomputer.org/)
+[![Motoko](https://img.shields.io/badge/Backend-Motoko-8A2BE2?style=flat-square)](https://github.com/dfinity/motoko)
+[![React](https://img.shields.io/badge/Frontend-React%2018-61DAFB?style=flat-square)](https://reactjs.org/)
+[![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square)](https://vitejs.dev/)
+[![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC?style=flat-square)](https://tailwindcss.com/)
 
-If you want to test your project locally, you can use the following commands:
+A comprehensive decentralized autonomous organization (DAO) platform built on the Internet Computer blockchain, featuring secure governance, staking mechanisms, treasury management, and a modern React frontend with Internet Identity authentication.
+
+## 🌟 Features
+
+### Core Functionality
+- **🔐 Internet Identity Authentication**: Secure, passwordless authentication using IC's native identity system
+- **🏛️ DAO Governance**: Proposal creation, voting mechanisms, and community-driven decision making
+- **💰 Staking System**: Token staking with rewards and voting power calculation
+- **🏦 Treasury Management**: Decentralized fund management and allocation
+- **📊 Investment Dashboard**: Real-time portfolio tracking and project analytics
+- **🚀 DAO Launcher**: Create and deploy new DAOs with customizable parameters
+
+### Frontend Features
+- **⚡ Real-time Updates**: Instant transaction feedback and live data
+- **📱 Responsive Design**: Mobile-first design with desktop optimization
+- **🎨 Modern UI/UX**: Gradient animations, particle effects, and smooth transitions
+- **🔍 Advanced Filtering**: Search and filter projects by category, status, and more
+- **📈 Interactive Charts**: Visual portfolio performance and analytics
+- **🌐 Multi-language Support**: Extensible internationalization framework
+
+## 🏗️ Architecture
+
+### Backend (Motoko)
+```
+src/dao_backend/
+├── main.mo                 # Main DAO actor and coordinator
+├── governance/             # Voting and proposal management
+│   └── main.mo
+├── staking/               # Token staking and rewards
+│   └── main.mo
+├── treasury/              # Fund management and allocation
+│   └── main.mo
+├── proposals/             # Proposal lifecycle management
+│   └── main.mo
+└── shared/                # Common types and utilities
+    └── types.mo
+```
+
+### Frontend (React + Vite)
+```
+src/dao_frontend/
+├── src/
+│   ├── components/        # Reusable UI components
+│   │   ├── Dashboard.jsx     # Main dashboard
+│   │   ├── LandingPage.jsx   # Home page
+│   │   ├── SignIn.jsx        # Authentication
+│   │   ├── LaunchDAO.jsx     # DAO creation wizard
+│   │   ├── Settings.jsx      # User preferences
+│   │   └── Navbar.jsx        # Navigation component
+│   ├── context/           # React context providers
+│   │   └── AuthContext.jsx   # Authentication state
+│   ├── declarations/      # Auto-generated canister interfaces
+│   └── App.jsx           # Main application component
+├── public/               # Static assets
+└── package.json         # Dependencies and scripts
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js**: Version 16.0.0 or higher
+- **npm**: Version 7.0.0 or higher
+- **DFX**: Internet Computer SDK (latest version)
+
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone <repository-url>
+   cd dao
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Install frontend dependencies:**
+   ```bash
+   cd src/dao_frontend
+   npm install
+   cd ../..
+   ```
+
+### Development Setup
+
+1. **Start the local Internet Computer replica:**
+   ```bash
+   dfx start --background --clean
+   ```
+
+2. **Deploy the canisters:**
+   ```bash
+   dfx deploy
+   ```
+
+3. **Start the frontend development server:**
+   ```bash
+   npm start
+   ```
+
+4. **Access the application:**
+   - Frontend: `http://localhost:3000`
+   - Candid UI: `http://localhost:4943/?canisterId={canister_id}`
+
+### Alternative Development Commands
 
 ```bash
-dfx start --clean --background
+# Generate canister declarations
+dfx generate
 
-# Deploys your canisters to the replica and generates your candid interface
+# Deploy specific canister
+dfx deploy dao_backend
+
+# Build frontend only
+npm run build
+
+# Run frontend in development mode
+cd src/dao_frontend && npm run dev
+
+# Format frontend code
+cd src/dao_frontend && npm run format
+```
+
+## 📦 Project Structure
+
+### Core Modules
+
+1. **DAO Backend (`dao_backend`)**
+   - Main coordinator for all DAO operations
+   - User profile management
+   - Cross-module communication
+
+2. **Governance Module (`governance`)**
+   - Proposal creation and management
+   - Voting mechanisms (weighted and simple)
+   - Execution of approved proposals
+
+3. **Staking Module (`staking`)**
+   - Token staking and unstaking
+   - Reward calculation and distribution
+   - Voting power based on stakes
+
+4. **Treasury Module (`treasury`)**
+   - Fund allocation and management
+   - Multi-signature operations
+   - Budget tracking and reporting
+
+5. **Proposals Module (`proposals`)**
+   - Proposal lifecycle management
+   - Category-based organization
+   - Timeline and status tracking
+
+### Frontend Components
+
+- **Landing Page**: Marketing site with feature showcase
+- **Dashboard**: Main user interface for portfolio management
+- **Authentication**: Internet Identity integration
+- **DAO Launcher**: Multi-step DAO creation wizard
+- **Settings**: User preferences and profile management
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+DFX_NETWORK=local
+CANISTER_ID_DAO_BACKEND=your_canister_id
+CANISTER_ID_GOVERNANCE=your_canister_id
+CANISTER_ID_STAKING=your_canister_id
+CANISTER_ID_TREASURY=your_canister_id
+CANISTER_ID_PROPOSALS=your_canister_id
+```
+
+### DFX Configuration
+
+The `dfx.json` file is pre-configured with:
+- 5 backend canisters (dao_backend, governance, staking, treasury, proposals)
+- Frontend asset canister with workspace support
+- Internet Identity integration
+
+### Frontend Configuration
+
+Key configuration files:
+- `vite.config.js`: Build tool configuration
+- `tailwind.config.js`: Styling framework setup
+- `postcss.config.js`: CSS processing
+- `tsconfig.json`: TypeScript configuration
+
+## 🛠️ Development Workflow
+
+### Backend Development
+
+1. **Modify Motoko files** in `src/dao_backend/`
+2. **Deploy changes:**
+   ```bash
+   dfx deploy dao_backend
+   ```
+3. **Generate new declarations:**
+   ```bash
+   dfx generate
+   ```
+
+### Frontend Development
+
+1. **Start development server:**
+   ```bash
+   cd src/dao_frontend
+   npm run dev
+   ```
+2. **Access live reload** at `http://localhost:3000`
+3. **Build for production:**
+   ```bash
+   npm run build
+   ```
+
+### Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run frontend tests only
+cd src/dao_frontend && npm test
+
+# Run backend tests
+dfx test
+```
+
+## 🔐 Security Features
+
+- **Internet Identity**: Passwordless authentication with biometric support
+- **Canister Security**: Role-based access control and permission management
+- **Secure Storage**: Encrypted user data and private key management
+- **Multi-signature**: Treasury operations require multiple approvals
+- **Audit Trail**: Complete transaction and governance history
+
+## 📚 Key Technologies
+
+### Backend Stack
+- **Motoko**: Smart contract programming language
+- **Internet Computer**: Blockchain platform and runtime
+- **Candid**: Interface description language
+
+### Frontend Stack
+- **React 18**: User interface library with hooks
+- **Vite**: Fast build tool and development server
+- **TailwindCSS**: Utility-first CSS framework
+- **Framer Motion**: Animation and gesture library
+- **Lucide React**: Modern icon library
+
+### Development Tools
+- **DFX**: Internet Computer development framework
+- **TypeScript**: Type-safe JavaScript development
+- **ESLint**: Code linting and formatting
+- **PostCSS**: CSS processing and optimization
+
+## 🚀 Deployment
+
+### Local Deployment
+```bash
+dfx start --background
 dfx deploy
 ```
 
-To stop the canisters, use the following command
+### IC Mainnet Deployment
 ```bash
-dfx stop
+dfx deploy --network ic --with-cycles 1000000000000
 ```
 
-If you've updated your backend canister, you can regenerate the Candid interface by running:
+### Frontend Hosting
+The frontend can be deployed to:
+- IC Asset Canister (recommended)
+- Vercel, Netlify, or similar platforms
+- Custom web servers
 
-```bash
-npm run generate
-```
+## 🤝 Contributing
 
-at any time. This is recommended before starting the frontend development server, and will be run automatically any time you run `dfx deploy`.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Commit changes: `git commit -am 'Add new feature'`
+4. Push to the branch: `git push origin feature/new-feature`
+5. Submit a Pull Request
 
-If you are making frontend changes, you can start a development server with the following command and the server will will start at `http://localhost:8080`, proxying API requests to the replica at port 4943.
+## 📖 Documentation
 
-```bash
-npm run dev
-```
+### Internet Computer Resources
+- [IC Developer Portal](https://internetcomputer.org/docs/current/developer-docs/setup/deploy-locally)
+- [Motoko Programming Language Guide](https://internetcomputer.org/docs/current/motoko/main/motoko)
+- [Internet Identity Documentation](https://internetcomputer.org/docs/current/tokenomics/identity-auth/what-is-ic-identity)
 
-We have made the canisters in Motoko for simplicity!
-<br>
+### Framework Documentation
+- [React Documentation](https://reactjs.org/docs/getting-started.html)
+- [Vite Documentation](https://vitejs.dev/guide/)
+- [TailwindCSS Documentation](https://tailwindcss.com/docs)
 
-# Module Registry Canister for DAO Governance
-The Module Registry Canister is a core component in modular DAO architecture, responsible for managing and governing DAO modules (such as voting, treasury, staking, or analytics). It serves as a decentralized registry where modules can be registered, upgraded, deprecated, or replaced through transparent governance proposals.
+## 🐛 Troubleshooting
 
-🛠 Key Functions
-- Module Registration: Add new modules with metadata (name, type, version, canister ID).
+### Common Issues
 
-- Governance Hooks: Allow DAO members to propose changes to modules and vote on upgrades.
+1. **DFX Start Fails**
+   ```bash
+   dfx stop
+   dfx start --clean --background
+   ```
 
-- Version Control: Track module versions and support safe upgrades and rollbacks.
+2. **Canister Build Errors**
+   ```bash
+   dfx canister delete --all
+   dfx deploy
+   ```
 
-- Access Control: Ensure only authorized entities or DAO decisions can modify the registry.
+3. **Frontend Build Issues**
+   ```bash
+   cd src/dao_frontend
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
 
-This canister ensures plug-and-play flexibility, allowing a DAO to evolve its functionality without compromising core integrity. It lays the foundation for a sustainable, upgradable, and community-driven governance framework.
+4. **Authentication Problems**
+   - Clear browser cache and cookies
+   - Try incognito/private browsing mode
+   - Check Internet Identity service status
 
-<br>
+## 📜 License
 
-# 🗳️ Governance Canister for DAO Module Management
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-This canister handles decentralized governance for managing and evolving modular components of a DAO, such as treasury, staking, and voting modules. It enables transparent proposal creation, voting, and module upgrades via community consensus.
+## 🙏 Acknowledgments
 
-## 🔧 Key Features
+- Internet Computer Foundation for the blockchain platform
+- DFINITY team for Motoko and development tools
+- React and Vite communities for excellent development experience
+- Open source contributors and the broader Web3 community
 
-- **Proposal System**: Members can propose upgrades or additions to DAO modules.
-- **Voting Mechanism**: Weighted or 1-person-1-vote style voting on proposals.
-- **Module Registry**: Tracks registered modules with metadata, versions, and canister IDs.
-- **Execution Logic**: Applies approved proposals to upgrade or register modules.
+---
 
-## 📝 Interface Summary (Candid)
+**Built with ❤️ on the Internet Computer**
 
-```candid
-service : {
-  propose_module_change : (ModuleProposal) -> (nat);
-
-  vote_on_proposal : (nat, principal, variant { yes; no }) -> (variant { ok : text; err : text });
-
-  execute_proposal : (nat) -> (variant { ok : text; err : text });
-
-  get_module : (text) -> (opt ModuleInfo) query;
-
-  list_modules : () -> (vec ModuleInfo) query;
-
-  list_proposals : () -> (vec Proposal) query;
-}
-```
-
-## 🔌 Integration Protocol
-
-The Governance Canister exposes Candid interfaces that other canisters or frontend clients can interact with using HTTP or cross-canister calls.
-
-#### __🧩 Cross-Canister Integration (Rust → Rust)__
-
-Use `ic_cdk::call` to invoke governance functions from other Rust-based canisters:
-
-[📦 Frontend Integration (TypeScript)](#code-section)
-
-```rust
-use ic_cdk::call;
-let (result,): (Result<String, String>,) = call(
-    governance_canister_id,
-    "propose_module_change",
-    (proposal_payload,),
-).await?;
-});
-```
-
-#### __🌐 Frontend Integration (@dfinity/agent)__
-From a JavaScript/TypeScript frontend, connect using the Candid interface:
-
-```
-const result = await governanceActor.propose_module_change({
-  proposer: myPrincipal,
-  target_module: "Staking",
-  new_version: 1n,
-  new_canister: Principal.fromText("aaaaa-aa"),
-  metadata_hash: [],
-});
-```
-
-Use dfx canister call for manual interaction:
-```
-dfx canister call governance_canister propose_module_change '(record { ... })'
-```
-
-## 📚 Purpose
-Designed for flexible, upgradeable, and community-controlled DAO infrastructure on the Internet Computer (ICP). Supports plug-and-play module architecture with full transparency and version control.
-
-<br>
-
-# 💰 Treasury Canister for DAO Fund Management
-
-This canister manages treasury operations for a DAO, including receiving contributions, tracking balances, and processing approved disbursements. It integrates with the Governance Canister to ensure all spending is proposal-driven and transparent.
-
-## 🔧 Key Features
-
-- **Fund Reception**: Accepts contributions from DAO members or external users.
-- **Balance Tracking**: Maintains treasury balance in cycles or tokens.
-- **Disbursement Control**: Releases funds only upon approved governance proposals.
-- **Auditability**: Exposes full transaction history for transparency.
-
-## 📝 Interface Summary (Candid)
-
-```candid
-service : {
-  deposit : () -> (variant { ok : text; err : text });
-  
-  get_balance : () -> (nat) query;
-
-  request_funds : (principal, nat, text) -> (variant { ok : text; err : text });
-
-  execute_transfer : (principal, nat) -> (variant { ok : text; err : text });
-
-  get_transaction_log : () -> (vec record { principal; nat; text }) query;
-}
-```
-
-## 🔌 Integration Protocol
-The Treasury Canister exposes Candid interfaces for securely managing DAO funds. It supports contributions, disbursements, and audit logs accessible via frontend or cross-canister calls.
-
-#### __🧩 Cross-Canister Integration (Rust → Rust)__
-
-Use `ic_cdk::call` to request or transfer funds from other Rust-based canisters:
-
-```rust
-use ic_cdk::call;
-let (result,): (Result <String, String>, ) = call(
-    treasury_canister_id,
-    "execute_transfer",
-    (recipient_principal, amount),
-).await?;
-```
-
-#### __🌐 Frontend Integration (@dfinity/agent)__
-From a JavaScript/TypeScript frontend, interact with the canister as follows:
-
-```
-const result = await treasuryActor.execute_transfer(
-  Principal.fromText("aaaaa-aa"),
-  100_000_000n // amount in token units or cycles
-);
-```
-
-Use dfx canister call for quick CLI testing:
-
-```sql
-dfx canister call treasury_canister execute_transfer '(principal "aaaaa-aa", 100000000)'
-```
-
-## 📚 Purpose
-Ensures DAO funds are handled securely and only spent through governance-approved workflows, maintaining transparency and accountability in decentralized operations.
-
-<br>
-
-# 🔒 Staking Canister for DAO Participation and Rewards
-
-This canister manages staking operations within the DAO, allowing users to stake tokens, earn rewards, and participate in governance. It ensures that only active stakers can vote and enables fair reward distribution.
-
-## 🔧 Key Features
-
-- **Token Staking**: Members can lock tokens to gain voting rights.
-- **Reward Distribution**: Periodic rewards based on staked amount and duration.
-- **Unstaking Mechanism**: Allows safe withdrawal after a cooldown period.
-- **Governance Integration**: Validates voter eligibility for proposals.
-
-## 📝 Interface Summary (Candid)
-
-```candid
-service : {
-  stake : (nat) -> (variant { ok : text; err : text });
-  
-  unstake : (nat) -> (variant { ok : text; err : text });
-
-  get_stake : (principal) -> (opt nat) query;
-
-  distribute_rewards : () -> (variant { ok : text; err : text });
-
-  list_stakers : () -> (vec record { principal; staked : nat }) query;
-}
-```
-
-## 🔌 Integration Protocol
-
-The Staking Canister exposes Candid interfaces for locking tokens, managing rewards, and enabling DAO participation. It allows access via frontend calls or Rust-based canister logic.
-
-#### __🧩 Cross-Canister Integration (Rust → Rust)__
-
-Use `ic_cdk::call` to allow other canisters to stake, unstake, or query stake status:
-
-```rust
-use ic_cdk::call;
-let (result,): (Result<String, String>,) = call(
-    staking_canister_id,
-    "stake",
-    (amount,),
-).await?;
-```
-
-#### __🌐 Frontend Integration (@dfinity/agent)__
-
-From a JavaScript/TypeScript frontend, stake tokens like this:
-
-```
-const result = await stakingActor.stake(
-  500_000_000n // amount in token units
-);
-```
-Use dfx canister call to manually test interactions:
-```
-dfx canister call staking_canister stake '(500000000)'
-```
-
-## 📚 Purpose
-Empowers decentralized participation by incentivizing long-term engagement and enabling weighted voting, while keeping the staking process transparent and tamper-proof.
-
-<br>
-
-# 📄 Proposals Canister for DAO Decision Making
-
-This canister handles the lifecycle of proposals within the DAO, allowing members to submit ideas, discuss them, and track voting outcomes. It ensures transparency and traceability in DAO governance.
-
-## 🔧 Key Features
-
-- **Proposal Submission**: DAO members can submit proposals for changes or actions.
-- **Status Tracking**: Maintains the state of each proposal (e.g., open, accepted, rejected).
-- **Metadata Storage**: Stores descriptions, timestamps, and proposer details.
-- **Governance Sync**: Interfaces with Governance and Staking to validate and route decisions.
-
-## 📝 Interface Summary (Candid)
-
-```candid
-service : {
-  submit_proposal : (ProposalInput) -> (variant { ok : nat; err : text });
-
-  get_proposal : (nat) -> (opt Proposal) query;
-
-  list_proposals : () -> (vec Proposal) query;
-
-  update_proposal_status : (nat, ProposalStatus) -> (variant { ok : text; err : text });
-
-  get_open_proposals : () -> (vec Proposal) query;
-}
-```
-
-## 🔌 Integration Protocol
-The Proposal Canister provides interfaces for submitting, tracking, and managing governance proposals. It can be accessed from other canisters or frontend apps to coordinate DAO decision-making.
-
-#### __🧩 Cross-Canister Integration (Rust → Rust)__
-
-Use `ic_cdk::call` to submit or update proposals from other Rust-based canisters:
-
-```rust
-use ic_cdk::call;
-let (result,): (Result<nat, String>,) = call(
-    proposal_canister_id,
-    "submit_proposal",
-    (proposal_input,),
-).await?;
-```
-#### __🌐 Frontend Integration (@dfinity/agent)__
-From a JavaScript/TypeScript frontend, submit a proposal like this:
-```
-const result = await proposalActor.submit_proposal({
-  title: "Add new voting module",
-  description: "Proposal to integrate advanced voting strategy",
-  proposer: myPrincipal,
-  timestamp: BigInt(Date.now())
-});
-``` 
-Use dfx canister call to manually test proposal submission:
-```
-dfx canister call proposal_canister submit_proposal '(record { title = "Upgrade"; description = "Add new module"; proposer = principal "aaaaa-aa"; timestamp = 1718069400000 })'
-```
-
-## 📚 Purpose
-Drives decentralized governance by giving the community a structured and transparent way to propose, track, and influence decisions within the DAO.
-
-
-## 🌐 What is IPFS?
-
-[IPFS (InterPlanetary File System)](https://ipfs.tech/) is a decentralized, peer-to-peer file storage protocol designed to make the web more distributed and resilient. Instead of relying on centralized servers, IPFS stores files across a global network of nodes.
-
-### 🔧 Key Benefits
-
-- **Content Addressing**: Files are accessed via their cryptographic hash, ensuring immutability and integrity.
-- **Decentralization**: Eliminates single points of failure by distributing data.
-- **Efficient Delivery**: Supports deduplication and caching, improving performance and reducing bandwidth.
-- **Permanent Storage**: Ideal for storing static assets, metadata, and off-chain content in blockchain or DAO ecosystems.
-
-### 📦 Use Case in DAO
-
-In the context of a DAO, IPFS can be used to store module metadata, proposal documents, or governance records off-chain, while referencing them on-chain via their hash.
-
-
-## IPFS vs ICP Asset Canister
-
-| Feature              | IPFS                                 | ICP Asset Canister                        |
-|----------------------|---------------------------------------|--------------------------------------------|
-| 🛠 Type              | Decentralized file system             | Smart contract canister on Internet Computer |
-| 📡 Hosting Model    | Peer-to-peer network of nodes         | Hosted on the Internet Computer (ICP)       |
-| 🧾 File Access      | Content hash (CID)                    | URL-based or via canister methods           |
-| 🔐 Integrity        | Guaranteed via cryptographic hash     | Guaranteed by ICP’s consensus & WebAssembly sandbox |
-| 💡 Use Case         | Off-chain storage (metadata, media)   | On-chain storage for static frontend assets |
-| 🧩 DAO Integration  | Ideal for metadata or proposal docs   | Ideal for hosting UIs or serving frontend dApps |
-
-### ✅ Summary
-
-- **Use IPFS** to store large, off-chain files or metadata that can be referenced from proposals or modules.
-- **Use ICP Asset Canister** to host and serve static websites, dApp frontends, or on-chain assets within the Internet Computer ecosystem.

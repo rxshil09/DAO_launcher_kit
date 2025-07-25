@@ -3,19 +3,19 @@
   "canisters": {
     "governance": {
       "type": "motoko",
-      "main": "src/backend/governance/main.mo"
+      "main": "../dao_backend/governance/main.mo"
     },
     "treasury": {
       "type": "motoko", 
-      "main": "src/backend/treasury/main.mo"
+      "main": "../dao_backend/treasury/main.mo"
     },
     "staking": {
       "type": "motoko",
-      "main": "src/backend/staking/main.mo"
+      "main": "../dao_backend/staking/main.mo"
     },
     "proposals": {
       "type": "motoko",
-      "main": "src/backend/proposals/main.mo"
+      "main": "../dao_backend/proposals/main.mo"
     }
   },
   "networks": {
