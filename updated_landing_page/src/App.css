@@ -140,8 +140,8 @@ body {
 
 
 button:focus {
-  outline: 2px solid #c7d1e1;
-  outline-offset: 2px;
+outline: 2px solid #c7d1e1;
+outline-offset: 2px;
 }
 
 
