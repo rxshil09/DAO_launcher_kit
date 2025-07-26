@@ -9,7 +9,7 @@ import Text "mo:base/Text";
 
 import Types "shared/types";
 
-actor DAOMain {
+persistent actor DAOMain {
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -21,22 +21,22 @@ actor DAOMain {
     type DAOStats = Types.DAOStats;
 
     // Stable storage for upgrades
-    private stable var initialized : Bool = false;
-    private stable var daoName : Text = "DAO Launcher";
-    private stable var daoDescription : Text = "A decentralized autonomous organization for community governance";
-    private stable var totalMembers : Nat = 0;
-    private stable var userProfilesEntries : [(Principal, UserProfile)] = [];
-    private stable var adminPrincipalsEntries : [Principal] = [];
+    private var initialized : Bool = false;
+    private var daoName : Text = "DAO Launcher";
+    private var daoDescription : Text = "A decentralized autonomous organization for community governance";
+    private var totalMembers : Nat = 0;
+    private var userProfilesEntries : [(Principal, UserProfile)] = [];
+    private var adminPrincipalsEntries : [Principal] = [];
 
     // Runtime storage
-    private var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
-    private var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+    private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+    private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
 
     // Canister references (will be set after deployment)
-    private var governanceCanister : ?Principal = null;
-    private var stakingCanister : ?Principal = null;
-    private var treasuryCanister : ?Principal = null;
-    private var proposalsCanister : ?Principal = null;
+    private transient var governanceCanister : ?Principal = null;
+    private transient var stakingCanister : ?Principal = null;
+    private transient var treasuryCanister : ?Principal = null;
+    private transient var proposalsCanister : ?Principal = null;
 
     // System functions for upgrades
     system func preupgrade() {
