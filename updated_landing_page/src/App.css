@@ -140,6 +140,7 @@ body {
 
 
 button:focus {
+
 outline: 2px solid #c7d1e1;
 outline-offset: 2px;
 }
@@ -149,6 +150,7 @@ outline-offset: 2px;
 @media (max-width: 640px) {
   .container {
     padding-left: 1rem;
+    
     padding-right: 1rem;
   }
 }
