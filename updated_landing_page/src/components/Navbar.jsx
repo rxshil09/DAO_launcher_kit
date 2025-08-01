@@ -12,6 +12,7 @@ const Navbar = () => {
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Dashboard', href: '/dashboard' },
+    
   ];
 
   const isActive = (path) => location.pathname === path;
