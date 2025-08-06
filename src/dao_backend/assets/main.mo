@@ -1,0 +1,467 @@
+import HashMap "mo:base/HashMap";
+import Array "mo:base/Array";
+import Iter "mo:base/Iter";
+import Time "mo:base/Time";
+import Result "mo:base/Result";
+import Principal "mo:base/Principal";
+import Debug "mo:base/Debug";
+import Buffer "mo:base/Buffer";
+import Nat "mo:base/Nat";
+import Text "mo:base/Text";
+import Blob "mo:base/Blob";
+import Nat32 "mo:base/Nat32";
+import Nat8 "mo:base/Nat8";
+
+actor AssetCanister {
+    type Result<T, E> = Result.Result<T, E>;
+    type Time = Time.Time;
+
+    // Asset types
+    public type AssetId = Nat;
+    public type AssetData = Blob;
+    
+    public type Asset = {
+        id: AssetId;
+        name: Text;
+        contentType: Text;
+        size: Nat;
+        data: AssetData;
+        uploadedBy: Principal;
+        uploadedAt: Time;
+        isPublic: Bool;
+        tags: [Text];
+    };
+
+    public type AssetMetadata = {
+        id: AssetId;
+        name: Text;
+        contentType: Text;
+        size: Nat;
+        uploadedBy: Principal;
+        uploadedAt: Time;
+        isPublic: Bool;
+        tags: [Text];
+    };
+
+    public type AssetError = {
+        #notFound;
+        #notAuthorized;
+        #invalidInput;
+        #storageFull;
+        #fileTooLarge;
+        #unsupportedFormat;
+    };
+
+    // Stable storage for upgrades
+    private stable var nextAssetId : Nat = 1;
+    private stable var assetsEntries : [(AssetId, Asset)] = [];
+    private stable var authorizedUploaders : [Principal] = [];
+    private stable var maxFileSize : Nat = 10_000_000; // 10MB default
+    private stable var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
+    private stable var currentStorageUsed : Nat = 0;
+
+    // Runtime storage
+    private var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private var uploaderAssets = HashMap.HashMap<Principal, [AssetId]>(50, Principal.equal, Principal.hash);
+
+    // Supported content types
+    private let supportedTypes = [
+        "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
+        "application/pdf", "text/plain", "text/html", "text/css", "text/javascript",
+        "application/json", "application/xml", "video/mp4", "audio/mpeg", "audio/wav"
+    ];
+
+    // System functions for upgrades
+    system func preupgrade() {
+        assetsEntries := Iter.toArray(assets.entries());
+    };
+
+    system func postupgrade() {
+        assets := HashMap.fromIter<AssetId, Asset>(
+            assetsEntries.vals(), 
+            assetsEntries.size(), 
+            Nat.equal, 
+            func(n: Nat) : Nat32 { Nat32.fromNat(n) }
+        );
+        
+        // Rebuild uploader assets mapping
+        for ((assetId, asset) in assets.entries()) {
+            let currentAssets = switch (uploaderAssets.get(asset.uploadedBy)) {
+                case (?assets) assets;
+                case null [];
+            };
+            let updatedAssets = Array.append<AssetId>(currentAssets, [assetId]);
+            uploaderAssets.put(asset.uploadedBy, updatedAssets);
+        };
+    };
+
+    // Public functions
+
+    // Upload an asset
+    public shared(msg) func uploadAsset(
+        name: Text,
+        contentType: Text,
+        data: AssetData,
+        isPublic: Bool,
+        tags: [Text]
+    ) : async Result<AssetId, Text> {
+        let caller = msg.caller;
+        let dataSize = data.size();
+
+        // Validate input
+        if (name == "") {
+            return #err("Asset name cannot be empty");
+        };
+
+        if (dataSize == 0) {
+            return #err("Asset data cannot be empty");
+        };
+
+        if (dataSize > maxFileSize) {
+            return #err("File size exceeds maximum allowed size");
+        };
+
+        if (currentStorageUsed + dataSize > maxTotalStorage) {
+            return #err("Storage limit exceeded");
+        };
+
+        // Check if content type is supported
+        let isSupported = Array.find<Text>(supportedTypes, func(t) = t == contentType);
+        if (isSupported == null) {
+            return #err("Unsupported content type: " # contentType);
+        };
+
+        let assetId = nextAssetId;
+        nextAssetId += 1;
+
+        let asset : Asset = {
+            id = assetId;
+            name = name;
+            contentType = contentType;
+            size = dataSize;
+            data = data;
+            uploadedBy = caller;
+            uploadedAt = Time.now();
+            isPublic = isPublic;
+            tags = tags;
+        };
+
+        assets.put(assetId, asset);
+        currentStorageUsed += dataSize;
+
+        // Update uploader assets mapping
+        let currentAssets = switch (uploaderAssets.get(caller)) {
+            case (?assets) assets;
+            case null [];
+        };
+        let updatedAssets = Array.append<AssetId>(currentAssets, [assetId]);
+        uploaderAssets.put(caller, updatedAssets);
+
+        Debug.print("Asset uploaded: " # name # " (ID: " # Nat.toText(assetId) # ")");
+        #ok(assetId)
+    };
+
+    // Get asset data
+    public shared(msg) func getAsset(assetId: AssetId) : async Result<Asset, Text> {
+        let caller = msg.caller;
+        
+        switch (assets.get(assetId)) {
+            case (?asset) {
+                // Check access permissions
+                if (asset.isPublic or asset.uploadedBy == caller or isAuthorized(caller)) {
+                    #ok(asset)
+                } else {
+                    #err("Not authorized to access this asset")
+                }
+            };
+            case null #err("Asset not found");
+        }
+    };
+
+    // Get asset metadata only (without data)
+    public query func getAssetMetadata(assetId: AssetId) : async ?AssetMetadata {
+        switch (assets.get(assetId)) {
+            case (?asset) {
+                ?{
+                    id = asset.id;
+                    name = asset.name;
+                    contentType = asset.contentType;
+                    size = asset.size;
+                    uploadedBy = asset.uploadedBy;
+                    uploadedAt = asset.uploadedAt;
+                    isPublic = asset.isPublic;
+                    tags = asset.tags;
+                }
+            };
+            case null null;
+        }
+    };
+
+    // Get public assets
+    public query func getPublicAssets() : async [AssetMetadata] {
+        let publicAssets = Buffer.Buffer<AssetMetadata>(0);
+        for (asset in assets.vals()) {
+            if (asset.isPublic) {
+                publicAssets.add({
+                    id = asset.id;
+                    name = asset.name;
+                    contentType = asset.contentType;
+                    size = asset.size;
+                    uploadedBy = asset.uploadedBy;
+                    uploadedAt = asset.uploadedAt;
+                    isPublic = asset.isPublic;
+                    tags = asset.tags;
+                });
+            };
+        };
+        Buffer.toArray(publicAssets)
+    };
+
+    // Get user's assets
+    public shared(msg) func getUserAssets() : async [AssetMetadata] {
+        let caller = msg.caller;
+        let userAssetIds = switch (uploaderAssets.get(caller)) {
+            case (?ids) ids;
+            case null return [];
+        };
+
+        let userAssets = Buffer.Buffer<AssetMetadata>(0);
+        for (assetId in userAssetIds.vals()) {
+            switch (assets.get(assetId)) {
+                case (?asset) {
+                    userAssets.add({
+                        id = asset.id;
+                        name = asset.name;
+                        contentType = asset.contentType;
+                        size = asset.size;
+                        uploadedBy = asset.uploadedBy;
+                        uploadedAt = asset.uploadedAt;
+                        isPublic = asset.isPublic;
+                        tags = asset.tags;
+                    });
+                };
+                case null {};
+            };
+        };
+        Buffer.toArray(userAssets)
+    };
+
+    // Search assets by tags
+    public query func searchAssetsByTag(tag: Text) : async [AssetMetadata] {
+        let matchingAssets = Buffer.Buffer<AssetMetadata>(0);
+        for (asset in assets.vals()) {
+            if (asset.isPublic) {
+                let hasTag = Array.find<Text>(asset.tags, func(t) = t == tag);
+                if (hasTag != null) {
+                    matchingAssets.add({
+                        id = asset.id;
+                        name = asset.name;
+                        contentType = asset.contentType;
+                        size = asset.size;
+                        uploadedBy = asset.uploadedBy;
+                        uploadedAt = asset.uploadedAt;
+                        isPublic = asset.isPublic;
+                        tags = asset.tags;
+                    });
+                };
+            };
+        };
+        Buffer.toArray(matchingAssets)
+    };
+
+    // Delete asset
+    public shared(msg) func deleteAsset(assetId: AssetId) : async Result<(), Text> {
+        let caller = msg.caller;
+        
+        switch (assets.get(assetId)) {
+            case (?asset) {
+                // Check if user owns the asset or is authorized
+                if (asset.uploadedBy == caller or isAuthorized(caller)) {
+                    assets.delete(assetId);
+                    currentStorageUsed -= asset.size;
+                    
+                    // Update uploader assets mapping
+                    let currentAssets = switch (uploaderAssets.get(asset.uploadedBy)) {
+                        case (?assets) assets;
+                        case null [];
+                    };
+                    let updatedAssets = Array.filter<AssetId>(currentAssets, func(id) = id != assetId);
+                    uploaderAssets.put(asset.uploadedBy, updatedAssets);
+                    
+                    Debug.print("Asset deleted: " # asset.name # " (ID: " # Nat.toText(assetId) # ")");
+                    #ok()
+                } else {
+                    #err("Not authorized to delete this asset")
+                }
+            };
+            case null #err("Asset not found");
+        }
+    };
+
+    // Update asset metadata
+    public shared(msg) func updateAssetMetadata(
+        assetId: AssetId,
+        name: ?Text,
+        isPublic: ?Bool,
+        tags: ?[Text]
+    ) : async Result<(), Text> {
+        let caller = msg.caller;
+        
+        switch (assets.get(assetId)) {
+            case (?asset) {
+                if (asset.uploadedBy == caller or isAuthorized(caller)) {
+                    let updatedAsset = {
+                        id = asset.id;
+                        name = switch (name) { case (?n) n; case null asset.name };
+                        contentType = asset.contentType;
+                        size = asset.size;
+                        data = asset.data;
+                        uploadedBy = asset.uploadedBy;
+                        uploadedAt = asset.uploadedAt;
+                        isPublic = switch (isPublic) { case (?p) p; case null asset.isPublic };
+                        tags = switch (tags) { case (?t) t; case null asset.tags };
+                    };
+                    assets.put(assetId, updatedAsset);
+                    #ok()
+                } else {
+                    #err("Not authorized to update this asset")
+                }
+            };
+            case null #err("Asset not found");
+        }
+    };
+
+    // Get storage statistics
+    public query func getStorageStats() : async {
+        totalAssets: Nat;
+        storageUsed: Nat;
+        storageLimit: Nat;
+        storageAvailable: Nat;
+        averageFileSize: Nat;
+    } {
+        let totalAssets = assets.size();
+        let averageSize = if (totalAssets > 0) {
+            currentStorageUsed / totalAssets
+        } else { 0 };
+
+        {
+            totalAssets = totalAssets;
+            storageUsed = currentStorageUsed;
+            storageLimit = maxTotalStorage;
+            storageAvailable = maxTotalStorage - currentStorageUsed;
+            averageFileSize = averageSize;
+        }
+    };
+
+    // Get supported content types
+    public query func getSupportedContentTypes() : async [Text] {
+        supportedTypes
+    };
+
+    // Administrative functions
+
+    // Add authorized uploader
+    public shared(msg) func addAuthorizedUploader(principal: Principal) : async Result<(), Text> {
+        if (not isAuthorized(msg.caller)) {
+            return #err("Not authorized to add uploaders");
+        };
+
+        let principals = Buffer.fromArray<Principal>(authorizedUploaders);
+        principals.add(principal);
+        authorizedUploaders := Buffer.toArray(principals);
+        
+        Debug.print("Authorized uploader added: " # Principal.toText(principal));
+        #ok()
+    };
+
+    // Remove authorized uploader
+    public shared(msg) func removeAuthorizedUploader(principal: Principal) : async Result<(), Text> {
+        if (not isAuthorized(msg.caller)) {
+            return #err("Not authorized to remove uploaders");
+        };
+
+        authorizedUploaders := Array.filter<Principal>(authorizedUploaders, func(p) = p != principal);
+        
+        Debug.print("Authorized uploader removed: " # Principal.toText(principal));
+        #ok()
+    };
+
+    // Update storage limits
+    public shared(msg) func updateStorageLimits(
+        maxFileSizeNew: ?Nat,
+        maxTotalStorageNew: ?Nat
+    ) : async Result<(), Text> {
+        if (not isAuthorized(msg.caller)) {
+            return #err("Not authorized to update storage limits");
+        };
+
+        switch (maxFileSizeNew) {
+            case (?size) maxFileSize := size;
+            case null {};
+        };
+
+        switch (maxTotalStorageNew) {
+            case (?size) {
+                if (size < currentStorageUsed) {
+                    return #err("New storage limit cannot be less than current usage");
+                };
+                maxTotalStorage := size;
+            };
+            case null {};
+        };
+
+        #ok()
+    };
+
+    // Get authorized uploaders
+    public query func getAuthorizedUploaders() : async [Principal] {
+        authorizedUploaders
+    };
+
+    // Helper functions
+    private func isAuthorized(principal: Principal) : Bool {
+        Array.find<Principal>(authorizedUploaders, func(p) = p == principal) != null
+    };
+
+    // Health check
+    public query func health() : async { status: Text; timestamp: Time; storageUsed: Nat } {
+        {
+            status = "healthy";
+            timestamp = Time.now();
+            storageUsed = currentStorageUsed;
+        }
+    };
+
+    // Get asset by name (for convenience)
+    public query func getAssetByName(name: Text) : async ?AssetMetadata {
+        for (asset in assets.vals()) {
+            if (asset.name == name and asset.isPublic) {
+                return ?{
+                    id = asset.id;
+                    name = asset.name;
+                    contentType = asset.contentType;
+                    size = asset.size;
+                    uploadedBy = asset.uploadedBy;
+                    uploadedAt = asset.uploadedAt;
+                    isPublic = asset.isPublic;
+                    tags = asset.tags;
+                };
+            };
+        };
+        null
+    };
+
+    // Batch upload assets
+    public shared(msg) func batchUploadAssets(
+        assets_data: [(Text, Text, AssetData, Bool, [Text])]
+    ) : async [Result<AssetId, Text>] {
+        let results = Buffer.Buffer<Result<AssetId, Text>>(assets_data.size());
+        
+        for ((name, contentType, data, isPublic, tags) in assets_data.vals()) {
+            let result = await uploadAsset(name, contentType, data, isPublic, tags);
+            results.add(result);
+        };
+        
+        Buffer.toArray(results)
+    };
+}

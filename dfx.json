@@ -20,13 +20,18 @@
       "main": "src/dao_backend/proposals/main.mo",
       "type": "motoko"
     },
+    "assets": {
+      "main": "src/dao_backend/assets/main.mo",
+      "type": "motoko"
+    },
     "dao_frontend": {
       "dependencies": [
         "dao_backend",
         "governance",
         "staking",
         "treasury",
-        "proposals"
+        "proposals",
+        "assets"
       ],
       "source": [
         "src/dao_frontend/dist"
