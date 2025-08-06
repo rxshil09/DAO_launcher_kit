@@ -16,7 +16,6 @@ function App() {
           child 2
         </div>
         <div className='col-span-12 sm:col-span-2 bg-blue-600'>
-          child 3
         </div>
       </div>
     </>
