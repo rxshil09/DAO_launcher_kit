@@ -17,6 +17,7 @@ function App() {
         </div>
         <div className='col-span-12 sm:col-span-2 bg-blue-600'>
         </div>
+        /* hello everynyan */
       </div>
     </>
   )
