@@ -53,28 +53,29 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
       
-      await new Promise((resolve, reject) => {
-        authClient.login({
-          // Always use the live Internet Identity service
-          identityProvider: "https://identity.ic0.app",
-          // Configure to use popup window instead of redirect
-          windowOpenerFeatures: "toolbar=0,location=0,menubar=0,width=500,height=500,left=100,top=100",
-          onSuccess: resolve,
-          onError: reject,
-        });
-      });
+      const identityProvider = import.meta.env.VITE_DFX_NETWORK === "ic" 
+        ? "https://identity.ic0.app"
+        : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
 
-      const identity = authClient.getIdentity();
-      const principalId = identity.getPrincipal().toString();
-      
-      setIsAuthenticated(true);
-      setPrincipal(principalId);
-      
-      // Create user settings with display name derived from principal
-      const newUserSettings = {
-        displayName: `User ${principalId.slice(0, 8)}`
-      };
-      setUserSettings(newUserSettings);
+      await authClient.login({
+        identityProvider,
+        onSuccess: async () => {
+          const identity = authClient.getIdentity();
+          const principal = identity.getPrincipal();
+          const principalId = principal.toString();
+          
+          setIsAuthenticated(true);
+          setPrincipal(principalId);
+          setUserSettings({
+            displayName: `User ${principalId.slice(0, 8)}`
+          });
+        },
+        onError: (error) => {
+          console.error("Login failed:", error);
+          setLoading(false);
+          throw error;
+        },
+      });
       
       return true;
     } catch (error) {

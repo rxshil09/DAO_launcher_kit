@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useDAOOperations } from '../hooks/useDAOOperations';
 import BackgroundParticles from './BackgroundParticles';
 import { 
   ArrowLeft, 
@@ -267,13 +268,19 @@ const LaunchDAO = () => {
     }));
   };
 
+  const { launchDAO, loading: launchLoading, error: launchError } = useDAOOperations();
+  
   const handleLaunch = async () => {
     if (validateStep(7)) {
-      // Simulate DAO launch
-      console.log('Launching DAO with data:', formData);
-      // Here you would integrate with your backend/smart contracts
-      alert('DAO launched successfully! 🚀');
-      navigate('/dashboard');
+      try {
+        const result = await launchDAO(formData);
+        console.log('DAO launched successfully:', result);
+        alert('DAO launched successfully! 🚀');
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Failed to launch DAO:', error);
+        alert(`Failed to launch DAO: ${error.message}`);
+      }
     }
   };
 

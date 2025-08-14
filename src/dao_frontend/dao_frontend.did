@@ -1,0 +1,7 @@
+service : {
+    "get": (text) -> (vec nat8) query;
+    "list" : () -> (vec text) query;
+    "create_batch" : () -> (nat64);
+    "commit_batch" : (nat64) -> ();
+    "create_chunk" : (nat64, vec nat8) -> (nat64);
+}

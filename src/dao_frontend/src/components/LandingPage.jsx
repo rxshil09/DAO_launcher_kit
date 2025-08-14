@@ -242,7 +242,6 @@ const LandingPage = () => {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   whileHover={{ scale: 1.05, rotateY: 5 }}
-                  transition={{ duration: 0 }}
                   className="group relative bg-gray-900/80 border border-gray-700/50 rounded-lg p-8 backdrop-blur-sm hover:border-cyan-400/50 transition-all duration-300 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-gray-800/50 to-gray-900/50 opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -297,7 +296,6 @@ const LandingPage = () => {
                   transition={{ duration: 0.6, delay: index * 0.1 }}
                   viewport={{ once: true }}
                   whileHover={{ scale: 1.02, y: -5 }}
-                  transition={{ duration: 0 }}
                   className="group bg-gray-900/50 border border-purple-500/30 rounded-lg p-6 backdrop-blur-sm hover:border-purple-400/50 transition-all duration-300 relative overflow-hidden"
                 >
                   {/* Animated background */}

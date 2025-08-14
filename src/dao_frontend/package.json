@@ -4,12 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5173",
     "setup": "npm i && dfx canister create dao_backend && dfx generate dao_backend && dfx deploy",
-    "start": "vite --port 3000",
+    "start": "vite",
     "prebuild": "dfx generate",
-    "build": "tsc && vite build",
-    "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\""
+    "build": "vite build",
+    "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\"",
+    "deploy:local": "dfx deploy --network=local",
+    "deploy:ic": "dfx deploy --network=ic",
+    "generate": "dfx generate dao_backend"
   },
   "dependencies": {
     "@dfinity/agent": "^1.4.0",

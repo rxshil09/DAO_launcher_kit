@@ -1,11 +1,15 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App.jsx'
+import './polyfills'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import { ActorProvider } from './context/ActorContext'
 import './index.css'
 import './app.css'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <ActorProvider>
+      <App />
+    </ActorProvider>
+  </React.StrictMode>,
 )

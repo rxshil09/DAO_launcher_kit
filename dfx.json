@@ -37,7 +37,10 @@
         "src/dao_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "dao_frontend"
+      "workspace": "dao_frontend",
+      "declarations": {
+        "output": "src/dao_frontend/src/declarations"
+      }
     },
     "internet_identity": {
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
