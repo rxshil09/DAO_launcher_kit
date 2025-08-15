@@ -382,6 +382,10 @@ actor AssetCanister {
             return #err("Not authorized to add uploaders");
         };
 
+        if (isAuthorized(principal)) {
+            return #err("Uploader already authorized");
+        };
+
         let principals = Buffer.fromArray<Principal>(authorizedUploaders);
         principals.add(principal);
         authorizedUploaders := Buffer.toArray(principals);
