@@ -182,7 +182,7 @@ actor ProposalsCanister {
             case null return #err("Configuration not found");
         };
         
-        if (activeProposals.size() >= currentConfig.maxProposalsPerUser) {
+        if (Array.size(activeProposals) >= currentConfig.maxProposalsPerUser) {
             return #err("Maximum active proposals limit reached");
         };
 
