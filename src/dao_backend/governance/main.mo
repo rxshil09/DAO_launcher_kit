@@ -1,5 +1,5 @@
 import HashMap "mo:base/HashMap";
-// import Array "mo:base/Array";
+import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Time "mo:base/Time";
 import Result "mo:base/Result";
@@ -99,7 +99,7 @@ actor GovernanceCanister {
             case null return #err("Configuration not found");
         };
         
-        if (activeProposals.size() >= currentConfig.maxProposalsPerUser) {
+        if (Array.size(activeProposals) >= currentConfig.maxProposalsPerUser) {
             return #err("Maximum active proposals limit reached");
         };
 
