@@ -26,6 +26,83 @@ export const useProposals = () => {
     }
   };
 
+  const getAllProposals = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.proposals.getAllProposals();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProposalsByCategory = async (category) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.proposals.getProposalsByCategory(category);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTrendingProposals = async (limit) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.proposals.getTrendingProposals(BigInt(limit));
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getProposalTemplates = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.proposals.getProposalTemplates();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTemplate = async (
+    name,
+    description,
+    category,
+    requiredFields,
+    template
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.proposals.addTemplate(
+        name,
+        description,
+        category,
+        requiredFields,
+        template
+      );
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const vote = async (proposalId, choice, reason) => {
     setLoading(true);
     setError(null);
@@ -45,5 +122,15 @@ export const useProposals = () => {
     }
   };
 
-  return { createProposal, vote, loading, error };
+  return {
+    createProposal,
+    vote,
+    getAllProposals,
+    getProposalsByCategory,
+    getTrendingProposals,
+    getProposalTemplates,
+    addTemplate,
+    loading,
+    error,
+  };
 };
