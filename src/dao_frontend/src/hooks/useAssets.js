@@ -87,12 +87,81 @@ export const useAssets = () => {
     }
   };
 
+  const searchAssetsByTag = async (tag) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.assets.searchAssetsByTag(tag);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteAsset = async (assetId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.assets.deleteAsset(BigInt(assetId));
+      if (res.err) {
+        throw new Error(res.err);
+      }
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateAssetMetadata = async (assetId, { name = null, isPublic = null, tags = null }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.assets.updateAssetMetadata(
+        BigInt(assetId),
+        name === null ? [] : [name],
+        isPublic === null ? [] : [isPublic],
+        tags === null ? [] : [tags]
+      );
+      if (res.err) {
+        throw new Error(res.err);
+      }
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStorageStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.assets.getStorageStats();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     uploadAsset,
     getAsset,
     getAssetMetadata,
     getPublicAssets,
     getUserAssets,
+    searchAssetsByTag,
+    deleteAsset,
+    updateAssetMetadata,
+    getStorageStats,
     loading,
     error,
   };
