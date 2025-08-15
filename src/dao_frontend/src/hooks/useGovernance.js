@@ -6,11 +6,21 @@ export const useGovernance = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const createProposal = async (title, description) => {
+  const createProposal = async (
+    title,
+    description,
+    proposalType,
+    votingPeriod
+  ) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.governance.createProposal(title, description);
+      const result = await actors.governance.createProposal(
+        title,
+        description,
+        proposalType,
+        votingPeriod ? [BigInt(votingPeriod)] : []
+      );
       return result;
     } catch (err) {
       setError(err.message);
@@ -20,7 +30,7 @@ export const useGovernance = () => {
     }
   };
 
-  const vote = async (proposalId, choice, votingPower, reason) => {
+  const vote = async (proposalId, choice, reason) => {
     setLoading(true);
     setError(null);
     try {
@@ -28,7 +38,6 @@ export const useGovernance = () => {
       const res = await actors.governance.vote(
         BigInt(proposalId),
         choiceVariant,
-        BigInt(votingPower),
         reason ? [reason] : []
       );
       return res;
