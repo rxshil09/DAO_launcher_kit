@@ -46,7 +46,7 @@ actor GovernanceCanister {
     private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
-    public shared(msg) func init(daoId: Principal, stakingId: Principal) {
+    public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
         if (Principal.isAnonymous(daoId) or Principal.isAnonymous(stakingId)) {
             Debug.trap("Invalid DAO or Staking principal provided");
         };
