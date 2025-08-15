@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
+import { useActors } from './ActorContext';
+
+
 // Create the AuthContext
 const AuthContext = createContext();
 
@@ -68,6 +71,7 @@ export const AuthProvider = ({ children }) => {
         ? "https://identity.ic0.app"
         : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
 
+
       await authClient.login({
         identityProvider,
         onSuccess: async () => {
@@ -75,10 +79,12 @@ export const AuthProvider = ({ children }) => {
           const currentIdentity = authClient.getIdentity();
           const principal = currentIdentity.getPrincipal();
 
+
           const principalId = principal.toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+
 
           setIdentity(currentIdentity);
           setPrincipal(principalId);
@@ -86,7 +92,10 @@ export const AuthProvider = ({ children }) => {
             displayName
           });
 
+          await registerProfile(displayName);
+
         },
+
 
         onError: (error) => {
           console.error("Login failed:", error);
