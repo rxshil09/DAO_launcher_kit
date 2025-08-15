@@ -1,0 +1,49 @@
+import React, { useState } from 'react';
+import { useStaking } from '../hooks/useStaking';
+
+const Staking = () => {
+  const { stake, loading, error } = useStaking();
+  const [amount, setAmount] = useState('');
+  const [period, setPeriod] = useState('instant');
+
+  const handleStake = async (e) => {
+    e.preventDefault();
+    await stake(amount, period);
+    setAmount('');
+  };
+
+  return (
+    <div className="p-4 space-y-8">
+      <h1 className="text-2xl font-bold">Staking</h1>
+      {error && <p className="text-red-500">{error}</p>}
+      <form onSubmit={handleStake} className="space-y-2">
+        <input
+          className="border p-2 w-full"
+          placeholder="Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        />
+        <select
+          className="border p-2 w-full"
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+        >
+          <option value="instant">Instant</option>
+          <option value="locked30">30 Days</option>
+          <option value="locked90">90 Days</option>
+          <option value="locked180">180 Days</option>
+          <option value="locked365">365 Days</option>
+        </select>
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded"
+          disabled={loading}
+        >
+          Stake
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default Staking;

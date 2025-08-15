@@ -9,6 +9,9 @@ import Dashboard from './components/Dashboard';
 import SignIn from './components/SignIn';
 import LaunchDAO from './components/LaunchDAO';
 import Settings from './components/Settings';
+import Proposals from './components/Proposals';
+import Staking from './components/Staking';
+import Treasury from './components/Treasury';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
 import './app.css';
@@ -26,6 +29,9 @@ function App() {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/launch" element={<LaunchDAO />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/proposals" element={<Proposals />} />
+            <Route path="/staking" element={<Staking />} />
+            <Route path="/treasury" element={<Treasury />} />
           </Routes>
         </div>
       </Router>
