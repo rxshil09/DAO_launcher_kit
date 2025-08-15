@@ -21,6 +21,20 @@ actor GovernanceCanister {
     type GovernanceError = Types.GovernanceError;
     type CommonError = Types.CommonError;
 
+    // References to other canisters
+    let dao = actor("canister:dao_backend") : actor {
+        getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
+    };
+
+    let staking = actor("canister:staking") : actor {
+        getUserStakingSummary: shared query (Principal) -> async {
+            totalStaked: Nat;
+            totalRewards: Nat;
+            activeStakes: Nat;
+            totalVotingPower: Nat;
+        };
+    };
+
     // Stable storage for upgrades
     private stable var nextProposalId : Nat = 1;
     private stable var proposalsEntries : [(ProposalId, Proposal)] = [];
@@ -136,7 +150,6 @@ actor GovernanceCanister {
     public shared(msg) func vote(
         proposalId: ProposalId,
         choice: Types.VoteChoice,
-        votingPower: Nat,
         reason: ?Text
     ) : async Result<(), Text> {
         let caller = msg.caller;
@@ -161,6 +174,20 @@ actor GovernanceCanister {
 
         if (Time.now() > proposal.votingDeadline) {
             return #err("Voting period has ended");
+        };
+
+        // Verify voter registration
+        let profileOpt = await dao.getUserProfile(caller);
+        switch (profileOpt) {
+            case null return #err("User not registered");
+            case (?_) {};
+        };
+
+        // Determine voting power from staking data
+        let summary = await staking.getUserStakingSummary(caller);
+        let votingPower = summary.totalVotingPower;
+        if (votingPower == 0) {
+            return #err("No voting power");
         };
 
         // Create vote record
