@@ -118,6 +118,9 @@ actor AssetCanister {
         tags: [Text]
     ) : async Result<AssetId, Text> {
         let caller = msg.caller;
+        if (authorizedUploaders.size() > 0 and not isAuthorized(caller)) {
+            return #err("Not authorized to upload assets");
+        };
         let dataSize = data.size();
 
         // Validate input
