@@ -9,6 +9,24 @@ export default defineConfig({
     react(),
     environment('all', { prefix: 'VITE_' }),
   ],
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      },
+      plugins: [
+        {
+          name: 'did-loader',
+          setup(build) {
+            build.onLoad({ filter: /\.did$/ }, async (args) => ({
+              contents: '',
+              loader: 'js'
+            }))
+          }
+        }
+      ]
+    }
+  },
   define: {
     global: 'window',
     'process.env': process.env

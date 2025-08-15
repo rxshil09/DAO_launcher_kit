@@ -1,0 +1,114 @@
+type VoteChoice = 
+ variant {
+   abstain;
+   against;
+   inFavor;
+ };
+type Vote = 
+ record {
+   choice: VoteChoice;
+   proposalId: ProposalId;
+   reason: opt text;
+   timestamp: Time;
+   voter: Principal;
+   votingPower: nat;
+ };
+type TreasuryTransferProposal = 
+ record {
+   amount: TokenAmount;
+   reason: text;
+   recipient: Principal;
+ };
+type TokenAmount = nat;
+type Time = int;
+type Result_1 = 
+ variant {
+   err: text;
+   ok: ProposalId;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok;
+ };
+type ProposalType = 
+ variant {
+   membershipChange: MembershipChangeProposal;
+   parameterChange: ParameterChangeProposal;
+   textProposal: text;
+   treasuryTransfer: TreasuryTransferProposal;
+ };
+type ProposalStatus = 
+ variant {
+   active;
+   cancelled;
+   executed;
+   failed;
+   pending;
+   succeeded;
+ };
+type ProposalId = nat;
+type Proposal = 
+ record {
+   approvalThreshold: nat;
+   createdAt: Time;
+   description: text;
+   executionDeadline: opt Time;
+   id: ProposalId;
+   proposalType: ProposalType;
+   proposer: Principal;
+   quorumThreshold: nat;
+   status: ProposalStatus;
+   title: text;
+   totalVotingPower: nat;
+   votesAgainst: nat;
+   votesInFavor: nat;
+   votingDeadline: Time;
+ };
+type Principal = principal;
+type ParameterChangeProposal = 
+ record {
+   newValue: text;
+   oldValue: text;
+   parameter: text;
+ };
+type MembershipChangeProposal = 
+ record {
+   action: variant {
+             add;
+             remove;
+           };
+   member: Principal;
+   role: text;
+ };
+type GovernanceConfig = 
+ record {
+   approvalThreshold: nat;
+   maxProposalsPerUser: nat;
+   proposalDeposit: TokenAmount;
+   quorumThreshold: nat;
+   votingPeriod: nat;
+ };
+service : {
+  createProposal: (title: text, description: text, proposalType:
+   ProposalType, votingPeriod: opt nat) -> (Result_1);
+  executeProposal: (proposalId: ProposalId) -> (Result);
+  getActiveProposals: () -> (vec Proposal) query;
+  getAllProposals: () -> (vec Proposal) query;
+  getConfig: () -> (opt GovernanceConfig) query;
+  getGovernanceStats: () ->
+   (record {
+      activeProposals: nat;
+      failedProposals: nat;
+      succeededProposals: nat;
+      totalProposals: nat;
+      totalVotes: nat;
+    }) query;
+  getProposal: (proposalId: ProposalId) -> (opt Proposal) query;
+  getProposalVotes: (proposalId: ProposalId) -> (vec Vote) query;
+  getProposalsByStatus: (status: ProposalStatus) -> (vec Proposal) query;
+  getUserVote: (proposalId: ProposalId, user: principal) -> (opt Vote) query;
+  updateConfig: (newConfig: GovernanceConfig) -> (Result);
+  vote: (proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
+   (Result);
+}

@@ -1,0 +1,71 @@
+type TreasuryTransactionType = 
+ variant {
+   deposit;
+   fee;
+   proposalExecution;
+   stakingReward;
+   withdrawal;
+ };
+type TreasuryTransaction = 
+ record {
+   amount: TokenAmount;
+   description: text;
+   from: opt Principal;
+   id: nat;
+   proposalId: opt ProposalId;
+   status: variant {
+             completed;
+             failed;
+             pending;
+           };
+   timestamp: Time;
+   to: opt Principal;
+   transactionType: TreasuryTransactionType;
+ };
+type TreasuryBalance = 
+ record {
+   available: TokenAmount;
+   locked: TokenAmount;
+   "reserved": TokenAmount;
+   total: TokenAmount;
+ };
+type TokenAmount = nat;
+type Time = int;
+type Result_1 = 
+ variant {
+   err: text;
+   ok;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: nat;
+ };
+type ProposalId = nat;
+type Principal = principal;
+service : {
+  addAuthorizedPrincipal: ("principal": principal) -> (Result_1);
+  deposit: (amount: TokenAmount, description: text) -> (Result);
+  getAllTransactions: () -> (vec TreasuryTransaction) query;
+  getAuthorizedPrincipals: () -> (vec principal) query;
+  getBalance: () -> (TreasuryBalance) query;
+  getRecentTransactions: (limit: nat) -> (vec TreasuryTransaction) query;
+  getTransaction: (transactionId: nat) -> (opt TreasuryTransaction) query;
+  getTransactionsByType: (transactionType: TreasuryTransactionType) ->
+   (vec TreasuryTransaction) query;
+  getTreasuryStats: () ->
+   (record {
+      averageTransactionAmount: float64;
+      balance: TreasuryBalance;
+      totalDeposits: TokenAmount;
+      totalTransactions: nat;
+      totalWithdrawals: TokenAmount;
+    }) query;
+  lockTokens: (amount: TokenAmount, reason: text) -> (Result_1);
+  releaseReservedTokens: (amount: TokenAmount, reason: text) -> (Result_1);
+  removeAuthorizedPrincipal: ("principal": principal) -> (Result_1);
+  reserveTokens: (amount: TokenAmount, reason: text) -> (Result_1);
+  unlockTokens: (amount: TokenAmount, reason: text) -> (Result_1);
+  withdraw: (recipient: principal, amount: TokenAmount, description: 
+   text, proposalId: opt ProposalId) -> (Result);
+}
