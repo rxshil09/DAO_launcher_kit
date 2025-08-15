@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { dao_backend } from '../declarations/dao_backend';
 
 // Create the DAO Context
 const DAOContext = createContext();
@@ -24,19 +25,56 @@ export const DAOProvider = ({ children }) => {
   const checkUserDAOs = async () => {
     setLoading(true);
     try {
-      // TODO: Implement actual DAO fetching from backend
-      // For now, we'll check localStorage for any launched DAOs
-      const launchedDAOs = localStorage.getItem(`daos_${principal}`);
-      if (launchedDAOs) {
-        const daos = JSON.parse(launchedDAOs);
-        setUserDAOs(daos);
-        // Set the first DAO as active if none is selected
-        if (daos.length > 0 && !activeDAO) {
-          setActiveDAO(daos[0]);
+      if (!dao_backend || !principal) {
+        setUserDAOs([]);
+        setActiveDAO(null);
+        return;
+      }
+
+      const response = await dao_backend.getAllUsers();
+      let daos = [];
+
+      if (Array.isArray(response)) {
+        const currentUser = response.find((u) => {
+          try {
+            const id = typeof u.id === 'string' ? u.id : u.id?.toText?.();
+            return id === principal;
+          } catch {
+            return false;
+          }
+        });
+        if (currentUser && Array.isArray(currentUser.daos)) {
+          daos = currentUser.daos;
+        } else if (!currentUser && response.length && response[0].daos === undefined) {
+          // If the API returns a direct list of DAOs instead of user profiles
+          daos = response;
         }
+      }
+
+      setUserDAOs(daos);
+      if (daos.length > 0) {
+        setActiveDAO((prev) => prev || daos[0]);
+      } else {
+        setActiveDAO(null);
       }
     } catch (error) {
       console.error('Failed to fetch user DAOs:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        const launchedDAOs = localStorage.getItem(`daos_${principal}`);
+        if (launchedDAOs) {
+          const daos = JSON.parse(launchedDAOs);
+          setUserDAOs(daos);
+          if (daos.length > 0 && !activeDAO) {
+            setActiveDAO(daos[0]);
+          }
+        } else {
+          setUserDAOs([]);
+          setActiveDAO(null);
+        }
+      } else {
+        setUserDAOs([]);
+        setActiveDAO(null);
+      }
     } finally {
       setLoading(false);
     }
