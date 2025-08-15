@@ -30,23 +30,33 @@ const Governance = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    await createProposal(
-      title,
-      description,
-      { [proposalType]: proposalType === 'textProposal' ? '' : null },
-      votingPeriod
-    );
-    setTitle('');
-    setDescription('');
-    setProposalType('textProposal');
-    setVotingPeriod('');
+    try {
+      const id = await createProposal(
+        title,
+        description,
+        { [proposalType]: proposalType === 'textProposal' ? '' : null },
+        votingPeriod
+      );
+      console.log('Created proposal:', id);
+      setTitle('');
+      setDescription('');
+      setProposalType('textProposal');
+      setVotingPeriod('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleVote = async (e) => {
     e.preventDefault();
-    await vote(proposalId, choice, reason);
-    setProposalId('');
-    setReason('');
+    try {
+      await vote(proposalId, choice, reason);
+      console.log('Voted on proposal');
+      setProposalId('');
+      setReason('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

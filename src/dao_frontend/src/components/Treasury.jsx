@@ -36,19 +36,29 @@ const Treasury = () => {
 
   const handleDeposit = async (e) => {
     e.preventDefault();
-    await deposit(depositAmount, depositDesc);
-    setDepositAmount('');
-    setDepositDesc('');
-    await fetchData();
+    try {
+      const txId = await deposit(depositAmount, depositDesc);
+      console.log('Deposit transaction:', txId);
+      setDepositAmount('');
+      setDepositDesc('');
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleWithdraw = async (e) => {
     e.preventDefault();
-    await withdraw(recipient, withdrawAmount, withdrawDesc);
-    setRecipient('');
-    setWithdrawAmount('');
-    setWithdrawDesc('');
-    await fetchData();
+    try {
+      const txId = await withdraw(recipient, withdrawAmount, withdrawDesc);
+      console.log('Withdraw transaction:', txId);
+      setRecipient('');
+      setWithdrawAmount('');
+      setWithdrawDesc('');
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
