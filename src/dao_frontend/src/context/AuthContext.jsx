@@ -1,19 +1,33 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
+import { useActors } from './ActorContext';
 
 // Create the AuthContext
 const AuthContext = createContext();
 
 // AuthProvider component to wrap the app and provide auth state
+
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
-  const [identity, setIdentity] = useState(null);
   const [userSettings, setUserSettings] = useState({
     displayName: 'Anonymous User'
   });
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
+  const actors = useActors();
+
+  const registerProfile = async (displayName, bio = '') => {
+    try {
+      const result = await actors.daoBackend.registerUser(displayName, bio);
+      if ('err' in result && result.err !== 'User already registered') {
+        console.error('Failed to register user:', result.err);
+      }
+    } catch (error) {
+      console.error('Failed to register user:', error);
+    }
+  };
+
 
   // Initialize auth client and check authentication status
   useEffect(() => {
@@ -25,17 +39,20 @@ export const AuthProvider = ({ children }) => {
         // Check if user is already authenticated
         const isAuthenticated = await client.isAuthenticated();
         
+
         if (isAuthenticated) {
           const identity = client.getIdentity();
           const principalId = identity.getPrincipal().toString();
+          const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
           setPrincipal(principalId);
-          setIdentity(identity);
           setUserSettings({
-            displayName: `User ${principalId.slice(0, 8)}`
+            displayName
           });
+          await registerProfile(displayName);
         }
+
       } catch (error) {
         console.error('Failed to initialize auth client:', error);
       } finally {
@@ -65,14 +82,16 @@ export const AuthProvider = ({ children }) => {
           const identity = authClient.getIdentity();
           const principal = identity.getPrincipal();
           const principalId = principal.toString();
+          const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
           setPrincipal(principalId);
-          setIdentity(identity);
           setUserSettings({
-            displayName: `User ${principalId.slice(0, 8)}`
+            displayName
           });
+          await registerProfile(displayName);
         },
+
         onError: (error) => {
           console.error("Login failed:", error);
           setLoading(false);
