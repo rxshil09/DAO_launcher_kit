@@ -1,21 +1,23 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
-import { useActors } from './ActorContext';
 
 // Create the AuthContext
 const AuthContext = createContext();
 
 // AuthProvider component to wrap the app and provide auth state
 
+
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
+
   const [userSettings, setUserSettings] = useState({
     displayName: 'Anonymous User'
   });
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
   const [identity, setIdentity] = useState(null);
+
   const actors = useActors();
 
   const registerProfile = async (displayName, bio = '') => {
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }) => {
   };
 
 
+
   // Initialize auth client and check authentication status
   useEffect(() => {
     const initAuth = async () => {
@@ -38,6 +41,7 @@ export const AuthProvider = ({ children }) => {
         setAuthClient(client);
 
         // Check if user is already authenticated
+
         const isAuthenticated = await client.isAuthenticated();
         
 
@@ -53,6 +57,7 @@ export const AuthProvider = ({ children }) => {
             displayName
           });
           await registerProfile(displayName);
+
         }
 
       } catch (error) {
@@ -81,18 +86,22 @@ export const AuthProvider = ({ children }) => {
       await authClient.login({
         identityProvider,
         onSuccess: async () => {
-          const identity = authClient.getIdentity();
-          const principal = identity.getPrincipal();
+
+          const currentIdentity = authClient.getIdentity();
+          const principal = currentIdentity.getPrincipal();
+
           const principalId = principal.toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+
           setIdentity(identity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
           });
           await registerProfile(displayName);
+
         },
 
         onError: (error) => {
