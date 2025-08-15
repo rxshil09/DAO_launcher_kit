@@ -96,21 +96,25 @@ export const useDAOOperations = () => {
 
 
             // Optional: Register other team members
-            for (const member of daoConfig.teamMembers) {
-                if (member.wallet) {
-                    try {
-                        const memberPrincipal = Principal.fromText(member.wallet);
-                        const registerMember = await actors.daoBackend.adminRegisterUser(
-                            memberPrincipal,
-                            member.name,
-                            member.role
+            for (const { wallet, name, role } of daoConfig.teamMembers || []) {
+                if (!wallet) continue;
+
+                try {
+                    const memberPrincipal = Principal.fromText(wallet);
+                    const registerMember = await actors.daoBackend.adminRegisterUser(
+                        memberPrincipal,
+                        name,
+                        role
+                    );
+
+                    if ('err' in registerMember) {
+                        console.warn(
+                            `Failed to register team member ${name}:`,
+                            registerMember.err
                         );
-                        if ('err' in registerMember) {
-                            console.warn(`Failed to register team member ${member.name}:`, registerMember.err);
-                        }
-                    } catch (err) {
-                        console.warn(`Invalid principal for team member ${member.name}:`, err);
                     }
+                } catch (err) {
+                    console.warn(`Invalid principal for team member ${name}:`, err);
                 }
             }
             // Step 4: Return the DAO info
