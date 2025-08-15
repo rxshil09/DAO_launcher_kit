@@ -9,6 +9,7 @@ import Proposals from './components/Proposals';
 import Staking from './components/Staking';
 import Treasury from './components/Treasury';
 import Governance from './components/Governance';
+import DAOStatus from './components/DAOStatus';
 import Navbar from './components/Navbar';
 import Assets from './components/Assets';
 import { useAuth } from './context/AuthContext';
@@ -40,23 +41,28 @@ function App() {
   }, [isAuthenticated, actors, principal, userSettings.displayName]);
 
   return (
-    <Router>
-      <div className="App">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/launch" element={<LaunchDAO />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/proposals" element={<Proposals />} />
-          <Route path="/staking" element={<Staking />} />
-          <Route path="/treasury" element={<Treasury />} />
-          <Route path="/governance" element={<Governance />} />
-          <Route path="/assets" element={<Assets />} />
-        </Routes>
-      </div>
-    </Router>
+
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/status" element={<DAOStatus />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/launch" element={<LaunchDAO />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/proposals" element={<Proposals />} />
+            <Route path="/staking" element={<Staking />} />
+            <Route path="/treasury" element={<Treasury />} />
+            <Route path="/governance" element={<Governance />} />
+            <Route path="/assets" element={<Assets />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
+
   );
 }
 
