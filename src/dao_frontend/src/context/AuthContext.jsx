@@ -6,6 +6,7 @@ import { useActors } from './ActorContext';
 const AuthContext = createContext();
 
 // AuthProvider component to wrap the app and provide auth state
+
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+
   // Initialize auth client and check authentication status
   useEffect(() => {
     const initAuth = async () => {
@@ -37,6 +39,7 @@ export const AuthProvider = ({ children }) => {
         // Check if user is already authenticated
         const isAuthenticated = await client.isAuthenticated();
         
+
         if (isAuthenticated) {
           const identity = client.getIdentity();
           const principalId = identity.getPrincipal().toString();
@@ -49,6 +52,7 @@ export const AuthProvider = ({ children }) => {
           });
           await registerProfile(displayName);
         }
+
       } catch (error) {
         console.error('Failed to initialize auth client:', error);
       } finally {
@@ -87,6 +91,7 @@ export const AuthProvider = ({ children }) => {
           });
           await registerProfile(displayName);
         },
+
         onError: (error) => {
           console.error("Login failed:", error);
           setLoading(false);
@@ -115,6 +120,7 @@ export const AuthProvider = ({ children }) => {
       
       setIsAuthenticated(false);
       setPrincipal(null);
+      setIdentity(null);
       setUserSettings({
         displayName: 'Anonymous User'
       });
@@ -134,7 +140,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    authClient
+    authClient,
+    identity
   };
 
   return (
