@@ -6,7 +6,7 @@ export const useProposals = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const createProposal = async (title, description) => {
+  const createProposal = async (title, description, category, votingPeriod) => {
     setLoading(true);
     setError(null);
     try {
@@ -14,8 +14,8 @@ export const useProposals = () => {
         title,
         description,
         { textProposal: '' },
-        [],
-        []
+        category ? [category] : [],
+        votingPeriod ? [BigInt(votingPeriod)] : []
       );
       return result;
     } catch (err) {
@@ -26,7 +26,7 @@ export const useProposals = () => {
     }
   };
 
-  const vote = async (proposalId, choice, votingPower, reason) => {
+  const vote = async (proposalId, choice, reason) => {
     setLoading(true);
     setError(null);
     try {
@@ -34,7 +34,6 @@ export const useProposals = () => {
       const res = await actors.proposals.vote(
         BigInt(proposalId),
         choiceVariant,
-        BigInt(votingPower),
         reason ? [reason] : []
       );
       return res;

@@ -5,24 +5,26 @@ const Proposals = () => {
   const { createProposal, vote, loading, error } = useProposals();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
+  const [votingPeriod, setVotingPeriod] = useState('');
 
   const [proposalId, setProposalId] = useState('');
   const [choice, setChoice] = useState('inFavor');
-  const [votingPower, setVotingPower] = useState('');
   const [reason, setReason] = useState('');
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    await createProposal(title, description);
+    await createProposal(title, description, category, votingPeriod);
     setTitle('');
     setDescription('');
+    setCategory('');
+    setVotingPeriod('');
   };
 
   const handleVote = async (e) => {
     e.preventDefault();
-    await vote(proposalId, choice, votingPower, reason);
+    await vote(proposalId, choice, reason);
     setProposalId('');
-    setVotingPower('');
     setReason('');
   };
 
@@ -43,6 +45,18 @@ const Proposals = () => {
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+        />
+        <input
+          className="border p-2 w-full"
+          placeholder="Category (optional)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <input
+          className="border p-2 w-full"
+          placeholder="Voting Period (seconds, optional)"
+          value={votingPeriod}
+          onChange={(e) => setVotingPeriod(e.target.value)}
         />
         <button
           type="submit"
@@ -70,12 +84,6 @@ const Proposals = () => {
           <option value="against">Against</option>
           <option value="abstain">Abstain</option>
         </select>
-        <input
-          className="border p-2 w-full"
-          placeholder="Voting Power"
-          value={votingPower}
-          onChange={(e) => setVotingPower(e.target.value)}
-        />
         <input
           className="border p-2 w-full"
           placeholder="Reason (optional)"

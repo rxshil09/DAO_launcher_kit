@@ -129,6 +129,5 @@ service : {
   getTemplate: (templateId: nat) -> (opt ProposalTemplate) query;
   getTemplatesByCategory: (category: text) -> (vec ProposalTemplate) query;
   getTrendingProposals: (limit: nat) -> (vec Proposal) query;
-  vote: (proposalId: ProposalId, choice: VoteChoice, votingPower: nat,
-   reason: opt text) -> (Result);
+  vote: (proposalId: ProposalId, choice: VoteChoice, reason: opt text) -> (Result);
 }
