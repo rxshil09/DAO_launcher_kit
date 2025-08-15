@@ -5,6 +5,10 @@
       "type": "motoko"
     },
     "governance": {
+      "dependencies": [
+        "dao_backend",
+        "staking"
+      ],
       "main": "src/dao_backend/governance/main.mo",
       "type": "motoko"
     },
