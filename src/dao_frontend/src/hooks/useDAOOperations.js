@@ -77,6 +77,7 @@ export const useDAOOperations = () => {
                 throw new Error(canisterRefResult.err);
             }
 
+
             // Step 3: Register initial users via admin method
             if (creatorPrincipal) {
                 const registerCreator = await actors.daoBackend.adminRegisterUser(
@@ -90,26 +91,26 @@ export const useDAOOperations = () => {
                 }
             }
 
+
             // Optional: Register other team members
             for (const member of daoConfig.teamMembers) {
                 if (member.wallet) {
                     try {
+
                         const memberPrincipal = Principal.fromText(member.wallet);
                         await actors.daoBackend.adminRegisterUser(
                             memberPrincipal,
-                            member.name,
-                            member.role
-                        );
-                    } catch (err) {
-                        console.warn(`Failed to register team member ${member.name}:`, err);
-                        // Continue with other members
-                    }
-                }
-            }
+
+                        // Use principal.toString() as wallet address might be already a Principal
+                        const memberPrincipal = Principal.fromText(member.wallet);
+                        await actors.daoBackend.registerUser(
+
+
 
             // Step 4: Return the DAO info
             const daoInfo = await actors.daoBackend.getDAOInfo();
             return daoInfo;
+
 
         } catch (err) {
             setError(err.message);

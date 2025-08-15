@@ -19,6 +19,7 @@ actor DAOMain {
     type TokenAmount = Types.TokenAmount;
     type UserProfile = Types.UserProfile;
     type DAOStats = Types.DAOStats;
+    type DAOConfig = Types.DAOConfig;
 
     // Stable storage for upgrades
     private stable var initialized : Bool = false;
@@ -27,6 +28,7 @@ actor DAOMain {
     private stable var totalMembers : Nat = 0;
     private stable var userProfilesEntries : [(Principal, UserProfile)] = [];
     private stable var adminPrincipalsEntries : [Principal] = [];
+    private stable var daoConfig : ?DAOConfig = null;
 
     // Runtime storage
     private var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
@@ -100,6 +102,16 @@ actor DAOMain {
         proposalsCanister := ?proposals;
 
         Debug.print("Canister references set successfully");
+        #ok()
+    };
+
+    // DAO configuration
+    public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can set DAO configuration");
+        };
+        daoConfig := ?config;
+        Debug.print("DAO configuration saved");
         #ok()
     };
 
@@ -190,6 +202,10 @@ actor DAOMain {
             totalMembers = totalMembers;
             initialized = initialized;
         }
+    };
+
+    public query func getDAOConfig() : async ?DAOConfig {
+        daoConfig
     };
 
     public query func getUserProfile(userId: Principal) : async ?UserProfile {
