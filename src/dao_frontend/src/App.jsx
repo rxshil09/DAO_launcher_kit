@@ -10,6 +10,7 @@ import Proposals from './components/Proposals';
 import Staking from './components/Staking';
 import Treasury from './components/Treasury';
 import Governance from './components/Governance';
+import DAOStatus from './components/DAOStatus';
 import Navbar from './components/Navbar';
 import Assets from './components/Assets';
 import { AuthProvider } from './context/AuthContext';
@@ -25,6 +26,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/status" element={<DAOStatus />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/launch" element={<LaunchDAO />} />
             <Route path="/settings" element={<Settings />} />

@@ -24,6 +24,7 @@ import {
   Globe,
   Sparkles,
   Image,
+  BarChart3,
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -36,6 +37,7 @@ const Navbar = () => {
   const navigation = [
     { name: 'Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/dashboard', icon: Activity },
+    { name: 'Status', href: '/status', icon: BarChart3 },
     { name: 'Launch DAO', href: '/launch', icon: Rocket }, // NO HIGHLIGHTING
     { name: 'Proposals', href: '/proposals', icon: Star },
     { name: 'Staking', href: '/staking', icon: Award },
