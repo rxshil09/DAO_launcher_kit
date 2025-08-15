@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
@@ -12,36 +12,14 @@ import Governance from './components/Governance';
 import DAOStatus from './components/DAOStatus';
 import Navbar from './components/Navbar';
 import Assets from './components/Assets';
-import { useAuth } from './context/AuthContext';
-import { useActors } from './context/ActorContext';
+import UserRegistrationHandler from './components/UserRegistrationHandler';
 import './app.css';
 
 function App() {
-  const { identity, userSettings } = useAuth();
-  const actors = useActors();
-
-  useEffect(() => {
-    const registerUser = async () => {
-      if (identity && actors) {
-        try {
-          const result = await actors.daoBackend.registerUser(
-            userSettings.displayName,
-            ''
-          );
-          if ('err' in result && result.err !== 'User already registered') {
-            console.error('Failed to register user:', result.err);
-          }
-        } catch (error) {
-          console.error('Failed to register user:', error);
-        }
-      }
-    };
-
-    registerUser();
-  }, [identity, actors, userSettings.displayName]);
-
+  
   return (
     <Router>
+      <UserRegistrationHandler />
       <div className="App">
         <Navbar />
         <Routes>

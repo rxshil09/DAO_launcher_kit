@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
 
-import { useActors } from './ActorContext';
-
-
 // Create the AuthContext
 const AuthContext = createContext();
 
@@ -91,9 +88,6 @@ export const AuthProvider = ({ children }) => {
           setUserSettings({
             displayName
           });
-
-          await registerProfile(displayName);
-
         },
 
 
