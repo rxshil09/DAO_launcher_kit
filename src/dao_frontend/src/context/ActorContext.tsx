@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { initializeAgents } from "../config/agent";
+import { useAuth } from "./AuthContext";
 
 type Actors = Awaited<ReturnType<typeof initializeAgents>>;
 
@@ -19,11 +20,13 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
   const [actors, setActors] = useState<Actors | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { identity } = useAuth();
 
   useEffect(() => {
     const setup = async () => {
+      setLoading(true);
       try {
-        const initializedActors = await initializeAgents();
+        const initializedActors = await initializeAgents(identity ?? undefined);
         setActors(initializedActors);
       } catch (err) {
         console.error("Failed to initialize actors:", err);
@@ -33,7 +36,7 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
       }
     };
     setup();
-  }, []);
+  }, [identity]);
 
   if (loading) {
     return (
@@ -63,3 +66,4 @@ export const useActors = (): Actors => {
   }
   return context;
 };
+
