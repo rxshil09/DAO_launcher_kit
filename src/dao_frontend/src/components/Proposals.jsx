@@ -64,7 +64,7 @@ const Proposals = () => {
         />
         <input
           className="border p-2 w-full"
-          placeholder="Voting Period (seconds, optional)"
+          placeholder="Voting Period in seconds (optional)"
           value={votingPeriod}
           onChange={(e) => setVotingPeriod(e.target.value)}
         />
