@@ -71,7 +71,19 @@ actor AssetCanister {
         "application/json", "application/xml", "video/mp4", "audio/mpeg", "audio/wav"
     ];
 
-    // System functions for upgrades
+    // System functions for upgrades and initialization
+
+    // During installation the deployer can optionally supply an initial
+    // principal that is immediately granted upload permissions. If omitted,
+    // the list of authorized uploaders starts empty and can be populated
+    // later via `addAuthorizedUploader`.
+    system func init(initialUploader : ?Principal) {
+        switch (initialUploader) {
+            case (?p) { authorizedUploaders := [p] };
+            case null {};
+        };
+    };
+
     system func preupgrade() {
         assetsEntries := Iter.toArray(assets.entries());
     };
@@ -362,14 +374,15 @@ actor AssetCanister {
 
     // Add authorized uploader
     public shared(msg) func addAuthorizedUploader(principal: Principal) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+        // Allow the first uploader to be added by anyone when the list is empty.
+        if (authorizedUploaders.size() > 0 and not isAuthorized(msg.caller)) {
             return #err("Not authorized to add uploaders");
         };
 
         let principals = Buffer.fromArray<Principal>(authorizedUploaders);
         principals.add(principal);
         authorizedUploaders := Buffer.toArray(principals);
-        
+
         Debug.print("Authorized uploader added: " # Principal.toText(principal));
         #ok()
     };
