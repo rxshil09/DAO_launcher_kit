@@ -19,6 +19,7 @@ actor DAOMain {
     type TokenAmount = Types.TokenAmount;
     type UserProfile = Types.UserProfile;
     type DAOStats = Types.DAOStats;
+    type DAOConfig = Types.DAOConfig;
 
     // Stable storage for upgrades
     private stable var initialized : Bool = false;
@@ -27,6 +28,7 @@ actor DAOMain {
     private stable var totalMembers : Nat = 0;
     private stable var userProfilesEntries : [(Principal, UserProfile)] = [];
     private stable var adminPrincipalsEntries : [Principal] = [];
+    private stable var daoConfig : ?DAOConfig = null;
 
     // Runtime storage
     private var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
@@ -103,6 +105,16 @@ actor DAOMain {
         #ok()
     };
 
+    // DAO configuration
+    public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can set DAO configuration");
+        };
+        daoConfig := ?config;
+        Debug.print("DAO configuration saved");
+        #ok()
+    };
+
     // User management
     public shared(msg) func registerUser(displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
@@ -126,6 +138,33 @@ actor DAOMain {
         totalMembers += 1;
 
         Debug.print("User registered: " # displayName);
+        #ok()
+    };
+
+    public shared(msg) func adminRegisterUser(newUser: Principal, displayName: Text, bio: Text) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can register users");
+        };
+
+        switch (userProfiles.get(newUser)) {
+            case (?_) return #err("User already registered");
+            case null {};
+        };
+
+        let userProfile : UserProfile = {
+            id = newUser;
+            displayName = displayName;
+            bio = bio;
+            joinedAt = Time.now();
+            reputation = 0;
+            totalStaked = 0;
+            votingPower = 0;
+        };
+
+        userProfiles.put(newUser, userProfile);
+        totalMembers += 1;
+
+        Debug.print("User registered by admin: " # displayName);
         #ok()
     };
 
@@ -163,6 +202,10 @@ actor DAOMain {
             totalMembers = totalMembers;
             initialized = initialized;
         }
+    };
+
+    public query func getDAOConfig() : async ?DAOConfig {
+        daoConfig
     };
 
     public query func getUserProfile(userId: Principal) : async ?UserProfile {
