@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
+
 import { useActors } from './ActorContext';
+
 
 // Create the AuthContext
 const AuthContext = createContext();
@@ -19,19 +21,6 @@ export const AuthProvider = ({ children }) => {
   const [authClient, setAuthClient] = useState(null);
   const [identity, setIdentity] = useState(null);
 
-  const actors = useActors();
-
-  const registerProfile = async (displayName, bio = '') => {
-    try {
-      const result = await actors.daoBackend.registerUser(displayName, bio);
-      if ('err' in result && result.err !== 'User already registered') {
-        console.error('Failed to register user:', result.err);
-      }
-    } catch (error) {
-      console.error('Failed to register user:', error);
-    }
-  };
-
 
 
   // Initialize auth client and check authentication status
@@ -47,18 +36,16 @@ export const AuthProvider = ({ children }) => {
         
 
         if (isAuthenticated) {
-          const identity = client.getIdentity();
-          const principalId = identity.getPrincipal().toString();
+          const currentIdentity = client.getIdentity();
+          const principalId = currentIdentity.getPrincipal().toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
-          setIdentity(identity);
+          setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
           });
-          await registerProfile(displayName);
-
         }
 
       } catch (error) {
@@ -84,6 +71,7 @@ export const AuthProvider = ({ children }) => {
         ? "https://identity.ic0.app"
         : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
 
+
       await authClient.login({
         identityProvider,
         onSuccess: async () => {
@@ -91,18 +79,23 @@ export const AuthProvider = ({ children }) => {
           const currentIdentity = authClient.getIdentity();
           const principal = currentIdentity.getPrincipal();
 
+
           const principalId = principal.toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+
+
           setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
           });
+
           await registerProfile(displayName);
 
         },
+
 
         onError: (error) => {
           console.error("Login failed:", error);
