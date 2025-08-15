@@ -28,6 +28,15 @@ export const idlFactory = ({ IDL }) => {
     totalMembers: IDL.Nat,
     initialized: IDL.Bool,
   });
+  const UserProfile = IDL.Record({
+    id: IDL.Principal,
+    displayName: IDL.Text,
+    bio: IDL.Text,
+    joinedAt: IDL.Int,
+    reputation: IDL.Nat,
+    totalStaked: IDL.Nat,
+    votingPower: IDL.Nat,
+  });
   const DAOStats = IDL.Record({
     totalMembers: IDL.Nat,
     totalProposals: IDL.Nat,
@@ -51,9 +60,14 @@ export const idlFactory = ({ IDL }) => {
 
     adminRegisterUser: IDL.Func([IDL.Principal, IDL.Text, IDL.Text], [Result], []),
 
+    updateUserProfile: IDL.Func([IDL.Text, IDL.Text], [Result], []),
+
     setDAOConfig: IDL.Func([DAOConfig], [Result], []),
 
+    getDAOInfo: IDL.Func([], [DAOInfo], ['query']),
     getDAOConfig: IDL.Func([], [IDL.Opt(DAOConfig)], ['query']),
+    getUserProfile: IDL.Func([IDL.Principal], [IDL.Opt(UserProfile)], ['query']),
+    getAllUsers: IDL.Func([], [IDL.Vec(UserProfile)], ['query']),
     getCanisterReferences: IDL.Func(
       [],
       [
@@ -67,6 +81,16 @@ export const idlFactory = ({ IDL }) => {
       ['query'],
     ),
     getDAOStats: IDL.Func([], [DAOStats], ['query']),
+
+    checkIsAdmin: IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
+    addAdmin: IDL.Func([IDL.Principal], [Result], []),
+    removeAdmin: IDL.Func([IDL.Principal], [Result], []),
+    health: IDL.Func(
+      [],
+      [IDL.Record({ status: IDL.Text, timestamp: IDL.Int })],
+      ['query'],
+    ),
+    greet: IDL.Func([IDL.Text], [IDL.Text], ['query']),
 
   });
 };
