@@ -8,6 +8,7 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
+  const [identity, setIdentity] = useState(null);
   const [userSettings, setUserSettings] = useState({
     displayName: 'Anonymous User'
   });
@@ -27,9 +28,10 @@ export const AuthProvider = ({ children }) => {
         if (isAuthenticated) {
           const identity = client.getIdentity();
           const principalId = identity.getPrincipal().toString();
-          
+
           setIsAuthenticated(true);
           setPrincipal(principalId);
+          setIdentity(identity);
           setUserSettings({
             displayName: `User ${principalId.slice(0, 8)}`
           });
@@ -63,9 +65,10 @@ export const AuthProvider = ({ children }) => {
           const identity = authClient.getIdentity();
           const principal = identity.getPrincipal();
           const principalId = principal.toString();
-          
+
           setIsAuthenticated(true);
           setPrincipal(principalId);
+          setIdentity(identity);
           setUserSettings({
             displayName: `User ${principalId.slice(0, 8)}`
           });
@@ -98,6 +101,7 @@ export const AuthProvider = ({ children }) => {
       
       setIsAuthenticated(false);
       setPrincipal(null);
+      setIdentity(null);
       setUserSettings({
         displayName: 'Anonymous User'
       });
@@ -117,7 +121,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    authClient
+    authClient,
+    identity
   };
 
   return (
