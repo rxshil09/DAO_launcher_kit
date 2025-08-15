@@ -10,7 +10,6 @@ import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Nat32 "mo:base/Nat32";
-import Nat8 "mo:base/Nat8";
 
 actor AssetCanister {
     type Result<T, E> = Result.Result<T, E>;
@@ -77,7 +76,7 @@ actor AssetCanister {
     // principal that is immediately granted upload permissions. If omitted,
     // the list of authorized uploaders starts empty and can be populated
     // later via `addAuthorizedUploader`.
-    public shared ({caller}) func init(initialUploader : ?Principal) : async () {
+    public shared ({caller = _}) func init(initialUploader : ?Principal) : async () {
         switch (initialUploader) {
             case (?p) { authorizedUploaders := [p] };
             case null {};
@@ -472,7 +471,7 @@ actor AssetCanister {
     };
 
     // Batch upload assets
-    public shared(msg) func batchUploadAssets(
+    public shared(_msg) func batchUploadAssets(
         assets_data: [(Text, Text, AssetData, Bool, [Text])]
     ) : async [Result<AssetId, Text>] {
         let results = Buffer.Buffer<Result<AssetId, Text>>(assets_data.size());
