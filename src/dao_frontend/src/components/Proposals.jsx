@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useProposals } from '../hooks/useProposals';
+import { useActors } from '../context/ActorContext';
+import { useAuth } from '../context/AuthContext';
 
 const Proposals = () => {
   const {
@@ -11,6 +14,8 @@ const Proposals = () => {
     loading,
     error,
   } = useProposals();
+  const actors = useActors();
+  const { principal } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -57,7 +62,10 @@ const Proposals = () => {
   const handleVote = async (e) => {
     e.preventDefault();
     try {
-      await vote(proposalId, choice, reason);
+      const userPrincipal = Principal.fromText(principal);
+      const summary = await actors.staking.getUserStakingSummary(userPrincipal);
+      const votingPower = summary.totalVotingPower;
+      await vote(proposalId, choice, votingPower, reason);
       console.log('Voted on proposal');
       setProposalId('');
       setReason('');

@@ -106,7 +106,7 @@ export const useProposals = () => {
     }
   };
 
-  const vote = async (proposalId, choice, reason) => {
+  const vote = async (proposalId, choice, votingPower, reason) => {
     setLoading(true);
     setError(null);
     try {
@@ -114,6 +114,7 @@ export const useProposals = () => {
       const res = await actors.proposals.vote(
         BigInt(proposalId),
         choiceVariant,
+        BigInt(votingPower),
         reason ? [reason] : []
       );
       if ('err' in res) throw new Error(res.err);
