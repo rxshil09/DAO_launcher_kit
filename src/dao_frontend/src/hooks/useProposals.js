@@ -6,6 +6,8 @@ export const useProposals = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+
   const createProposal = async (title, description, category, votingPeriod) => {
     setLoading(true);
     setError(null);
@@ -15,7 +17,7 @@ export const useProposals = () => {
         description,
         { textProposal: '' },
         category ? [category] : [],
-        votingPeriod ? [BigInt(votingPeriod)] : []
+        votingPeriod ? [toNanoseconds(votingPeriod)] : []
       );
       return result;
     } catch (err) {

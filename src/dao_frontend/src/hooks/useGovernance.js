@@ -6,6 +6,8 @@ export const useGovernance = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+
   const createProposal = async (
     title,
     description,
@@ -19,7 +21,7 @@ export const useGovernance = () => {
         title,
         description,
         proposalType,
-        votingPeriod ? [BigInt(votingPeriod)] : []
+        votingPeriod ? [toNanoseconds(votingPeriod)] : []
       );
       return result;
     } catch (err) {
