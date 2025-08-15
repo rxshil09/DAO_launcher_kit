@@ -104,7 +104,34 @@ export const useDAOOperations = () => {
                 }
             }
 
-            // Step 4: Return the DAO info
+            // Step 4: Save DAO configuration
+            const configPayload = {
+                category: daoConfig.category,
+                website: daoConfig.website,
+                selectedModules: daoConfig.selectedModules,
+                moduleFeatures: Object.entries(daoConfig.selectedFeatures || {}).map(
+                    ([moduleId, features]) => ({ moduleId, features })
+                ),
+                tokenName: daoConfig.tokenName,
+                tokenSymbol: daoConfig.tokenSymbol,
+                totalSupply: BigInt(daoConfig.totalSupply || 0),
+                initialPrice: BigInt(daoConfig.initialPrice || 0),
+                votingPeriod: BigInt(daoConfig.votingPeriod || 0),
+                quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
+                proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
+                fundingGoal: BigInt(daoConfig.fundingGoal || 0),
+                fundingDuration: BigInt(daoConfig.fundingDuration || 0),
+                minInvestment: BigInt(daoConfig.minInvestment || 0),
+                termsAccepted: daoConfig.termsAccepted,
+                kycRequired: daoConfig.kycRequired
+            };
+
+            const configResult = await actors.daoBackend.setDAOConfig(configPayload);
+            if ('err' in configResult) {
+                throw new Error(configResult.err);
+            }
+
+            // Step 5: Return the DAO info
             const daoInfo = await actors.daoBackend.getDAOInfo();
             return daoInfo;
 
