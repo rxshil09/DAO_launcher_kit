@@ -18,6 +18,7 @@ export const idlFactory = ({ IDL }) => {
       []
     ),
     registerUser: IDL.Func([IDL.Text, IDL.Text], [Result], []),
+    adminRegisterUser: IDL.Func([IDL.Principal, IDL.Text, IDL.Text], [Result], []),
     getDAOInfo: IDL.Func([], [DAOInfo], ['query']),
   });
 };

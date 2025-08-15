@@ -129,6 +129,33 @@ actor DAOMain {
         #ok()
     };
 
+    public shared(msg) func adminRegisterUser(newUser: Principal, displayName: Text, bio: Text) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can register users");
+        };
+
+        switch (userProfiles.get(newUser)) {
+            case (?_) return #err("User already registered");
+            case null {};
+        };
+
+        let userProfile : UserProfile = {
+            id = newUser;
+            displayName = displayName;
+            bio = bio;
+            joinedAt = Time.now();
+            reputation = 0;
+            totalStaked = 0;
+            votingPower = 0;
+        };
+
+        userProfiles.put(newUser, userProfile);
+        totalMembers += 1;
+
+        Debug.print("User registered by admin: " # displayName);
+        #ok()
+    };
+
     public shared(msg) func updateUserProfile(displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
         
