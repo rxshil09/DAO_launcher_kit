@@ -10,20 +10,35 @@ const Staking = () => {
 
   const handleStake = async (e) => {
     e.preventDefault();
-    await stake(amount, period);
-    setAmount('');
+    try {
+      const id = await stake(amount, period);
+      console.log('Stake created:', id);
+      setAmount('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleUnstake = async (e) => {
     e.preventDefault();
-    await unstake(unstakeId);
-    setUnstakeId('');
+    try {
+      const amount = await unstake(unstakeId);
+      console.log('Unstaked amount:', amount);
+      setUnstakeId('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleClaim = async (e) => {
     e.preventDefault();
-    await claimRewards(claimId);
-    setClaimId('');
+    try {
+      const rewards = await claimRewards(claimId);
+      console.log('Rewards claimed:', rewards);
+      setClaimId('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

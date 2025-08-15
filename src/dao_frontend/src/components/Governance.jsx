@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useGovernance } from '../hooks/useGovernance';
 
 const Governance = () => {
-  const { createProposal, vote, getConfig, getStats, loading, error } = useGovernance();
+  const { createProposal, vote, getConfig, getGovernanceStats, loading, error } =
+    useGovernance();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [proposalType, setProposalType] = useState('textProposal');
@@ -18,7 +19,7 @@ const Governance = () => {
       try {
         const cfg = await getConfig();
         setConfig(cfg);
-        const st = await getStats();
+        const st = await getGovernanceStats();
         setStats(st);
       } catch (e) {
         // error handled in hook
@@ -29,23 +30,33 @@ const Governance = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    await createProposal(
-      title,
-      description,
-      { [proposalType]: proposalType === 'textProposal' ? '' : null },
-      votingPeriod
-    );
-    setTitle('');
-    setDescription('');
-    setProposalType('textProposal');
-    setVotingPeriod('');
+    try {
+      const id = await createProposal(
+        title,
+        description,
+        { [proposalType]: proposalType === 'textProposal' ? '' : null },
+        votingPeriod
+      );
+      console.log('Created proposal:', id);
+      setTitle('');
+      setDescription('');
+      setProposalType('textProposal');
+      setVotingPeriod('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleVote = async (e) => {
     e.preventDefault();
-    await vote(proposalId, choice, reason);
-    setProposalId('');
-    setReason('');
+    try {
+      await vote(proposalId, choice, reason);
+      console.log('Voted on proposal');
+      setProposalId('');
+      setReason('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (

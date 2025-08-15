@@ -40,19 +40,30 @@ const Proposals = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    await createProposal(title, description, category, votingPeriod);
-    setTitle('');
-    setDescription('');
-    setCategory('');
-    setVotingPeriod('');
-    loadProposals();
+
+    try {
+      const id = await createProposal(title, description, category, votingPeriod);
+      console.log('Created proposal:', id);
+      setTitle('');
+      setDescription('');
+      setCategory('');
+      setVotingPeriod('');
+    } catch (err) {
+      console.error(err);
+    }
+
   };
 
   const handleVote = async (e) => {
     e.preventDefault();
-    await vote(proposalId, choice, reason);
-    setProposalId('');
-    setReason('');
+    try {
+      await vote(proposalId, choice, reason);
+      console.log('Voted on proposal');
+      setProposalId('');
+      setReason('');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleFilter = async (e) => {
@@ -138,7 +149,7 @@ const Proposals = () => {
         />
         <input
           className="border p-2 w-full"
-          placeholder="Voting Period (seconds, optional)"
+          placeholder="Voting Period in seconds (optional)"
           value={votingPeriod}
           onChange={(e) => setVotingPeriod(e.target.value)}
         />

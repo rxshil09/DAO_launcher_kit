@@ -5,6 +5,8 @@ import { useActors } from '../context/ActorContext';
 import { useAuth } from '../context/AuthContext';
 import { Principal } from '@dfinity/principal';
 
+const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+
 export const useDAOOperations = () => {
     const actors = useActors();
     const { principal } = useAuth();
@@ -99,11 +101,11 @@ export const useDAOOperations = () => {
                 tokenSymbol: daoConfig.tokenSymbol,
                 totalSupply: BigInt(daoConfig.totalSupply || 0),
                 initialPrice: BigInt(daoConfig.initialPrice || 0),
-                votingPeriod: BigInt(daoConfig.votingPeriod || 0),
+                votingPeriod: toNanoseconds(daoConfig.votingPeriod || 0),
                 quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
                 proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
                 fundingGoal: BigInt(daoConfig.fundingGoal || 0),
-                fundingDuration: BigInt(daoConfig.fundingDuration || 0),
+                fundingDuration: toNanoseconds(daoConfig.fundingDuration || 0),
                 minInvestment: BigInt(daoConfig.minInvestment || 0),
                 termsAccepted: daoConfig.termsAccepted,
                 kycRequired: daoConfig.kycRequired

@@ -63,13 +63,13 @@ const LaunchDAO = () => {
     initialPrice: '',
     
     // Governance
-    votingPeriod: '7',
+    votingPeriod: '604800',
     quorumThreshold: '10',
     proposalThreshold: '1',
     
     // Funding
     fundingGoal: '',
-    fundingDuration: '30',
+    fundingDuration: '2592000',
     minInvestment: '',
     
     // Team
@@ -738,7 +738,7 @@ const LaunchDAO = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-                    Voting Period (days) <span className="text-red-400">*</span>
+                    Voting Period (seconds) <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
@@ -747,8 +747,8 @@ const LaunchDAO = () => {
                     className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono ${
                       errors.votingPeriod ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    min="1"
-                    max="30"
+                    min="86400"
+                    max="2592000"
                   />
                 </div>
 
@@ -809,15 +809,15 @@ const LaunchDAO = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-                    Funding Duration (days)
+                    Funding Duration (seconds)
                   </label>
                   <input
                     type="number"
                     value={formData.fundingDuration}
                     onChange={(e) => setFormData(prev => ({ ...prev, fundingDuration: e.target.value }))}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
-                    min="7"
-                    max="365"
+                    min="604800"
+                    max="31536000"
                   />
                 </div>
 
@@ -1149,7 +1149,7 @@ const LaunchDAO = () => {
                         </div>
                         <div>
                           <span className="text-gray-400">Duration:</span>
-                          <div className="text-white font-semibold">{formData.fundingDuration} days</div>
+                          <div className="text-white font-semibold">{formData.fundingDuration} seconds</div>
                         </div>
                         <div>
                           <span className="text-gray-400">Min Investment:</span>

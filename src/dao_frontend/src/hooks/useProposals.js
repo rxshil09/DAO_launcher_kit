@@ -6,18 +6,21 @@ export const useProposals = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+
   const createProposal = async (title, description, category, votingPeriod) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.proposals.createProposal(
+      const res = await actors.proposals.createProposal(
         title,
         description,
         { textProposal: '' },
         category ? [category] : [],
-        votingPeriod ? [BigInt(votingPeriod)] : []
+        votingPeriod ? [toNanoseconds(votingPeriod)] : []
       );
-      return result;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -113,7 +116,8 @@ export const useProposals = () => {
         choiceVariant,
         reason ? [reason] : []
       );
-      return res;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;

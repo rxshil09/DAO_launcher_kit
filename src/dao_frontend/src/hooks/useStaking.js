@@ -11,8 +11,9 @@ export const useStaking = () => {
     setError(null);
     try {
       const periodVariant = { [period]: null };
-      const result = await actors.staking.stake(BigInt(amount), periodVariant);
-      return result;
+      const res = await actors.staking.stake(BigInt(amount), periodVariant);
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -25,8 +26,9 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.staking.unstake(BigInt(stakeId));
-      return result;
+      const res = await actors.staking.unstake(BigInt(stakeId));
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -39,8 +41,9 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.staking.claimRewards(BigInt(stakeId));
-      return result;
+      const res = await actors.staking.claimRewards(BigInt(stakeId));
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;

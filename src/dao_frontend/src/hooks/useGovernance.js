@@ -6,6 +6,8 @@ export const useGovernance = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+
   const createProposal = async (
     title,
     description,
@@ -15,13 +17,14 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.governance.createProposal(
+      const res = await actors.governance.createProposal(
         title,
         description,
         proposalType,
-        votingPeriod ? [BigInt(votingPeriod)] : []
+        votingPeriod ? [toNanoseconds(votingPeriod)] : []
       );
-      return result;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -40,7 +43,8 @@ export const useGovernance = () => {
         choiceVariant,
         reason ? [reason] : []
       );
-      return res;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -53,8 +57,9 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const cfg = await actors.governance.getConfig();
-      return cfg;
+      const res = await actors.governance.getConfig();
+      if ('err' in res) throw new Error(res.err);
+      return 'ok' in res ? res.ok : res;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -63,12 +68,15 @@ export const useGovernance = () => {
     }
   };
 
-  const getStats = async () => {
+  const getGovernanceStats = async () => {
     setLoading(true);
     setError(null);
     try {
-      const stats = await actors.governance.getStats();
-      return stats;
+
+      const res = await actors.governance.getStats();
+      if ('err' in res) throw new Error(res.err);
+      return 'ok' in res ? res.ok : res;
+
     } catch (err) {
       setError(err.message);
       throw err;
@@ -77,5 +85,5 @@ export const useGovernance = () => {
     }
   };
 
-  return { createProposal, vote, getConfig, getStats, loading, error };
+  return { createProposal, vote, getConfig, getGovernanceStats, loading, error };
 };
