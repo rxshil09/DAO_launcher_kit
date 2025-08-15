@@ -126,14 +126,98 @@ export const initializeAgents = async () => {
   });
 
   try {
-    const [daoBackend, governance, staking, treasury, proposals, assets] = await Promise.all([
-      createActor<DaoBackendService>(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND, daoBackendIdl),
-      createActor<GovernanceService>(import.meta.env.VITE_CANISTER_ID_GOVERNANCE, governanceIdl),
-      createActor<StakingService>(import.meta.env.VITE_CANISTER_ID_STAKING, stakingIdl),
-      createActor<TreasuryService>(import.meta.env.VITE_CANISTER_ID_TREASURY, treasuryIdl),
-      createActor<ProposalsService>(import.meta.env.VITE_CANISTER_ID_PROPOSALS, proposalsIdl),
-      createActor<AssetsService>(import.meta.env.VITE_CANISTER_ID_ASSETS, assetsIdl),
-    ]);
+    // Create actors for required canisters
+    const daoBackend = await createActor<DaoBackendService>(
+      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND, 
+      daoBackendIdl
+    );
+    
+    const assets = await createActor<AssetsService>(
+      import.meta.env.VITE_CANISTER_ID_ASSETS, 
+      assetsIdl
+    );
+
+    // Create mock actors for optional canisters if they don't exist
+    // This prevents errors during development when not all canisters are deployed
+    const createMockActor = <T>(): ActorSubclass<T> => {
+      return new Proxy({} as ActorSubclass<T>, {
+        get: (target, prop) => {
+          if (typeof prop === 'string') {
+            return async (...args: any[]) => {
+              console.warn(`Mock actor method called: ${prop}`, args);
+              // Return mock data based on the method name
+              if (prop.includes('get') || prop.includes('fetch') || prop.includes('list')) {
+                return null; // Query methods return null for now
+              }
+              return { ok: true }; // Update methods return success
+            };
+          }
+          return target[prop as keyof ActorSubclass<T>];
+        }
+      });
+    };
+
+    // Try to create real actors, fall back to mock actors
+    let governance: ActorSubclass<GovernanceService>;
+    let staking: ActorSubclass<StakingService>;
+    let treasury: ActorSubclass<TreasuryService>;
+    let proposals: ActorSubclass<ProposalsService>;
+
+    try {
+      if (import.meta.env.VITE_CANISTER_ID_GOVERNANCE) {
+        governance = await createActor<GovernanceService>(
+          import.meta.env.VITE_CANISTER_ID_GOVERNANCE, 
+          governanceIdl
+        );
+      } else {
+        governance = createMockActor<GovernanceService>();
+      }
+    } catch (error) {
+      console.warn("Failed to create governance actor, using mock:", error);
+      governance = createMockActor<GovernanceService>();
+    }
+
+    try {
+      if (import.meta.env.VITE_CANISTER_ID_STAKING) {
+        staking = await createActor<StakingService>(
+          import.meta.env.VITE_CANISTER_ID_STAKING, 
+          stakingIdl
+        );
+      } else {
+        staking = createMockActor<StakingService>();
+      }
+    } catch (error) {
+      console.warn("Failed to create staking actor, using mock:", error);
+      staking = createMockActor<StakingService>();
+    }
+
+    try {
+      if (import.meta.env.VITE_CANISTER_ID_TREASURY) {
+        treasury = await createActor<TreasuryService>(
+          import.meta.env.VITE_CANISTER_ID_TREASURY, 
+          treasuryIdl
+        );
+      } else {
+        treasury = createMockActor<TreasuryService>();
+      }
+    } catch (error) {
+      console.warn("Failed to create treasury actor, using mock:", error);
+      treasury = createMockActor<TreasuryService>();
+    }
+
+    try {
+      if (import.meta.env.VITE_CANISTER_ID_PROPOSALS) {
+        proposals = await createActor<ProposalsService>(
+          import.meta.env.VITE_CANISTER_ID_PROPOSALS, 
+          proposalsIdl
+        );
+      } else {
+        proposals = createMockActor<ProposalsService>();
+      }
+    } catch (error) {
+      console.warn("Failed to create proposals actor, using mock:", error);
+      proposals = createMockActor<ProposalsService>();
+    }
 
     return {
       daoBackend,

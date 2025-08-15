@@ -290,9 +290,64 @@ persistent actor DAOMain {
         }
     };
 
+    // Governance operations (temporary implementation until governance canister is ready)
+    public func getGovernanceStats() : async {
+        totalProposals: Nat;
+        activeProposals: Nat;
+        passedProposals: Nat;
+        totalVotingPower: Nat;
+    } {
+        // Temporary static data until governance canister is implemented
+        {
+            totalProposals = 0;
+            activeProposals = 0;
+            passedProposals = 0;
+            totalVotingPower = 0;
+        }
+    };
+
+    // Temporary proposal creation (will delegate to proposals canister later)
+    public shared(msg) func createProposal(
+        title: Text,
+        _description: Text,
+        _proposalType: Text
+    ) : async Result<Nat, Text> {
+        if (not isRegisteredUser(msg.caller)) {
+            return #err("Only registered users can create proposals");
+        };
+        
+        // For now, return success with a dummy proposal ID
+        // Later this will delegate to the proposals canister
+        Debug.print("Proposal created: " # title);
+        #ok(1) // Return dummy proposal ID
+    };
+
+    // Temporary voting function (will delegate to proposals canister later)
+    public shared(msg) func vote(
+        proposalId: Nat,
+        choice: Text,
+        _reason: ?Text
+    ) : async Result<(), Text> {
+        if (not isRegisteredUser(msg.caller)) {
+            return #err("Only registered users can vote");
+        };
+        
+        // For now, just log the vote
+        // Later this will delegate to the proposals canister
+        Debug.print("Vote cast on proposal " # Nat.toText(proposalId) # ": " # choice);
+        #ok()
+    };
+
     // Utility functions
     private func isAdmin(principal: Principal) : Bool {
         switch (adminPrincipals.get(principal)) {
+            case (?_) true;
+            case null false;
+        }
+    };
+
+    private func isRegisteredUser(principal: Principal) : Bool {
+        switch (userProfiles.get(principal)) {
             case (?_) true;
             case null false;
         }

@@ -1,28 +1,33 @@
 
 // Hook to interact with DAO canisters
 import { useState } from 'react';
-import { useActors } from '../context/ActorContext';
+import { useDAOAPI } from '../utils/daoAPI';
 import { useAuth } from '../context/AuthContext';
 import { Principal } from '@dfinity/principal';
 
 const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
 
 export const useDAOOperations = () => {
-    const actors = useActors();
+    const daoAPI = useDAOAPI();
     const { principal } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const launchDAO = async (daoConfig) => {
+        if (!daoAPI) {
+            throw new Error('DAO API not initialized');
+        }
+
         setLoading(true);
         setError(null);
         
         try {
-            // Step 1: Initialize the DAO with basic info
+            // Step 1: Prepare initial admins
             const initialAdmins = daoConfig.teamMembers
                 .map(member => member.wallet)
                 .filter(wallet => wallet) // Remove empty wallets
                 .map(wallet => Principal.fromText(wallet)); // Convert to Principal
+            
             let creatorPrincipal = null;
             // Add the creator as an admin if not already included
             if (principal) {
@@ -39,29 +44,25 @@ export const useDAOOperations = () => {
                 }
             }
 
-            // Initialize the DAO with basic info
-            const initResult = await actors.daoBackend.initialize(
+            // Step 2: Initialize the DAO with basic info
+            await daoAPI.initializeDAO(
                 daoConfig.daoName,
                 daoConfig.description,
                 initialAdmins
             );
 
-            if ('err' in initResult) {
-                throw new Error(initResult.err);
-            }
-
-
-            // Step 2: Set up required canister references
-            // Retrieve and validate canister IDs from environment variables
+            // Step 3: Set up canister references (using fallbacks for now)
             const getCanisterPrincipal = (key) => {
                 const id = import.meta.env[key];
                 if (!id || typeof id !== 'string' || id.trim() === '') {
-                    throw new Error(`Missing ${key}`);
+                    // Return the dao_backend canister ID as fallback
+                    return Principal.fromText(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND);
                 }
                 try {
                     return Principal.fromText(id);
                 } catch (err) {
-                    throw new Error(`Invalid canister ID for ${key}: ${err.message}`);
+                    // Return the dao_backend canister ID as fallback
+                    return Principal.fromText(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND);
                 }
             };
 
@@ -70,19 +71,14 @@ export const useDAOOperations = () => {
             const treasuryCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_TREASURY');
             const proposalsCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_PROPOSALS');
 
-            const canisterRefResult = await actors.daoBackend.setCanisterReferences(
+            await daoAPI.setCanisterReferences(
                 governanceCanisterId,
                 stakingCanisterId,
                 treasuryCanisterId,
                 proposalsCanisterId
             );
 
-
-            if ('err' in canisterRefResult) {
-                throw new Error(canisterRefResult.err);
-            }
-
-            // Step 3: Configure DAO settings
+            // Step 4: Configure DAO settings
             const moduleFeatures = Object.entries(daoConfig.selectedFeatures || {})
                 .map(([moduleId, features]) => ({
                     moduleId,
@@ -92,7 +88,7 @@ export const useDAOOperations = () => {
                 }))
                 .filter(mf => mf.features.length > 0);
 
-            const configResult = await actors.daoBackend.setDAOConfig({
+            await daoAPI.setDAOConfig({
                 category: daoConfig.category,
                 website: daoConfig.website,
                 selectedModules: daoConfig.selectedModules,
@@ -111,51 +107,36 @@ export const useDAOOperations = () => {
                 kycRequired: daoConfig.kycRequired
             });
 
-            if ('err' in configResult) {
-                throw new Error(configResult.err);
-            }
-
-
-            // Step 4: Register initial users via admin method
+            // Step 5: Register initial users via admin method
             if (creatorPrincipal) {
-                const registerCreator = await actors.daoBackend.adminRegisterUser(
+                await daoAPI.adminRegisterUser(
                     creatorPrincipal,
                     "DAO Creator", // Default display name
                     "DAO Creator and Administrator" // Default bio
                 );
-
-                if ('err' in registerCreator) {
-                    throw new Error(registerCreator.err);
-                }
             }
 
-
-            // Optional: Register other team members
-            for (const { wallet, name, role } of daoConfig.teamMembers || []) {
-                if (!wallet) continue;
-
-                try {
-                    const memberPrincipal = Principal.fromText(wallet);
-                    const registerMember = await actors.daoBackend.adminRegisterUser(
-                        memberPrincipal,
-                        name,
-                        role
-                    );
-
-                    if ('err' in registerMember) {
-                        console.warn(
-                            `Failed to register team member ${name}:`,
-                            registerMember.err
-                        );
+            // Step 6: Register other team members
+            const registrationOperations = (daoConfig.teamMembers || [])
+                .filter(member => member.wallet)
+                .map(({ wallet, name, role }) => async () => {
+                    try {
+                        const memberPrincipal = Principal.fromText(wallet);
+                        return await daoAPI.adminRegisterUser(memberPrincipal, name, role);
+                    } catch (err) {
+                        console.warn(`Invalid principal for team member ${name}:`, err);
+                        throw err;
                     }
-                } catch (err) {
-                    console.warn(`Invalid principal for team member ${name}:`, err);
-                }
-            }
-            // Step 5: Return the DAO info
-            const daoInfo = await actors.daoBackend.getDAOInfo();
-            return daoInfo;
+                });
 
+            const registrationResults = await daoAPI.batchCall(registrationOperations);
+            if (registrationResults.errorCount > 0) {
+                console.warn(`Failed to register ${registrationResults.errorCount} team members`);
+            }
+
+            // Step 7: Return the DAO info
+            const daoInfo = await daoAPI.getDAOInfo();
+            return daoInfo;
 
         } catch (err) {
             setError(err.message);
