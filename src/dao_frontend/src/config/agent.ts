@@ -73,11 +73,11 @@ const createActor = async <T>(
 export const initializeAgents = async () => {
   try {
     const daoBackend = await createActor<DaoBackendService>(
-      import.meta.env.VITE_DAO_BACKEND_CANISTER_ID,
+      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
       daoBackendIdl
     );
     const governance = await createActor<GovernanceService>(
-      import.meta.env.VITE_GOVERNANCE_CANISTER_ID,
+      import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
       governanceIdl
     );
     const proposals = await createActor<ProposalsService>(
