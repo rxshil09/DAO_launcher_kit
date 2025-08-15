@@ -1,6 +1,3 @@
-// import { dao_backend } from 'declarations/dao_backend';
-
-
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthClient } from '@dfinity/auth-client';
@@ -12,12 +9,13 @@ import Settings from './components/Settings';
 import Proposals from './components/Proposals';
 import Staking from './components/Staking';
 import Treasury from './components/Treasury';
+import Governance from './components/Governance';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
 import './app.css';
 
 function App() {
-  
+
   return (
     <AuthProvider>
       <Router>
@@ -32,6 +30,7 @@ function App() {
             <Route path="/proposals" element={<Proposals />} />
             <Route path="/staking" element={<Staking />} />
             <Route path="/treasury" element={<Treasury />} />
+            <Route path="/governance" element={<Governance />} />
           </Routes>
         </div>
       </Router>
