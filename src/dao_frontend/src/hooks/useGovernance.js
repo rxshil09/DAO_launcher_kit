@@ -66,13 +66,15 @@ export const useGovernance = () => {
     }
   };
 
-  const getStats = async () => {
+  const getGovernanceStats = async () => {
     setLoading(true);
     setError(null);
     try {
+
       const res = await actors.governance.getStats();
       if ('err' in res) throw new Error(res.err);
       return 'ok' in res ? res.ok : res;
+
     } catch (err) {
       setError(err.message);
       throw err;
@@ -81,5 +83,5 @@ export const useGovernance = () => {
     }
   };
 
-  return { createProposal, vote, getConfig, getStats, loading, error };
+  return { createProposal, vote, getConfig, getGovernanceStats, loading, error };
 };

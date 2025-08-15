@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useGovernance } from '../hooks/useGovernance';
 
 const Governance = () => {
-  const { createProposal, vote, getConfig, getStats, loading, error } = useGovernance();
+  const { createProposal, vote, getConfig, getGovernanceStats, loading, error } =
+    useGovernance();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [proposalType, setProposalType] = useState('textProposal');
@@ -18,7 +19,7 @@ const Governance = () => {
       try {
         const cfg = await getConfig();
         setConfig(cfg);
-        const st = await getStats();
+        const st = await getGovernanceStats();
         setStats(st);
       } catch (e) {
         // error handled in hook
