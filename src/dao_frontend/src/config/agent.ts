@@ -1,5 +1,7 @@
 import { Actor, HttpAgent } from "@dfinity/agent";
-import { IDL } from "@dfinity/candid";
+import type { IDL } from "@dfinity/candid";
+import { idlFactory as daoBackendIdl } from "../declarations/dao_backend";
+import { idlFactory as governanceIdl } from "../declarations/governance";
 
 declare global {
   interface Window {
@@ -12,19 +14,7 @@ if (typeof window !== "undefined") {
   window.global = window;
 }
 
-// Temporary IDL definitions until we fix the import issues
-const createActorInterface = () => {
-  return IDL.Service({
-    'createDAO': IDL.Func([IDL.Text], [IDL.Variant({ 'Ok': IDL.Text, 'Err': IDL.Text })], []),
-    'getDAODetails': IDL.Func([IDL.Text], [IDL.Opt(IDL.Record({
-      'name': IDL.Text,
-      'description': IDL.Text,
-      'creator': IDL.Principal
-    }))], ['query'])
-  });
-};
-
-const createActor = async (canisterId: string) => {
+const createActor = async (canisterId: string, idlFactory: IDL.InterfaceFactory) => {
   try {
     const agent = new HttpAgent({
       host: import.meta.env.VITE_HOST || "http://localhost:4943",
@@ -39,7 +29,7 @@ const createActor = async (canisterId: string) => {
       });
     }
 
-    return Actor.createActor(createActorInterface, {
+    return Actor.createActor(idlFactory, {
       agent,
       canisterId,
     });
@@ -51,9 +41,15 @@ const createActor = async (canisterId: string) => {
 
 export const initializeAgents = async () => {
   try {
-    const daoBackend = await createActor(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND);
-    const governance = await createActor(import.meta.env.VITE_CANISTER_ID_GOVERNANCE);
-    
+    const daoBackend = await createActor(
+      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
+      daoBackendIdl
+    );
+    const governance = await createActor(
+      import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+      governanceIdl
+    );
+
     return {
       daoBackend,
       governance,
