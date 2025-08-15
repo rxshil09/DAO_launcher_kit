@@ -93,6 +93,7 @@ export interface _SERVICE {
   'getProposalVotes' : ActorMethod<[ProposalId], Array<Vote>>,
   'getProposalsByStatus' : ActorMethod<[ProposalStatus], Array<Proposal>>,
   'getUserVote' : ActorMethod<[ProposalId, Principal], [] | [Vote]>,
+  'init' : ActorMethod<[Principal, Principal], undefined>,
   'updateConfig' : ActorMethod<[GovernanceConfig], Result>,
   'vote' : ActorMethod<[ProposalId, VoteChoice, [] | [string]], Result>,
 }

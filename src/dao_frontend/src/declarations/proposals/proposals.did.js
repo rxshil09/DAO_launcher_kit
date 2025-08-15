@@ -149,7 +149,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'vote' : IDL.Func(
-        [ProposalId, VoteChoice, IDL.Opt(IDL.Text)],
+        [ProposalId, VoteChoice, IDL.Nat, IDL.Opt(IDL.Text)],
         [Result],
         [],
       ),

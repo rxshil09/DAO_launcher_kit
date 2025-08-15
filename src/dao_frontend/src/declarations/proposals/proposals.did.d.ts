@@ -109,7 +109,7 @@ export interface _SERVICE {
   'getTemplate' : ActorMethod<[bigint], [] | [ProposalTemplate]>,
   'getTemplatesByCategory' : ActorMethod<[string], Array<ProposalTemplate>>,
   'getTrendingProposals' : ActorMethod<[bigint], Array<Proposal>>,
-  'vote' : ActorMethod<[ProposalId, VoteChoice, [] | [string]], Result>,
+  'vote' : ActorMethod<[ProposalId, VoteChoice, bigint, [] | [string]], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

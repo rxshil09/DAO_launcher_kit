@@ -40,4 +40,3 @@ export const createActor = (canisterId, options = {}) => {
 };
 
 export const governance = canisterId ? createActor(canisterId) : undefined;
-export { idlFactory } from './governance.did.js';
