@@ -77,7 +77,7 @@ actor AssetCanister {
     // principal that is immediately granted upload permissions. If omitted,
     // the list of authorized uploaders starts empty and can be populated
     // later via `addAuthorizedUploader`.
-    shared ({caller}) func init(initialUploader : ?Principal) {
+    public shared ({caller}) func init(initialUploader : ?Principal) : async () {
         switch (initialUploader) {
             case (?p) { authorizedUploaders := [p] };
             case null {};
