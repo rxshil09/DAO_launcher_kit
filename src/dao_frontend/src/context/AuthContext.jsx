@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
+  const [identity, setIdentity] = useState(null);
   const actors = useActors();
 
   const registerProfile = async (displayName, bio = '') => {
@@ -46,6 +47,7 @@ export const AuthProvider = ({ children }) => {
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+          setIdentity(identity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
@@ -85,6 +87,7 @@ export const AuthProvider = ({ children }) => {
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+          setIdentity(identity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
