@@ -2,14 +2,28 @@ import React, { useState } from 'react';
 import { useStaking } from '../hooks/useStaking';
 
 const Staking = () => {
-  const { stake, loading, error } = useStaking();
+  const { stake, unstake, claimRewards, loading, error } = useStaking();
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState('instant');
+  const [unstakeId, setUnstakeId] = useState('');
+  const [claimId, setClaimId] = useState('');
 
   const handleStake = async (e) => {
     e.preventDefault();
     await stake(amount, period);
     setAmount('');
+  };
+
+  const handleUnstake = async (e) => {
+    e.preventDefault();
+    await unstake(unstakeId);
+    setUnstakeId('');
+  };
+
+  const handleClaim = async (e) => {
+    e.preventDefault();
+    await claimRewards(claimId);
+    setClaimId('');
   };
 
   return (
@@ -40,6 +54,38 @@ const Staking = () => {
           disabled={loading}
         >
           Stake
+        </button>
+      </form>
+
+      <form onSubmit={handleUnstake} className="space-y-2">
+        <input
+          className="border p-2 w-full"
+          placeholder="Stake ID"
+          value={unstakeId}
+          onChange={(e) => setUnstakeId(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="bg-green-500 text-white px-4 py-2 rounded"
+          disabled={loading}
+        >
+          Unstake
+        </button>
+      </form>
+
+      <form onSubmit={handleClaim} className="space-y-2">
+        <input
+          className="border p-2 w-full"
+          placeholder="Stake ID"
+          value={claimId}
+          onChange={(e) => setClaimId(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="bg-purple-500 text-white px-4 py-2 rounded"
+          disabled={loading}
+        >
+          Claim Rewards
         </button>
       </form>
     </div>

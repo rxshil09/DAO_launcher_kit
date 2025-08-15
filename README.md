@@ -168,7 +168,7 @@ npm test                      # Run frontend tests
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (you can copy `.env.example`):
 
 ```env
 DFX_NETWORK=local
@@ -177,6 +177,7 @@ VITE_CANISTER_ID_GOVERNANCE=your_canister_id
 VITE_CANISTER_ID_STAKING=your_canister_id
 VITE_CANISTER_ID_TREASURY=your_canister_id
 VITE_CANISTER_ID_PROPOSALS=your_canister_id
+VITE_CANISTER_ID_INTERNET_IDENTITY=your_canister_id
 ```
 
 ### DFX Configuration

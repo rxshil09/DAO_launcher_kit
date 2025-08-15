@@ -80,8 +80,41 @@ export const useDAOOperations = () => {
                 throw new Error(canisterRefResult.err);
             }
 
+            // Step 3: Configure DAO settings
+            const moduleFeatures = Object.entries(daoConfig.selectedFeatures || {})
+                .map(([moduleId, features]) => ({
+                    moduleId,
+                    features: Object.entries(features)
+                        .filter(([_, selected]) => selected)
+                        .map(([featureId]) => featureId)
+                }))
+                .filter(mf => mf.features.length > 0);
 
-            // Step 3: Register initial users via admin method
+            const configResult = await actors.daoBackend.setDAOConfig({
+                category: daoConfig.category,
+                website: daoConfig.website,
+                selectedModules: daoConfig.selectedModules,
+                moduleFeatures,
+                tokenName: daoConfig.tokenName,
+                tokenSymbol: daoConfig.tokenSymbol,
+                totalSupply: BigInt(daoConfig.totalSupply || 0),
+                initialPrice: BigInt(daoConfig.initialPrice || 0),
+                votingPeriod: BigInt(daoConfig.votingPeriod || 0),
+                quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
+                proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
+                fundingGoal: BigInt(daoConfig.fundingGoal || 0),
+                fundingDuration: BigInt(daoConfig.fundingDuration || 0),
+                minInvestment: BigInt(daoConfig.minInvestment || 0),
+                termsAccepted: daoConfig.termsAccepted,
+                kycRequired: daoConfig.kycRequired
+            });
+
+            if ('err' in configResult) {
+                throw new Error(configResult.err);
+            }
+
+
+            // Step 4: Register initial users via admin method
             if (creatorPrincipal) {
                 const registerCreator = await actors.daoBackend.adminRegisterUser(
                     creatorPrincipal,
@@ -96,24 +129,28 @@ export const useDAOOperations = () => {
 
 
             // Optional: Register other team members
-            for (const member of daoConfig.teamMembers) {
-                if (member.wallet) {
-                    try {
-                        const memberPrincipal = Principal.fromText(member.wallet);
-                        const registerMember = await actors.daoBackend.adminRegisterUser(
-                            memberPrincipal,
-                            member.name,
-                            member.role
+            for (const { wallet, name, role } of daoConfig.teamMembers || []) {
+                if (!wallet) continue;
+
+                try {
+                    const memberPrincipal = Principal.fromText(wallet);
+                    const registerMember = await actors.daoBackend.adminRegisterUser(
+                        memberPrincipal,
+                        name,
+                        role
+                    );
+
+                    if ('err' in registerMember) {
+                        console.warn(
+                            `Failed to register team member ${name}:`,
+                            registerMember.err
                         );
-                        if ('err' in registerMember) {
-                            console.warn(`Failed to register team member ${member.name}:`, registerMember.err);
-                        }
-                    } catch (err) {
-                        console.warn(`Invalid principal for team member ${member.name}:`, err);
                     }
+                } catch (err) {
+                    console.warn(`Invalid principal for team member ${name}:`, err);
                 }
             }
-            // Step 4: Return the DAO info
+            // Step 5: Return the DAO info
             const daoInfo = await actors.daoBackend.getDAOInfo();
             return daoInfo;
 

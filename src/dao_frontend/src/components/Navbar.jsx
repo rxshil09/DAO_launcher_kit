@@ -22,7 +22,8 @@ import {
   Award,
   Star,
   Globe,
-  Sparkles
+  Sparkles,
+  Image,
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -40,6 +41,7 @@ const Navbar = () => {
     { name: 'Staking', href: '/staking', icon: Award },
     { name: 'Treasury', href: '/treasury', icon: DollarSign },
     { name: 'Governance', href: '/governance', icon: Shield },
+    { name: 'Assets', href: '/assets', icon: Image },
   ];
 
   const isActive = (path) => location.pathname === path;
