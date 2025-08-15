@@ -221,6 +221,7 @@ Key configuration files:
    ```bash
    npm run build
    ```
+   
 
 ### Testing
 
@@ -329,6 +330,15 @@ The frontend can be deployed to:
    - Clear browser cache and cookies
    - Try incognito/private browsing mode
    - Check Internet Identity service status
+
+# Frontend Declarations
+
+These declarations are processed versions of the dfx-generated candid interfaces.
+Do not modify these files directly - instead:
+
+1. Update your candid (.did) files
+2. Run `dfx generate`
+3. The build process will update
 
 ## � License
 
