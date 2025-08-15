@@ -1,4 +1,4 @@
-import Asset "./main.mo";
+import Asset "./main";
 import Principal "mo:base/Principal";
 import Array "mo:base/Array";
 import Debug "mo:base/Debug";
@@ -13,6 +13,9 @@ actor {
 
         let uploaders = await Asset.getAuthorizedUploaders();
         assert Array.find<Principal>(uploaders, func(p) = p == testPrincipal) != null;
+
+        let duplicateRes = await Asset.addAuthorizedUploader(testPrincipal);
+        assert duplicateRes == #err("Uploader already authorized");
 
         Debug.print("initial uploader configuration test passed");
     };
