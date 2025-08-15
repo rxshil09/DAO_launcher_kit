@@ -177,11 +177,11 @@ Create a `.env` file in the root directory:
 
 ```env
 DFX_NETWORK=local
-CANISTER_ID_DAO_BACKEND=your_canister_id
-CANISTER_ID_GOVERNANCE=your_canister_id
-CANISTER_ID_STAKING=your_canister_id
-CANISTER_ID_TREASURY=your_canister_id
-CANISTER_ID_PROPOSALS=your_canister_id
+DAO_BACKEND_CANISTER_ID=your_canister_id
+GOVERNANCE_CANISTER_ID=your_canister_id
+STAKING_CANISTER_ID=your_canister_id
+TREASURY_CANISTER_ID=your_canister_id
+PROPOSALS_CANISTER_ID=your_canister_id
 ```
 
 ### DFX Configuration

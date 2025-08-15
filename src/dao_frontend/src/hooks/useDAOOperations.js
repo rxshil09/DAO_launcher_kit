@@ -47,6 +47,7 @@ export const useDAOOperations = () => {
                 throw new Error(initResult.err);
             }
 
+
             // Step 2: Set up required canister references
             // Retrieve and validate canister IDs from environment variables
             const getCanisterPrincipal = (key) => {
@@ -61,17 +62,18 @@ export const useDAOOperations = () => {
                 }
             };
 
-            const governanceCanister = getCanisterPrincipal('VITE_GOVERNANCE_CANISTER_ID');
-            const stakingCanister = getCanisterPrincipal('VITE_STAKING_CANISTER_ID');
-            const treasuryCanister = getCanisterPrincipal('VITE_TREASURY_CANISTER_ID');
-            const proposalsCanister = getCanisterPrincipal('VITE_PROPOSALS_CANISTER_ID');
+            const governanceCanisterId = getCanisterPrincipal('VITE_GOVERNANCE_CANISTER_ID');
+            const stakingCanisterId = getCanisterPrincipal('VITE_STAKING_CANISTER_ID');
+            const treasuryCanisterId = getCanisterPrincipal('VITE_TREASURY_CANISTER_ID');
+            const proposalsCanisterId = getCanisterPrincipal('VITE_PROPOSALS_CANISTER_ID');
 
             const canisterRefResult = await actors.daoBackend.setCanisterReferences(
-                governanceCanister,
-                stakingCanister,
-                treasuryCanister,
-                proposalsCanister
+                governanceCanisterId,
+                stakingCanisterId,
+                treasuryCanisterId,
+                proposalsCanisterId
             );
+
 
             if ('err' in canisterRefResult) {
                 throw new Error(canisterRefResult.err);
