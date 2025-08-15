@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
       
       const identityProvider = import.meta.env.VITE_DFX_NETWORK === "ic" 
         ? "https://identity.ic0.app"
-        : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
+        : `http://${import.meta.env.VITE_INTERNET_IDENTITY_CANISTER_ID}.localhost:4943`;
 
       await authClient.login({
         identityProvider,
