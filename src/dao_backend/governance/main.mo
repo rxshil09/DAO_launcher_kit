@@ -9,6 +9,7 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
+import Error "mo:base/Error";
 
 import Types "../shared/types";
 
@@ -45,8 +46,7 @@ actor GovernanceCanister {
     private var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
-
- public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
+public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
     Debug.print("Starting initialization...");
     
     // Convert principals to text for debug
@@ -60,9 +60,9 @@ actor GovernanceCanister {
         dao := actor(daoText);
         staking := actor(stakingText);
         Debug.print("Actor references updated successfully");
-    } catch (e) {
-        Debug.print("Error during actor creation: " # debug_show(e));
-        throw e;
+    } catch (err) {
+        Debug.print("Error during actor creation: " # Error.message(err));
+        throw err;
     };
     
     Debug.print("Initialization complete");
