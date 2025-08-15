@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AuthClient } from '@dfinity/auth-client';
+import { useActors } from './ActorContext';
 
 // Create the AuthContext
 const AuthContext = createContext();
@@ -94,8 +95,7 @@ export const AuthProvider = ({ children }) => {
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
-
-          setIdentity(identity);
+          setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
