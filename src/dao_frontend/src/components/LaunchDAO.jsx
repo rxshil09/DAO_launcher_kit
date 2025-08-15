@@ -201,7 +201,7 @@ const LaunchDAO = () => {
     }
   ];
 
-  const validateStep = (step) => {
+  const getStepErrors = (step) => {
     const newErrors = {};
 
     switch (step) {
@@ -210,50 +210,67 @@ const LaunchDAO = () => {
         if (!formData.description.trim()) newErrors.description = 'Description is required';
         if (!formData.category) newErrors.category = 'Category is required';
         break;
-      
+
       case 2:
         // Check if required modules are selected
         const requiredModules = modules.filter(m => m.required).map(m => m.id);
         const missingRequired = requiredModules.filter(id => !formData.selectedModules.includes(id));
-        
+
         if (missingRequired.length > 0) {
           missingRequired.forEach(moduleId => {
             const module = modules.find(m => m.id === moduleId);
-            newErrors[moduleId] = module.name + " module is required";
+            newErrors[moduleId] = module.name + ' module is required';
           });
         }
         break;
-      
+
       case 3:
         if (!formData.tokenName.trim()) newErrors.tokenName = 'Token name is required';
         if (!formData.tokenSymbol.trim()) newErrors.tokenSymbol = 'Token symbol is required';
         if (!formData.totalSupply) newErrors.totalSupply = 'Total supply is required';
         if (!formData.initialPrice) newErrors.initialPrice = 'Initial price is required';
         break;
-      
+
       case 4:
         if (!formData.votingPeriod) newErrors.votingPeriod = 'Voting period is required';
         if (!formData.quorumThreshold) newErrors.quorumThreshold = 'Quorum threshold is required';
         break;
-      
+
       case 5:
         if (!formData.fundingGoal) newErrors.fundingGoal = 'Funding goal is required';
         if (!formData.minInvestment) newErrors.minInvestment = 'Minimum investment is required';
         break;
-      
+
       case 6:
         if (formData.teamMembers.some(member => !member.name.trim() || !member.role.trim())) {
           newErrors.teamMembers = 'All team members must have name and role';
         }
         break;
-      
+
       case 7:
         if (!formData.termsAccepted) newErrors.termsAccepted = 'You must accept the terms of service';
         break;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
+  };
+
+  const validateStep = (step) => {
+    const stepErrors = getStepErrors(step);
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const validateAllSteps = () => {
+    let aggregatedErrors = {};
+    for (let step = 1; step <= 7; step++) {
+      const stepErrors = getStepErrors(step);
+      if (Object.keys(stepErrors).length > 0) {
+        aggregatedErrors = { ...aggregatedErrors, ...stepErrors };
+      }
+    }
+    setErrors(aggregatedErrors);
+    return { isValid: Object.keys(aggregatedErrors).length === 0, errors: aggregatedErrors };
   };
 
   const handleNext = () => {
@@ -317,11 +334,12 @@ const LaunchDAO = () => {
   const { launchDAO, loading: launchLoading, error: launchError } = useDAOOperations();
   
   const handleLaunch = async () => {
-    if (validateStep(7)) {
+    const { isValid, errors: allErrors } = validateAllSteps();
+    if (isValid) {
       try {
         const result = await launchDAO(formData);
         console.log('DAO launched successfully:', result);
-        
+
         // Add the DAO to user's context
         const newDAO = {
           id: result.daoId || Date.now().toString(),
@@ -332,15 +350,18 @@ const LaunchDAO = () => {
           createdAt: new Date().toISOString(),
           canisterId: result.canisterId
         };
-        
+
         addUserDAO(newDAO);
-        
+
         alert('DAO launched successfully! 🚀');
         navigate('/dashboard');
       } catch (error) {
         console.error('Failed to launch DAO:', error);
         alert(`Failed to launch DAO: ${error.message}`);
       }
+    } else {
+      const errorMessages = Object.values(allErrors).join('\n');
+      alert(`Please fix the following errors before launching:\n${errorMessages}`);
     }
   };
 
