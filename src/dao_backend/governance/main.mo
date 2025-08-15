@@ -13,7 +13,27 @@ import Error "mo:base/Error";
 
 import Types "../shared/types";
 
-actor GovernanceCanister {
+/**
+ * Governance Canister
+ * 
+ * This canister manages the democratic decision-making process of the DAO:
+ * - Proposal creation, voting, and execution
+ * - Vote counting and quorum validation
+ * - Governance parameter management
+ * - Integration with staking for voting power calculation
+ * 
+ * The governance system supports multiple voting mechanisms:
+ * - Token-weighted voting (proportional to stake)
+ * - Quadratic voting (to prevent whale dominance)
+ * - Delegated voting (vote delegation to representatives)
+ * 
+ * Security features:
+ * - Proposal deposits to prevent spam
+ * - Time-locked execution for major changes
+ * - Quorum requirements for legitimacy
+ */
+persistent actor GovernanceCanister {
+    // Type aliases for improved code readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -22,10 +42,11 @@ actor GovernanceCanister {
     type GovernanceError = Types.GovernanceError;
     type CommonError = Types.CommonError;
 
-    // References to other canisters
+    // Inter-canister communication setup
+    // These actor references enable cross-canister calls for governance functionality
     var dao : actor {
         getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-    } = actor("canister:dao_backend");
+    } = actor("aaaaa-aa");
 
     var staking : actor {
         getUserStakingSummary: shared query (Principal) -> async {
@@ -34,18 +55,20 @@ actor GovernanceCanister {
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
-    } = actor("canister:staking");
+    } = actor("aaaaa-aa");
 
-    // Stable storage for upgrades
-    private stable var nextProposalId : Nat = 1;
-    private stable var proposalsEntries : [(ProposalId, Proposal)] = [];
-    private stable var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
-    private stable var configEntries : [(Text, GovernanceConfig)] = [];
+    // Stable storage for upgrade persistence
+    // These arrays store serialized data that survives canister upgrades
+    private var nextProposalId : Nat = 1;
+    private var proposalsEntries : [(ProposalId, Proposal)] = [];
+    private var votesEntries : [(Text, Vote)] = []; // Key format: "proposalId_voterPrincipal"
+    private var configEntries : [(Text, GovernanceConfig)] = [];
 
-    // Runtime storage
-    private var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
-    private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+    // Runtime storage - rebuilt from stable storage after upgrades
+    // HashMaps provide O(1) lookup performance for governance operations
+    private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
+    private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
     Debug.print("Starting initialization...");
     

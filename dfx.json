@@ -10,9 +10,7 @@
       "dependencies": [
         "dao_backend",
         "staking"
-      ],
-      "init_args": "(principal \"$(dfx canister id dao_backend)\", principal \"$(dfx canister id staking)\")"
-    
+      ]
     },
     "staking": {
       "main": "src/dao_backend/staking/main.mo",

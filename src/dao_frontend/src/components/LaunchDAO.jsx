@@ -1,6 +1,29 @@
+/**
+ * LaunchDAO Component
+ * 
+ * This is the main DAO creation interface that guides users through a comprehensive
+ * 7-step wizard to configure and launch their decentralized autonomous organization.
+ * 
+ * Features:
+ * - Step-by-step wizard with validation at each stage
+ * - Real-time form validation with user-friendly error messages
+ * - Module selection for customizable DAO functionality
+ * - Preview mode for reviewing configuration before launch
+ * - Integration with Internet Identity for secure authentication
+ * - Responsive design optimized for desktop and mobile
+ * 
+ * The component manages complex state including:
+ * - Form data across multiple steps
+ * - Validation errors and user feedback
+ * - Module and feature selection logic
+ * - Team member management
+ * - Integration with blockchain operations
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useDAO } from '../context/DAOContext';
 import { useNavigate } from 'react-router-dom';
 import { useDAOOperations } from '../hooks/useDAOOperations';
 import BackgroundParticles from './BackgroundParticles';
@@ -37,47 +60,70 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 
+/**
+ * Main LaunchDAO Functional Component
+ * 
+ * Manages the entire DAO creation flow from initial landing to final launch.
+ * Uses React hooks for state management and side effects.
+ */
 const LaunchDAO = () => {
+  // Authentication and navigation hooks
   const { isAuthenticated, loading } = useAuth();
+  const { addUserDAO } = useDAO();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [errors, setErrors] = useState({});
-  const [showPreview, setShowPreview] = useState(false);
+  
+  // UI state management
+  const [showForm, setShowForm] = useState(false);        // Toggle between landing and form
+  const [currentStep, setCurrentStep] = useState(1);      // Current step in the 7-step wizard
+  const [errors, setErrors] = useState({});               // Form validation errors
+  const [showPreview, setShowPreview] = useState(false);  // Preview modal state
 
+  /**
+   * Form Data State
+   * 
+   * This object contains all the configuration data for the DAO being created.
+   * It's structured to match the backend API requirements and includes:
+   * - Basic information (name, description, category)
+   * - Module selection and feature configuration
+   * - Economic parameters (tokenomics, funding)
+   * - Governance settings (voting, proposals)
+   * - Team member information
+   * - Legal and compliance settings
+   */
   const [formData, setFormData] = useState({
-    // Basic Info
-    daoName: '',
-    description: '',
-    category: '',
-    website: '',
+    // Step 1: Basic Info - Core DAO identification and categorization
+    daoName: '',          // Human-readable name for the DAO
+    description: '',      // Detailed description of DAO purpose and goals
+    category: '',         // DAO category (DeFi, Gaming, Investment, etc.)
+    website: '',          // Official website or documentation URL
     
-    // Module Selection
-    selectedModules: [],
-    selectedFeatures: {},
+    // Step 2: Module Selection - Functional components to include
+    selectedModules: [],          // Array of selected module IDs
+    selectedFeatures: {},         // Object mapping modules to their selected features
     
-    // Tokenomics
-    tokenName: '',
-    tokenSymbol: '',
-    totalSupply: '',
-    initialPrice: '',
+    // Step 3: Tokenomics - Economic model configuration
+    tokenName: '',               // Full name of the DAO token
+    tokenSymbol: '',             // Ticker symbol (3-4 characters)
+    totalSupply: '',             // Maximum token supply
+    initialPrice: '',            // Starting price per token
     
-    // Governance
-    votingPeriod: '604800',
-    quorumThreshold: '10',
-    proposalThreshold: '1',
+    // Step 4: Governance - Democratic decision-making parameters
+    votingPeriod: '604800',      // Duration for voting (default: 7 days in seconds)
+    quorumThreshold: '10',       // Minimum participation for valid votes (%)
+    proposalThreshold: '1',      // Minimum tokens needed to create proposals (%)
     
-    // Funding
-    fundingGoal: '',
-    fundingDuration: '2592000',
-    minInvestment: '',
+    // Step 5: Funding - Initial capital raising configuration
+    fundingGoal: '',             // Target amount to raise
+    fundingDuration: '2592000',  // Fundraising period (default: 30 days in seconds)
+    minInvestment: '',           // Minimum individual investment amount
     
-    // Team
-    teamMembers: [{ name: '', role: '', wallet: '' }],
+    // Step 6: Team - Core team member information
+    teamMembers: [{ name: '', role: '', wallet: '' }],  // Array of team member objects
     
-    // Legal
-    termsAccepted: false,
-    kycRequired: false
+    // Step 7: Legal - Compliance and terms
+    termsAccepted: false,        // User agreement to terms of service
+    kycRequired: false           // Whether KYC verification is required for investors
+
   });
 
   useEffect(() => {
@@ -173,7 +219,7 @@ const LaunchDAO = () => {
         if (missingRequired.length > 0) {
           missingRequired.forEach(moduleId => {
             const module = modules.find(m => m.id === moduleId);
-            newErrors[moduleId] = `${module.name} module is required`;
+            newErrors[moduleId] = module.name + " module is required";
           });
         }
         break;
@@ -275,6 +321,20 @@ const LaunchDAO = () => {
       try {
         const result = await launchDAO(formData);
         console.log('DAO launched successfully:', result);
+        
+        // Add the DAO to user's context
+        const newDAO = {
+          id: result.daoId || Date.now().toString(),
+          name: formData.daoName,
+          description: formData.description,
+          category: formData.category,
+          modules: formData.selectedModules,
+          createdAt: new Date().toISOString(),
+          canisterId: result.canisterId
+        };
+        
+        addUserDAO(newDAO);
+        
         alert('DAO launched successfully! 🚀');
         navigate('/dashboard');
       } catch (error) {

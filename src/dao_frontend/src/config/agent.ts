@@ -55,8 +55,27 @@ const createActor = async <T>(
   identity?: Identity
 ): Promise<ActorSubclass<T>> => {
   try {
+    console.log("Creating actor for canister ID:", canisterId);
+    
+    // Check if canisterId is valid
+    if (!canisterId || canisterId === 'undefined' || canisterId.includes('_')) {
+      throw new Error(`Invalid canister ID: ${canisterId}`);
+    }
+
+    // Determine the correct host based on the environment
+    let host = import.meta.env.VITE_HOST;
+    
+    // If we're in a canister environment, use the current window location
+    if (typeof window !== 'undefined' && window.location.hostname.includes('.localhost')) {
+      host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+    } else if (!host) {
+      host = "http://127.0.0.1:4943";
+    }
+
+    console.log("Using host:", host);
+
     const agent = new HttpAgent({
-      host: import.meta.env.VITE_HOST || "http://localhost:4943",
+      host: host,
       verifyQuerySignatures: false,
       identity,
     });
@@ -84,49 +103,48 @@ const createActor = async <T>(
   }
 };
 
-export const initializeAgents = async (identity?: Identity) => {
+export const initializeAgents = async () => {
+  console.log("=== DEBUGGING ENVIRONMENT VARIABLES ===");
+  console.log("All import.meta.env:", import.meta.env);
+  
+  const envVars = {
+    'VITE_CANISTER_ID_DAO_BACKEND': import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
+    'VITE_CANISTER_ID_GOVERNANCE': import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+    'VITE_CANISTER_ID_STAKING': import.meta.env.VITE_CANISTER_ID_STAKING,
+    'VITE_CANISTER_ID_TREASURY': import.meta.env.VITE_CANISTER_ID_TREASURY,
+    'VITE_CANISTER_ID_PROPOSALS': import.meta.env.VITE_CANISTER_ID_PROPOSALS,
+    'VITE_CANISTER_ID_ASSETS': import.meta.env.VITE_CANISTER_ID_ASSETS,
+    'VITE_CANISTER_ID_INTERNET_IDENTITY': import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY,
+  };
+
+  Object.entries(envVars).forEach(([key, value]) => {
+    console.log(`${key}:`, value);
+    console.log(`  Type: ${typeof value}`);
+    console.log(`  Length: ${value ? value.length : 'N/A'}`);
+    console.log(`  Contains underscore: ${value ? value.includes('_') : 'N/A'}`);
+    console.log(`  Raw characters:`, value ? [...value].map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A');
+  });
+
   try {
-    const daoBackend = await createActor<DaoBackendService>(
-      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
-      daoBackendIdl,
-      identity
-    );
-    const governance = await createActor<GovernanceService>(
-      import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
-      governanceIdl,
-      identity
-    );
-    const proposals = await createActor<ProposalsService>(
-      import.meta.env.VITE_CANISTER_ID_PROPOSALS,
-      proposalsIdl,
-      identity
-    );
-    const staking = await createActor<StakingService>(
-      import.meta.env.VITE_CANISTER_ID_STAKING,
-      stakingIdl,
-      identity
-    );
-    const treasury = await createActor<TreasuryService>(
-      import.meta.env.VITE_CANISTER_ID_TREASURY,
-      treasuryIdl,
-      identity
-    );
-    const assets = await createActor<AssetsService>(
-      import.meta.env.VITE_CANISTER_ID_ASSETS,
-      assetsIdl,
-      identity
-    );
+    const [daoBackend, governance, staking, treasury, proposals, assets] = await Promise.all([
+      createActor<DaoBackendService>(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND, daoBackendIdl),
+      createActor<GovernanceService>(import.meta.env.VITE_CANISTER_ID_GOVERNANCE, governanceIdl),
+      createActor<StakingService>(import.meta.env.VITE_CANISTER_ID_STAKING, stakingIdl),
+      createActor<TreasuryService>(import.meta.env.VITE_CANISTER_ID_TREASURY, treasuryIdl),
+      createActor<ProposalsService>(import.meta.env.VITE_CANISTER_ID_PROPOSALS, proposalsIdl),
+      createActor<AssetsService>(import.meta.env.VITE_CANISTER_ID_ASSETS, assetsIdl),
+    ]);
 
     return {
       daoBackend,
       governance,
-      proposals,
       staking,
       treasury,
+      proposals,
       assets,
     };
   } catch (error) {
-    console.error("Failed to initialize actors:", error);
+    console.error("Failed to initialize agents:", error);
     throw error;
   }
 };

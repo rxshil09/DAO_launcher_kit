@@ -12,7 +12,7 @@ import Nat32 "mo:base/Nat32";
 
 import Types "../shared/types";
 
-actor ProposalsCanister {
+persistent actor ProposalsCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -37,20 +37,20 @@ actor ProposalsCanister {
     };
 
     // Stable storage for upgrades
-    private stable var nextProposalId : Nat = 1;
-    private stable var nextTemplateId : Nat = 1;
-    private stable var proposalsEntries : [(ProposalId, Proposal)] = [];
-    private stable var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
-    private stable var templatesEntries : [(Nat, ProposalTemplate)] = [];
-    private stable var categoriesEntries : [(Text, ProposalCategory)] = [];
-    private stable var configEntries : [(Text, GovernanceConfig)] = [];
+    private var nextProposalId : Nat = 1;
+    private var nextTemplateId : Nat = 1;
+    private var proposalsEntries : [(ProposalId, Proposal)] = [];
+    private var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
+    private var templatesEntries : [(Nat, ProposalTemplate)] = [];
+    private var categoriesEntries : [(Text, ProposalCategory)] = [];
+    private var configEntries : [(Text, GovernanceConfig)] = [];
 
     // Runtime storage
-    private var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
-    private var templates = HashMap.HashMap<Nat, ProposalTemplate>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var categories = HashMap.HashMap<Text, ProposalCategory>(10, Text.equal, Text.hash);
-    private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+    private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
+    private transient var templates = HashMap.HashMap<Nat, ProposalTemplate>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var categories = HashMap.HashMap<Text, ProposalCategory>(10, Text.equal, Text.hash);
+    private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
     // Initialize default data
     private func initializeDefaults() {

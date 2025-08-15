@@ -9,7 +9,21 @@ import Text "mo:base/Text";
 
 import Types "shared/types";
 
-actor DAOMain {
+/**
+ * Main DAO Backend Canister
+ * 
+ * This is the central coordinator canister for the DAO system. It manages:
+ * - DAO initialization and configuration
+ * - User profile management and registration
+ * - Admin permissions and access control
+ * - Canister reference management for the modular architecture
+ * - Cross-canister communication coordination
+ * 
+ * The canister follows the upgrade-safe pattern with stable variables
+ * and proper state management for Internet Computer upgrades.
+ */
+persistent actor DAOMain {
+    // Type aliases for cleaner code and better readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -21,31 +35,42 @@ actor DAOMain {
     type DAOStats = Types.DAOStats;
     type DAOConfig = Types.DAOConfig;
 
-    // Stable storage for upgrades
-    private stable var initialized : Bool = false;
-    private stable var daoName : Text = "DAO Launcher";
-    private stable var daoDescription : Text = "A decentralized autonomous organization for community governance";
-    private stable var totalMembers : Nat = 0;
-    private stable var userProfilesEntries : [(Principal, UserProfile)] = [];
-    private stable var adminPrincipalsEntries : [Principal] = [];
-    private stable var daoConfig : ?DAOConfig = null;
+    // Stable storage for upgrades - persists across canister upgrades
+    // These variables maintain their state when the canister is upgraded
+    private var initialized : Bool = false;
+    private var daoName : Text = "DAO Launcher";
+    private var daoDescription : Text = "A decentralized autonomous organization for community governance";
+    private var totalMembers : Nat = 0;
+    private var userProfilesEntries : [(Principal, UserProfile)] = [];
+    private var adminPrincipalsEntries : [Principal] = [];
+    private var daoConfig : ?DAOConfig = null;
 
-    // Runtime storage
-    private var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
-    private var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+    // Runtime storage - recreated after upgrades from stable storage
+    // These HashMaps provide efficient O(1) lookup for user data and admin permissions
+    private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+    private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
 
-    // Canister references (will be set after deployment)
-    private var governanceCanister : ?Principal = null;
-    private var stakingCanister : ?Principal = null;
-    private var treasuryCanister : ?Principal = null;
-    private var proposalsCanister : ?Principal = null;
+    // Canister references for modular architecture
+    // These maintain connections to other specialized canisters in the DAO ecosystem
+    private transient var governanceCanister : ?Principal = null;
+    private transient var stakingCanister : ?Principal = null;
+    private transient var treasuryCanister : ?Principal = null;
+    private transient var proposalsCanister : ?Principal = null;
 
     // System functions for upgrades
+    /**
+     * Pre-upgrade hook - Serializes runtime state to stable storage
+     * Called automatically before canister upgrade to preserve data
+     */
     system func preupgrade() {
         userProfilesEntries := Iter.toArray(userProfiles.entries());
         adminPrincipalsEntries := Iter.toArray(adminPrincipals.keys());
     };
 
+    /**
+     * Post-upgrade hook - Restores runtime state from stable storage
+     * Called automatically after canister upgrade to restore functionality
+     */
     system func postupgrade() {
         userProfiles := HashMap.fromIter<Principal, UserProfile>(
             userProfilesEntries.vals(), 
@@ -54,17 +79,29 @@ actor DAOMain {
             Principal.hash
         );
         
+        // Restore admin permissions from stable storage
         for (admin in adminPrincipalsEntries.vals()) {
             adminPrincipals.put(admin, true);
         };
     };
 
-    // Initialize the DAO
+    /**
+     * Initialize the DAO with basic configuration
+     * 
+     * This is the first function called when setting up a new DAO.
+     * It establishes the foundational parameters and admin structure.
+     * 
+     * @param name - Human-readable name for the DAO
+     * @param description - Brief description of the DAO's purpose
+     * @param initialAdmins - Array of Principal IDs who will have admin privileges
+     * @returns Result indicating success or failure with error message
+     */
     public shared(msg) func initialize(
         name: Text,
         description: Text,
         initialAdmins: [Principal]
     ) : async Result<(), Text> {
+        // Prevent double initialization
         if (initialized) {
             return #err("DAO already initialized");
         };
@@ -72,12 +109,12 @@ actor DAOMain {
         daoName := name;
         daoDescription := description;
         
-        // Set initial admins
+        // Set initial admins - these users can manage DAO configuration
         for (admin in initialAdmins.vals()) {
             adminPrincipals.put(admin, true);
         };
 
-        // Add deployer as admin
+        // Always add the deployer as an admin for initial setup
         adminPrincipals.put(msg.caller, true);
 
         initialized := true;
@@ -85,13 +122,25 @@ actor DAOMain {
         #ok()
     };
 
-    // Set canister references
+    /**
+     * Set references to other canisters in the DAO ecosystem
+     * 
+     * This establishes the microservices architecture by connecting
+     * the main canister to specialized function canisters.
+     * 
+     * @param governance - Principal ID of the governance canister
+     * @param staking - Principal ID of the staking canister  
+     * @param treasury - Principal ID of the treasury canister
+     * @param proposals - Principal ID of the proposals canister
+     * @returns Result indicating success or failure
+     */
     public shared(msg) func setCanisterReferences(
         governance: Principal,
         staking: Principal,
         treasury: Principal,
         proposals: Principal
     ) : async Result<(), Text> {
+        // Only admins can modify the canister architecture
         if (not isAdmin(msg.caller)) {
             return #err("Only admins can set canister references");
         };

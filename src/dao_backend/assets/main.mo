@@ -11,7 +11,7 @@ import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Nat32 "mo:base/Nat32";
 
-actor AssetCanister {
+persistent actor AssetCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Time = Time.Time;
 
@@ -52,19 +52,19 @@ actor AssetCanister {
     };
 
     // Stable storage for upgrades
-    private stable var nextAssetId : Nat = 1;
-    private stable var assetsEntries : [(AssetId, Asset)] = [];
-    private stable var authorizedUploaders : [Principal] = [];
-    private stable var maxFileSize : Nat = 10_000_000; // 10MB default
-    private stable var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
-    private stable var currentStorageUsed : Nat = 0;
+    private var nextAssetId : Nat = 1;
+    private var assetsEntries : [(AssetId, Asset)] = [];
+    private var authorizedUploaders : [Principal] = [];
+    private var maxFileSize : Nat = 10_000_000; // 10MB default
+    private var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
+    private var currentStorageUsed : Nat = 0;
 
     // Runtime storage
-    private var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var uploaderAssets = HashMap.HashMap<Principal, [AssetId]>(50, Principal.equal, Principal.hash);
+    private transient var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var uploaderAssets = HashMap.HashMap<Principal, [AssetId]>(50, Principal.equal, Principal.hash);
 
     // Supported content types
-    private let supportedTypes = [
+    private transient let supportedTypes = [
         "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
         "application/pdf", "text/plain", "text/html", "text/css", "text/javascript",
         "application/json", "application/xml", "video/mp4", "audio/mpeg", "audio/wav"

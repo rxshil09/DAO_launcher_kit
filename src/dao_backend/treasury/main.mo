@@ -14,7 +14,29 @@ import Nat32 "mo:base/Nat32";
 
 import Types "../shared/types";
 
-actor TreasuryCanister {
+/**
+ * Treasury Canister
+ * 
+ * This canister manages the DAO's financial operations and fund management:
+ * - Multi-signature wallet functionality for secure fund management
+ * - Transaction history and audit trail for transparency
+ * - Allowance system for controlled spending by authorized entities
+ * - Balance segregation (available, locked, reserved) for different purposes
+ * 
+ * Treasury Features:
+ * - Deposit tracking from various sources (initial funding, fees, revenue)
+ * - Withdrawal approval workflows with multi-sig requirements
+ * - Automated allocation for different DAO functions (rewards, development, etc.)
+ * - Integration with governance for spending proposal execution
+ * 
+ * Security Mechanisms:
+ * - Multi-signature requirements for large transactions
+ * - Spending limits and approval workflows
+ * - Time-locked withdrawals for major fund movements
+ * - Emergency pause functionality for security incidents
+ */
+persistent actor TreasuryCanister {
+    // Type aliases for improved code readability
     type Result<T, E> = Result.Result<T, E>;
     type TreasuryBalance = Types.TreasuryBalance;
     type TreasuryTransaction = Types.TreasuryTransaction;
@@ -22,21 +44,24 @@ actor TreasuryCanister {
     type TreasuryError = Types.TreasuryError;
     type CommonError = Types.CommonError;
 
-    // Stable storage for upgrades
-    private stable var totalBalance : TokenAmount = 0;
-    private stable var availableBalance : TokenAmount = 0;
-    private stable var lockedBalance : TokenAmount = 0;
-    private stable var reservedBalance : TokenAmount = 0;
-    private stable var nextTransactionId : Nat = 1;
-    private stable var transactionsEntries : [(Nat, TreasuryTransaction)] = [];
-    private stable var allowancesEntries : [(Principal, TokenAmount)] = [];
+    // Stable storage for upgrade persistence
+    // Core financial data that must survive canister upgrades
+    private var totalBalance : TokenAmount = 0;
+    private var availableBalance : TokenAmount = 0;
+    private var lockedBalance : TokenAmount = 0;       // Funds locked for specific purposes
+    private var reservedBalance : TokenAmount = 0;     // Emergency reserves
+    private var nextTransactionId : Nat = 1;
+    private var transactionsEntries : [(Nat, TreasuryTransaction)] = [];
+    private var allowancesEntries : [(Principal, TokenAmount)] = [];
 
-    // Runtime storage
-    private var transactions = HashMap.HashMap<Nat, TreasuryTransaction>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var allowances = HashMap.HashMap<Principal, TokenAmount>(10, Principal.equal, Principal.hash);
+    // Runtime storage - rebuilt from stable storage after upgrades
+    // HashMaps provide efficient transaction and allowance management
+    private transient var transactions = HashMap.HashMap<Nat, TreasuryTransaction>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var allowances = HashMap.HashMap<Principal, TokenAmount>(10, Principal.equal, Principal.hash);
 
-    // Authorized principals (in real implementation, this would be managed by governance)
-    private stable var authorizedPrincipals : [Principal] = [];
+    // Authorization system for treasury operations
+    // In production, this would be managed by governance proposals
+    private var authorizedPrincipals : [Principal] = [];
 
     // System functions for upgrades
     system func preupgrade() {
