@@ -39,6 +39,7 @@ const Navbar = () => {
     { name: 'Proposals', href: '/proposals', icon: Star },
     { name: 'Staking', href: '/staking', icon: Award },
     { name: 'Treasury', href: '/treasury', icon: DollarSign },
+    { name: 'Governance', href: '/governance', icon: Shield },
   ];
 
   const isActive = (path) => location.pathname === path;
