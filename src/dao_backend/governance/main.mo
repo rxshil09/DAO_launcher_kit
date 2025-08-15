@@ -46,14 +46,27 @@ actor GovernanceCanister {
     private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
-    public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
-        if (Principal.isAnonymous(daoId) or Principal.isAnonymous(stakingId)) {
-            Debug.trap("Invalid DAO or Staking principal provided");
-        };
-
-        dao := actor(Principal.toText(daoId));
-        staking := actor(Principal.toText(stakingId));
+ public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
+    Debug.print("Starting initialization...");
+    
+    // Convert principals to text for debug
+    let daoText = Principal.toText(daoId);
+    let stakingText = Principal.toText(stakingId);
+    
+    Debug.print("DAO ID (text): " # daoText);
+    Debug.print("Staking ID (text): " # stakingText);
+    
+    try {
+        dao := actor(daoText);
+        staking := actor(stakingText);
+        Debug.print("Actor references updated successfully");
+    } catch (e) {
+        Debug.print("Error during actor creation: " # debug_show(e));
+        throw e;
     };
+    
+    Debug.print("Initialization complete");
+};
 
     // Initialize default configuration
     private func initializeConfig() {

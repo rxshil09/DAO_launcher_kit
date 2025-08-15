@@ -1,44 +1,49 @@
 #!/bin/bash
 
+set -e  # Exit on error
+set -x  # Print commands for debugging
+
 echo "🚀 Starting DAO deployment..."
 
-# Stop any running dfx instances
+# Stop any running dfx instances and clean state
 dfx stop
-
-# Clean .dfx directory
 rm -rf .dfx
 
 # Start dfx in the background
 echo "📦 Starting Internet Computer replica..."
 dfx start --clean --background
 
-# Wait for the replica to be ready
 sleep 5
 
-# Deploy canisters in the correct order
-echo "🏗️ Deploying identity and asset canisters..."
-dfx deploy internet_identity
-dfx deploy assets
-
-echo "💎 Deploying core DAO components..."
 # Deploy base canisters first
-dfx deploy treasury
-dfx deploy staking
-dfx deploy proposals
-
-# Deploy governance with proper initialization
-echo "🏛️ Deploying governance canister..."
-dfx deploy governance --argument "(
-  record {
-    admin_principal = principal \"$(dfx identity get-principal)\";
-    min_proposal_threshold = 100_000_000;
-    quorum_percentage = 51;
-  }
-)"
-
-# Deploy frontend components last
-echo "🖥️ Deploying frontend components..."
-dfx deploy dao_frontend
+echo "🏗️ Deploying base canisters..."
 dfx deploy dao_backend
+dfx deploy staking
 
-echo "✨ Deployment complete! Your DAO is ready."
+# Get and verify canister IDs
+DAO_BACKEND_ID=$(dfx canister id dao_backend)
+STAKING_ID=$(dfx canister id staking)
+
+echo "Debug: DAO Backend ID: ${DAO_BACKEND_ID}"
+echo "Debug: Staking ID: ${STAKING_ID}"
+
+# Format the initialization argument carefully
+INIT_ARG="(principal \"${DAO_BACKEND_ID}\", principal \"${STAKING_ID}\")"
+echo "Debug: Init argument: ${INIT_ARG}"
+
+# Try deploying governance
+echo "🏛️ Deploying governance canister..."
+dfx deploy governance --argument "${INIT_ARG}" || {
+    echo "❌ Governance canister deployment failed"
+    dfx canister status governance
+    exit 1
+}
+
+# Only continue if governance deployed successfully
+echo "💎 Deploying remaining components..."
+dfx deploy treasury
+dfx deploy proposals
+dfx deploy assets
+dfx deploy dao_frontend
+
+echo "✨ Deployment complete!"
