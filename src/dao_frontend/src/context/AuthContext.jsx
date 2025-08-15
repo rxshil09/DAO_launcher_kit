@@ -6,15 +6,31 @@ const AuthContext = createContext();
 
 // AuthProvider component to wrap the app and provide auth state
 
+
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
+
   const [userSettings, setUserSettings] = useState({
     displayName: 'Anonymous User'
   });
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
   const [identity, setIdentity] = useState(null);
+
+  const actors = useActors();
+
+  const registerProfile = async (displayName, bio = '') => {
+    try {
+      const result = await actors.daoBackend.registerUser(displayName, bio);
+      if ('err' in result && result.err !== 'User already registered') {
+        console.error('Failed to register user:', result.err);
+      }
+    } catch (error) {
+      console.error('Failed to register user:', error);
+    }
+  };
+
 
 
   // Initialize auth client and check authentication status
@@ -25,19 +41,23 @@ export const AuthProvider = ({ children }) => {
         setAuthClient(client);
 
         // Check if user is already authenticated
-        const authenticated = await client.isAuthenticated();
 
-        if (authenticated) {
-          const currentIdentity = client.getIdentity();
-          const principalId = currentIdentity.getPrincipal().toString();
+        const isAuthenticated = await client.isAuthenticated();
+        
+
+        if (isAuthenticated) {
+          const identity = client.getIdentity();
+          const principalId = identity.getPrincipal().toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+          setIdentity(identity);
           setPrincipal(principalId);
-          setIdentity(currentIdentity);
           setUserSettings({
             displayName
           });
+          await registerProfile(displayName);
+
         }
 
       } catch (error) {
@@ -66,17 +86,22 @@ export const AuthProvider = ({ children }) => {
       await authClient.login({
         identityProvider,
         onSuccess: async () => {
+
           const currentIdentity = authClient.getIdentity();
           const principal = currentIdentity.getPrincipal();
+
           const principalId = principal.toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
+
+          setIdentity(identity);
           setPrincipal(principalId);
-          setIdentity(currentIdentity);
           setUserSettings({
             displayName
           });
+          await registerProfile(displayName);
+
         },
 
         onError: (error) => {
