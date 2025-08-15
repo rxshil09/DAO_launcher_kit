@@ -10,14 +10,15 @@ export const useProposals = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.proposals.createProposal(
+      const res = await actors.proposals.createProposal(
         title,
         description,
         { textProposal: '' },
         category ? [category] : [],
         votingPeriod ? [BigInt(votingPeriod)] : []
       );
-      return result;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -36,7 +37,8 @@ export const useProposals = () => {
         choiceVariant,
         reason ? [reason] : []
       );
-      return res;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;

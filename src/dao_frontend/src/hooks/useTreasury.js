@@ -11,8 +11,9 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.treasury.deposit(BigInt(amount), description);
-      return result;
+      const res = await actors.treasury.deposit(BigInt(amount), description);
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -26,13 +27,14 @@ export const useTreasury = () => {
     setError(null);
     try {
       const principal = Principal.fromText(recipient);
-      const result = await actors.treasury.withdraw(
+      const res = await actors.treasury.withdraw(
         principal,
         BigInt(amount),
         description,
         []
       );
-      return result;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -45,8 +47,9 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const balance = await actors.treasury.getBalance();
-      return balance;
+      const res = await actors.treasury.getBalance();
+      if ('err' in res) throw new Error(res.err);
+      return 'ok' in res ? res.ok : res;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -59,8 +62,9 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const txs = await actors.treasury.getAllTransactions();
-      return txs;
+      const res = await actors.treasury.getAllTransactions();
+      if ('err' in res) throw new Error(res.err);
+      return 'ok' in res ? res.ok : res;
     } catch (err) {
       setError(err.message);
       throw err;

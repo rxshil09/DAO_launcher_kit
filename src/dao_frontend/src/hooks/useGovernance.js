@@ -15,13 +15,14 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await actors.governance.createProposal(
+      const res = await actors.governance.createProposal(
         title,
         description,
         proposalType,
         votingPeriod ? [BigInt(votingPeriod)] : []
       );
-      return result;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -40,7 +41,8 @@ export const useGovernance = () => {
         choiceVariant,
         reason ? [reason] : []
       );
-      return res;
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -53,8 +55,9 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const cfg = await actors.governance.getConfig();
-      return cfg;
+      const res = await actors.governance.getConfig();
+      if ('err' in res) throw new Error(res.err);
+      return 'ok' in res ? res.ok : res;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -67,8 +70,9 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-      const stats = await actors.governance.getStats();
-      return stats;
+      const res = await actors.governance.getStats();
+      if ('err' in res) throw new Error(res.err);
+      return 'ok' in res ? res.ok : res;
     } catch (err) {
       setError(err.message);
       throw err;
