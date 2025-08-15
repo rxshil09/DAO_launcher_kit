@@ -41,6 +41,74 @@ export const useTreasury = () => {
     }
   };
 
+  const lockTokens = async (amount, reason) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await actors.treasury.lockTokens(
+        BigInt(amount),
+        reason
+      );
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const unlockTokens = async (amount, reason) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await actors.treasury.unlockTokens(
+        BigInt(amount),
+        reason
+      );
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reserveTokens = async (amount, reason) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await actors.treasury.reserveTokens(
+        BigInt(amount),
+        reason
+      );
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const releaseReservedTokens = async (amount, reason) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await actors.treasury.releaseReservedTokens(
+        BigInt(amount),
+        reason
+      );
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getBalance = async () => {
     setLoading(true);
     setError(null);
@@ -69,11 +137,62 @@ export const useTreasury = () => {
     }
   };
 
+  const getTransactionsByType = async (type) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const txs = await actors.treasury.getTransactionsByType({
+        [type]: null,
+      });
+      return txs;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getRecentTransactions = async (limit) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const txs = await actors.treasury.getRecentTransactions(BigInt(limit));
+      return txs;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getTreasuryStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const stats = await actors.treasury.getTreasuryStats();
+      return stats;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     deposit,
     withdraw,
+    lockTokens,
+    unlockTokens,
+    reserveTokens,
+    releaseReservedTokens,
     getBalance,
     getAllTransactions,
+    getTransactionsByType,
+    getRecentTransactions,
+    getTreasuryStats,
     loading,
     error,
   };
