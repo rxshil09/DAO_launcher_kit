@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useActors } from '../context/ActorContext';
 import BackgroundParticles from './BackgroundParticles';
 import { Loader2 } from 'lucide-react';
+import StatusWidget from './StatusWidget';
 
 const formatPrincipal = (opt) => (opt && opt[0] ? opt[0].toText() : 'Not set');
 
@@ -63,6 +64,7 @@ const DAOStatus = () => {
       <BackgroundParticles />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         <h1 className="text-3xl font-bold text-white mb-8 font-mono">DAO Status</h1>
+        <StatusWidget />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gray-800/50 p-6 rounded-xl border border-cyan-500/20">
             <h2 className="text-xl font-mono text-cyan-400 mb-4">Configuration</h2>
