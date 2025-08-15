@@ -18,19 +18,6 @@ export const AuthProvider = ({ children }) => {
   const [authClient, setAuthClient] = useState(null);
   const [identity, setIdentity] = useState(null);
 
-  const actors = useActors();
-
-  const registerProfile = async (displayName, bio = '') => {
-    try {
-      const result = await actors.daoBackend.registerUser(displayName, bio);
-      if ('err' in result && result.err !== 'User already registered') {
-        console.error('Failed to register user:', result.err);
-      }
-    } catch (error) {
-      console.error('Failed to register user:', error);
-    }
-  };
-
 
 
   // Initialize auth client and check authentication status
@@ -46,18 +33,16 @@ export const AuthProvider = ({ children }) => {
         
 
         if (isAuthenticated) {
-          const identity = client.getIdentity();
-          const principalId = identity.getPrincipal().toString();
+          const currentIdentity = client.getIdentity();
+          const principalId = currentIdentity.getPrincipal().toString();
           const displayName = `User ${principalId.slice(0, 8)}`;
 
           setIsAuthenticated(true);
-          setIdentity(identity);
+          setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
           });
-          await registerProfile(displayName);
-
         }
 
       } catch (error) {
@@ -95,12 +80,11 @@ export const AuthProvider = ({ children }) => {
 
           setIsAuthenticated(true);
 
-          setIdentity(identity);
+          setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
             displayName
           });
-          await registerProfile(displayName);
 
         },
 
