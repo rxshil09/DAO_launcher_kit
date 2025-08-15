@@ -1,5 +1,5 @@
 // Hook to interact with DAO canisters
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useActors } from '../context/ActorContext';
 import { useAuth } from '../context/AuthContext';
 import { Principal } from '@dfinity/principal';
@@ -22,8 +22,18 @@ export const useDAOOperations = () => {
                 .map(wallet => Principal.fromText(wallet)); // Convert to Principal
 
             // Add the creator as an admin if not already included
-            if (principal && !initialAdmins.includes(principal)) {
-                initialAdmins.push(principal);
+            if (principal) {
+                try {
+                    const creatorPrincipal = Principal.fromText(principal);
+                    const exists = initialAdmins.some(
+                        admin => admin.toText() === creatorPrincipal.toText()
+                    );
+                    if (!exists) {
+                        initialAdmins.push(creatorPrincipal);
+                    }
+                } catch (err) {
+                    console.warn('Failed to parse authenticated principal:', err);
+                }
             }
 
             // Initialize the DAO with basic info
@@ -38,12 +48,23 @@ export const useDAOOperations = () => {
             }
 
             // Step 2: Set up required canister references
-            // Here you would set up references to governance, staking, treasury, and proposal canisters
-            // These would be created and deployed by the dfx deploy process
-            const governanceCanister = Principal.fromText(process.env.GOVERNANCE_CANISTER_ID || "");
-            const stakingCanister = Principal.fromText(process.env.STAKING_CANISTER_ID || "");
-            const treasuryCanister = Principal.fromText(process.env.TREASURY_CANISTER_ID || "");
-            const proposalsCanister = Principal.fromText(process.env.PROPOSALS_CANISTER_ID || "");
+            // Retrieve and validate canister IDs from environment variables
+            const getCanisterPrincipal = (key) => {
+                const id = import.meta.env[key];
+                if (!id || typeof id !== 'string' || id.trim() === '') {
+                    throw new Error(`Missing ${key}`);
+                }
+                try {
+                    return Principal.fromText(id);
+                } catch (err) {
+                    throw new Error(`Invalid canister ID for ${key}: ${err.message}`);
+                }
+            };
+
+            const governanceCanister = getCanisterPrincipal('VITE_GOVERNANCE_CANISTER_ID');
+            const stakingCanister = getCanisterPrincipal('VITE_STAKING_CANISTER_ID');
+            const treasuryCanister = getCanisterPrincipal('VITE_TREASURY_CANISTER_ID');
+            const proposalsCanister = getCanisterPrincipal('VITE_PROPOSALS_CANISTER_ID');
 
             const canisterRefResult = await actors.daoBackend.setCanisterReferences(
                 governanceCanister,
