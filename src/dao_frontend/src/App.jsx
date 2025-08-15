@@ -11,6 +11,7 @@ import Staking from './components/Staking';
 import Treasury from './components/Treasury';
 import Governance from './components/Governance';
 import Navbar from './components/Navbar';
+import Assets from './components/Assets';
 import { AuthProvider } from './context/AuthContext';
 import './app.css';
 
@@ -31,6 +32,7 @@ function App() {
             <Route path="/staking" element={<Staking />} />
             <Route path="/treasury" element={<Treasury />} />
             <Route path="/governance" element={<Governance />} />
+            <Route path="/assets" element={<Assets />} />
           </Routes>
         </div>
       </Router>
