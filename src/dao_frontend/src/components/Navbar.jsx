@@ -36,6 +36,9 @@ const Navbar = () => {
     { name: 'Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/dashboard', icon: Activity },
     { name: 'Launch DAO', href: '/launch', icon: Rocket }, // NO HIGHLIGHTING
+    { name: 'Proposals', href: '/proposals', icon: Star },
+    { name: 'Staking', href: '/staking', icon: Award },
+    { name: 'Treasury', href: '/treasury', icon: DollarSign },
   ];
 
   const isActive = (path) => location.pathname === path;
