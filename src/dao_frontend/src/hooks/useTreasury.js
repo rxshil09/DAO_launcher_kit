@@ -41,5 +41,40 @@ export const useTreasury = () => {
     }
   };
 
-  return { deposit, withdraw, loading, error };
+  const getBalance = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const balance = await actors.treasury.getBalance();
+      return balance;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAllTransactions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const txs = await actors.treasury.getAllTransactions();
+      return txs;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    deposit,
+    withdraw,
+    getBalance,
+    getAllTransactions,
+    loading,
+    error,
+  };
 };
