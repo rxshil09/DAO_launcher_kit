@@ -21,5 +21,33 @@ export const useStaking = () => {
     }
   };
 
-  return { stake, loading, error };
+  const unstake = async (stakeId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await actors.staking.unstake(BigInt(stakeId));
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const claimRewards = async (stakeId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await actors.staking.claimRewards(BigInt(stakeId));
+      return result;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { stake, unstake, claimRewards, loading, error };
 };
