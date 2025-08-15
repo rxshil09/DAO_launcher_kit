@@ -113,7 +113,8 @@ export const initializeAgents = async (identity?: Identity) => {
     );
     const assets = await createActor<AssetsService>(
       import.meta.env.VITE_CANISTER_ID_ASSETS,
-      assetsIdl
+      assetsIdl,
+      identity
     );
 
     return {
