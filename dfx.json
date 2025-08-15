@@ -1,19 +1,57 @@
 {
   "canisters": {
-    "DAO_Launcher_Kit_backend": {
-      "candid": "src/DAO_Launcher_Kit_backend/DAO_Launcher_Kit_backend.did",
-      "package": "DAO_Launcher_Kit_backend",
-      "type": "rust"
+    "dao_backend": {
+      "main": "src/dao_backend/main.mo",
+      "type": "motoko"
     },
-    "DAO_Launcher_Kit_frontend": {
+    "governance": {
+      "main": "src/dao_backend/governance/main.mo",
+      "type": "motoko"
+    },
+    "staking": {
+      "main": "src/dao_backend/staking/main.mo",
+      "type": "motoko"
+    },
+    "treasury": {
+      "main": "src/dao_backend/treasury/main.mo",
+      "type": "motoko"
+    },
+    "proposals": {
+      "main": "src/dao_backend/proposals/main.mo",
+      "type": "motoko"
+    },
+    "assets": {
+      "main": "src/dao_backend/assets/main.mo",
+      "type": "motoko"
+    },
+    "dao_frontend": {
       "dependencies": [
-        "DAO_Launcher_Kit_backend"
+        "dao_backend",
+        "governance",
+        "staking",
+        "treasury",
+        "proposals",
+        "assets"
       ],
       "source": [
-        "src/DAO_Launcher_Kit_frontend/dist"
+        "src/dao_frontend/dist"
       ],
       "type": "assets",
-      "workspace": "DAO_Launcher_Kit_frontend"
+      "workspace": "dao_frontend",
+      "declarations": {
+        "output": "src/dao_frontend/src/declarations"
+      }
+    },
+    "internet_identity": {
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "frontend": {},
+      "remote": {
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
     }
   },
   "defaults": {

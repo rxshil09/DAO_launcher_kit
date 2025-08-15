@@ -1,5 +1,0 @@
-[workspace]
-members = [
-    "src/DAO_Launcher_Kit_backend"
-]
-resolver = "2"
