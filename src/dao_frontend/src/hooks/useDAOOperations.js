@@ -62,10 +62,10 @@ export const useDAOOperations = () => {
                 }
             };
 
-            const governanceCanisterId = getCanisterPrincipal('VITE_GOVERNANCE_CANISTER_ID');
-            const stakingCanisterId = getCanisterPrincipal('VITE_STAKING_CANISTER_ID');
-            const treasuryCanisterId = getCanisterPrincipal('VITE_TREASURY_CANISTER_ID');
-            const proposalsCanisterId = getCanisterPrincipal('VITE_PROPOSALS_CANISTER_ID');
+            const governanceCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_GOVERNANCE');
+            const stakingCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_STAKING');
+            const treasuryCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_TREASURY');
+            const proposalsCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_PROPOSALS');
 
             const canisterRefResult = await actors.daoBackend.setCanisterReferences(
                 governanceCanisterId,
