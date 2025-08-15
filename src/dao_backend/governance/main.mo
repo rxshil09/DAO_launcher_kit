@@ -4,7 +4,7 @@ import Iter "mo:base/Iter";
 import Time "mo:base/Time";
 import Result "mo:base/Result";
 import Principal "mo:base/Principal";
-// import Debug "mo:base/Debug";
+import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
@@ -22,18 +22,18 @@ actor GovernanceCanister {
     type CommonError = Types.CommonError;
 
     // References to other canisters
-    let dao = actor("canister:dao_backend") : actor {
+    var dao : actor {
         getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
-    };
+    } = actor("canister:dao_backend");
 
-    let staking = actor("canister:staking") : actor {
+    var staking : actor {
         getUserStakingSummary: shared query (Principal) -> async {
             totalStaked: Nat;
             totalRewards: Nat;
             activeStakes: Nat;
             totalVotingPower: Nat;
         };
-    };
+    } = actor("canister:staking");
 
     // Stable storage for upgrades
     private stable var nextProposalId : Nat = 1;
@@ -45,6 +45,15 @@ actor GovernanceCanister {
     private var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+
+    public shared(msg) func init(daoId: Principal, stakingId: Principal) {
+        if (Principal.isAnonymous(daoId) or Principal.isAnonymous(stakingId)) {
+            Debug.trap("Invalid DAO or Staking principal provided");
+        };
+
+        dao := actor(Principal.toText(daoId));
+        staking := actor(Principal.toText(stakingId));
+    };
 
     // Initialize default configuration
     private func initializeConfig() {

@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
-    "setup": "npm i && dfx canister create dao_backend && dfx generate dao_backend && dfx deploy",
+    "setup": "npm i && dfx canister create dao_backend && dfx canister create staking && dfx generate dao_backend && npm run deploy:local",
     "start": "vite",
     "prebuild": "dfx generate",
     "build": "vite build",
     "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\"",
-    "deploy:local": "dfx deploy --network=local",
-    "deploy:ic": "dfx deploy --network=ic",
+    "deploy:local": "dfx deploy dao_backend && dfx deploy staking && dfx deploy governance --argument \"(principal \\\"$(dfx canister id dao_backend)\\\", principal \\\"$(dfx canister id staking)\\\")\" && dfx deploy treasury && dfx deploy proposals && dfx deploy assets && dfx deploy dao_frontend",
+    "deploy:ic": "dfx deploy dao_backend --network=ic && dfx deploy staking --network=ic && dfx deploy governance --network=ic --argument \"(principal \\\"$(dfx canister id dao_backend --network=ic)\\\", principal \\\"$(dfx canister id staking --network=ic)\\\")\" && dfx deploy treasury --network=ic && dfx deploy proposals --network=ic && dfx deploy assets --network=ic && dfx deploy dao_frontend --network=ic",
     "generate": "dfx generate dao_backend",
     "test": "vitest run"
   },
