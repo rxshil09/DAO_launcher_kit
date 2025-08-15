@@ -20,11 +20,11 @@ export const useDAOOperations = () => {
                 .map(member => member.wallet)
                 .filter(wallet => wallet) // Remove empty wallets
                 .map(wallet => Principal.fromText(wallet)); // Convert to Principal
-
+            let creatorPrincipal = null;
             // Add the creator as an admin if not already included
             if (principal) {
                 try {
-                    const creatorPrincipal = Principal.fromText(principal);
+                    creatorPrincipal = Principal.fromText(principal);
                     const exists = initialAdmins.some(
                         admin => admin.toText() === creatorPrincipal.toText()
                     );
@@ -77,63 +77,40 @@ export const useDAOOperations = () => {
                 throw new Error(canisterRefResult.err);
             }
 
-            // Step 3: Register the creator as a user
-            const registerResult = await actors.daoBackend.registerUser(
-                "DAO Creator", // Default display name
-                "DAO Creator and Administrator" // Default bio
-            );
 
-            if ('err' in registerResult) {
-                throw new Error(registerResult.err);
+            // Step 3: Register initial users via admin method
+            if (creatorPrincipal) {
+                const registerCreator = await actors.daoBackend.adminRegisterUser(
+                    creatorPrincipal,
+                    "DAO Creator", // Default display name
+                    "DAO Creator and Administrator" // Default bio
+                );
+
+                if ('err' in registerCreator) {
+                    throw new Error(registerCreator.err);
+                }
             }
+
 
             // Optional: Register other team members
             for (const member of daoConfig.teamMembers) {
                 if (member.wallet) {
                     try {
+
+                        const memberPrincipal = Principal.fromText(member.wallet);
+                        await actors.daoBackend.adminRegisterUser(
+                            memberPrincipal,
+
                         // Use principal.toString() as wallet address might be already a Principal
                         const memberPrincipal = Principal.fromText(member.wallet);
                         await actors.daoBackend.registerUser(
-                            member.name,
-                            member.role
-                        );
-                    } catch (err) {
-                        console.warn(`Failed to register team member ${member.name}:`, err);
-                        // Continue with other members
-                    }
-                }
-            }
 
-            // Step 4: Save DAO configuration
-            const configPayload = {
-                category: daoConfig.category,
-                website: daoConfig.website,
-                selectedModules: daoConfig.selectedModules,
-                moduleFeatures: Object.entries(daoConfig.selectedFeatures || {}).map(
-                    ([moduleId, features]) => ({ moduleId, features })
-                ),
-                tokenName: daoConfig.tokenName,
-                tokenSymbol: daoConfig.tokenSymbol,
-                totalSupply: BigInt(daoConfig.totalSupply || 0),
-                initialPrice: BigInt(daoConfig.initialPrice || 0),
-                votingPeriod: BigInt(daoConfig.votingPeriod || 0),
-                quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
-                proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
-                fundingGoal: BigInt(daoConfig.fundingGoal || 0),
-                fundingDuration: BigInt(daoConfig.fundingDuration || 0),
-                minInvestment: BigInt(daoConfig.minInvestment || 0),
-                termsAccepted: daoConfig.termsAccepted,
-                kycRequired: daoConfig.kycRequired
-            };
 
-            const configResult = await actors.daoBackend.setDAOConfig(configPayload);
-            if ('err' in configResult) {
-                throw new Error(configResult.err);
-            }
 
-            // Step 5: Return the DAO info
+            // Step 4: Return the DAO info
             const daoInfo = await actors.daoBackend.getDAOInfo();
             return daoInfo;
+
 
         } catch (err) {
             setError(err.message);

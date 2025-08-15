@@ -40,9 +40,11 @@ export const idlFactory = ({ IDL }) => {
       []
     ),
     registerUser: IDL.Func([IDL.Text, IDL.Text], [Result], []),
+
+    adminRegisterUser: IDL.Func([IDL.Principal, IDL.Text, IDL.Text], [Result], []),
+
     setDAOConfig: IDL.Func([DAOConfig], [Result], []),
-    getDAOInfo: IDL.Func([], [DAOInfo], ['query']),
-    getDAOConfig: IDL.Func([], [IDL.Opt(DAOConfig)], ['query']),
+
   });
 };
 
