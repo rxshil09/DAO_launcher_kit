@@ -72,11 +72,8 @@ export const useGovernance = () => {
     setLoading(true);
     setError(null);
     try {
-
-      const res = await actors.governance.getStats();
-      if ('err' in res) throw new Error(res.err);
-      return 'ok' in res ? res.ok : res;
-
+      const res = await actors.governance.getGovernanceStats();
+      return res;
     } catch (err) {
       setError(err.message);
       throw err;
