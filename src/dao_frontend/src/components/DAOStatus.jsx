@@ -4,6 +4,7 @@ import { useActors } from '../context/ActorContext';
 import BackgroundParticles from './BackgroundParticles';
 import { Loader2 } from 'lucide-react';
 import StatusWidget from './StatusWidget';
+import { safeJsonStringify } from '../utils/jsonUtils';
 
 const formatPrincipal = (opt) => (opt && opt[0] ? opt[0].toText() : 'Not set');
 
@@ -69,7 +70,9 @@ const DAOStatus = () => {
           <div className="bg-gray-800/50 p-6 rounded-xl border border-cyan-500/20">
             <h2 className="text-xl font-mono text-cyan-400 mb-4">Configuration</h2>
             {config ? (
-              <pre className="text-sm overflow-x-auto whitespace-pre-wrap">{JSON.stringify(config, null, 2)}</pre>
+              <pre className="text-sm overflow-x-auto whitespace-pre-wrap">
+                {safeJsonStringify(config, 2)}
+              </pre>
             ) : (
               <p className="text-gray-400">No configuration found.</p>
             )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useGovernance } from '../hooks/useGovernance';
+import { safeJsonStringify } from '../utils/jsonUtils';
 
 const Governance = () => {
   const { createProposal, vote, getConfig, getGovernanceStats, loading, error } =
@@ -132,11 +133,15 @@ const Governance = () => {
 
       <div>
         <h2 className="text-xl font-semibold">Configuration</h2>
-        <pre className="bg-gray-100 p-2 overflow-auto">{config ? JSON.stringify(config, null, 2) : 'No config'}</pre>
+        <pre className="bg-gray-100 p-2 overflow-auto">
+          {config ? safeJsonStringify(config, 2) : 'No config'}
+        </pre>
       </div>
       <div>
         <h2 className="text-xl font-semibold">Stats</h2>
-        <pre className="bg-gray-100 p-2 overflow-auto">{stats ? JSON.stringify(stats, null, 2) : 'No stats'}</pre>
+        <pre className="bg-gray-100 p-2 overflow-auto">
+          {stats ? safeJsonStringify(stats, 2) : 'No stats'}
+        </pre>
       </div>
     </div>
   );

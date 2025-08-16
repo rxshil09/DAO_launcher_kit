@@ -112,11 +112,23 @@ export const useDAOOperations = () => {
 
             // Step 5: Register initial users via admin method
             if (creatorPrincipal) {
-                await daoAPI.adminRegisterUser(
-                    creatorPrincipal,
-                    "DAO Creator", // Default display name
-                    "DAO Creator and Administrator" // Default bio
-                );
+                try {
+                    // Check if creator is already registered
+                    const existingProfile = await daoAPI.getUserProfile(creatorPrincipal);
+                    if (!existingProfile) {
+                        await daoAPI.adminRegisterUser(
+                            creatorPrincipal,
+                            "DAO Creator", // Default display name
+                            "DAO Creator and Administrator" // Default bio
+                        );
+                        console.log('✅ Registered DAO creator');
+                    } else {
+                        console.log('✅ DAO creator already registered, skipping');
+                    }
+                } catch (err) {
+                    console.warn('Failed to register creator:', err);
+                    // Continue with the process even if creator registration fails
+                }
             }
 
             // Step 6: Register other team members
@@ -125,7 +137,17 @@ export const useDAOOperations = () => {
                 .map(({ wallet, name, role }) => async () => {
                     try {
                         const memberPrincipal = Principal.fromText(wallet);
-                        return await daoAPI.adminRegisterUser(memberPrincipal, name, role);
+                        
+                        // Check if user is already registered
+                        const existingProfile = await daoAPI.getUserProfile(memberPrincipal);
+                        if (!existingProfile) {
+                            const result = await daoAPI.adminRegisterUser(memberPrincipal, name, role);
+                            console.log(`✅ Registered team member: ${name}`);
+                            return result;
+                        } else {
+                            console.log(`✅ Team member ${name} already registered, skipping`);
+                            return { success: true, skipped: true };
+                        }
                     } catch (err) {
                         console.warn(`Invalid principal for team member ${name}:`, err);
                         throw err;

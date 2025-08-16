@@ -5,8 +5,8 @@ import environment from 'vite-plugin-environment';
 import path from 'path';
 
 export default defineConfig(({ command, mode }) => {
-  // Load environment variables based on the mode
-  const env = loadEnv(mode, process.cwd(), '');
+  // Load environment variables from the parent directory
+  const env = loadEnv(mode, path.resolve(__dirname, '../..'), '');
   
   return {
     plugins: [
@@ -52,6 +52,7 @@ export default defineConfig(({ command, mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        '@declarations': path.resolve(__dirname, '../declarations'),
       },
     },
     test: {

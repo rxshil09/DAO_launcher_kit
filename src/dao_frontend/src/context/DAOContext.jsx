@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useActors } from './ActorContext';
+import { safeJsonStringify, safeJsonParse } from '../utils/jsonUtils';
 
 // Create the DAO Context
 const DAOContext = createContext();
@@ -8,7 +9,8 @@ const DAOContext = createContext();
 // DAO Provider component
 export const DAOProvider = ({ children }) => {
   const { isAuthenticated, principal } = useAuth();
-  const { daoBackend } = useActors();
+  const actors = useActors();
+  const daoBackend = actors?.daoBackend;
   const [activeDAO, setActiveDAO] = useState(null);
   const [userDAOs, setUserDAOs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -63,7 +65,7 @@ export const DAOProvider = ({ children }) => {
       if (process.env.NODE_ENV !== 'production') {
         const launchedDAOs = localStorage.getItem(`daos_${principal}`);
         if (launchedDAOs) {
-          const daos = JSON.parse(launchedDAOs);
+          const daos = safeJsonParse(launchedDAOs);
           setUserDAOs(daos);
           if (daos.length > 0 && !activeDAO) {
             setActiveDAO(daos[0]);
@@ -83,15 +85,15 @@ export const DAOProvider = ({ children }) => {
 
   const selectDAO = (dao) => {
     setActiveDAO(dao);
-    localStorage.setItem(`activeDAO_${principal}`, JSON.stringify(dao));
+    localStorage.setItem(`activeDAO_${principal}`, safeJsonStringify(dao));
   };
 
   const addUserDAO = (dao) => {
     const updatedDAOs = [...userDAOs, dao];
     setUserDAOs(updatedDAOs);
     setActiveDAO(dao);
-    localStorage.setItem(`daos_${principal}`, JSON.stringify(updatedDAOs));
-    localStorage.setItem(`activeDAO_${principal}`, JSON.stringify(dao));
+    localStorage.setItem(`daos_${principal}`, safeJsonStringify(updatedDAOs));
+    localStorage.setItem(`activeDAO_${principal}`, safeJsonStringify(dao));
   };
 
   const removeUserDAO = (daoId) => {
@@ -100,7 +102,7 @@ export const DAOProvider = ({ children }) => {
     if (activeDAO?.id === daoId) {
       setActiveDAO(updatedDAOs.length > 0 ? updatedDAOs[0] : null);
     }
-    localStorage.setItem(`daos_${principal}`, JSON.stringify(updatedDAOs));
+    localStorage.setItem(`daos_${principal}`, safeJsonStringify(updatedDAOs));
   };
 
   const hasActiveDAO = activeDAO !== null;

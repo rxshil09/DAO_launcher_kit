@@ -6,6 +6,7 @@ import {
   ReactNode,
 } from "react";
 import { initializeAgents } from "../config/agent";
+// @ts-ignore - AuthContext is a .jsx file, ignore TypeScript error
 import { useAuth } from "./AuthContext";
 
 type Actors = Awaited<ReturnType<typeof initializeAgents>>;
@@ -38,32 +39,26 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
     setup();
   }, [identity]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-red-600">
-        Error: {error}
-      </div>
-    );
-  }
-
   return (
-    <ActorContext.Provider value={actors}>{children}</ActorContext.Provider>
+    <ActorContext.Provider value={actors}>
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center min-h-screen text-red-600">
+          Error: {error}
+        </div>
+      ) : (
+        children
+      )}
+    </ActorContext.Provider>
   );
 };
 
-export const useActors = (): Actors => {
+export const useActors = () => {
   const context = useContext(ActorContext);
-  if (!context) {
-    throw new Error("useActors must be used within an ActorProvider");
-  }
+  // Don't throw error during loading phase, allow null context
   return context;
 };
 
