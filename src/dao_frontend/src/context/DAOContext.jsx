@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { dao_backend } from '../declarations/dao_backend';
+import { useActors } from './ActorContext';
 
 // Create the DAO Context
 const DAOContext = createContext();
@@ -8,6 +8,7 @@ const DAOContext = createContext();
 // DAO Provider component
 export const DAOProvider = ({ children }) => {
   const { isAuthenticated, principal } = useAuth();
+  const { daoBackend } = useActors();
   const [activeDAO, setActiveDAO] = useState(null);
   const [userDAOs, setUserDAOs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -20,18 +21,18 @@ export const DAOProvider = ({ children }) => {
       setActiveDAO(null);
       setUserDAOs([]);
     }
-  }, [isAuthenticated, principal]);
+  }, [isAuthenticated, principal, daoBackend]);
 
   const checkUserDAOs = async () => {
     setLoading(true);
     try {
-      if (!dao_backend || !principal) {
+      if (!daoBackend || !principal) {
         setUserDAOs([]);
         setActiveDAO(null);
         return;
       }
 
-      const response = await dao_backend.getAllUsers();
+      const response = await daoBackend.getAllUsers();
       let daos = [];
 
       if (Array.isArray(response)) {
