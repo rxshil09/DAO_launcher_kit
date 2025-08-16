@@ -46,6 +46,7 @@ persistent actor GovernanceCanister {
     // These actor references enable cross-canister calls for governance functionality
     var dao : actor {
         getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
+        checkIsAdmin: shared query (Principal) -> async Bool;
     } = actor("aaaaa-aa");
 
     var staking : actor {
@@ -63,33 +64,42 @@ persistent actor GovernanceCanister {
     private var proposalsEntries : [(ProposalId, Proposal)] = [];
     private var votesEntries : [(Text, Vote)] = []; // Key format: "proposalId_voterPrincipal"
     private var configEntries : [(Text, GovernanceConfig)] = [];
+    private var daoId : Principal = Principal.fromText("aaaaa-aa");
+    private var stakingId : Principal = Principal.fromText("aaaaa-aa");
+    private var initialized : Bool = false;
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide O(1) lookup performance for governance operations
     private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
-public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
-    Debug.print("Starting initialization...");
-    
-    // Convert principals to text for debug
-    let daoText = Principal.toText(daoId);
-    let stakingText = Principal.toText(stakingId);
-    
-    Debug.print("DAO ID (text): " # daoText);
-    Debug.print("Staking ID (text): " # stakingText);
-    
-    try {
-        dao := actor(daoText);
-        staking := actor(stakingText);
-        Debug.print("Actor references updated successfully");
-    } catch (err) {
-        Debug.print("Error during actor creation: " # Error.message(err));
-        throw err;
+
+    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal) : async () {
+        if (initialized) {
+            Debug.print("Initialization already completed");
+            throw Error.reject("Governance canister already initialized");
+        };
+
+        // Verify caller is authorized: either the canister itself or an admin
+        let caller = msg.caller;
+        let self = Principal.fromActor(GovernanceCanister);
+        let daoTemp : actor {
+            getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
+            checkIsAdmin: shared query (Principal) -> async Bool;
+        } = actor(Principal.toText(newDaoId));
+        let isAdmin = await daoTemp.checkIsAdmin(caller);
+        if (caller != self and not isAdmin) {
+            Debug.print("Unauthorized init attempt by " # Principal.toText(caller));
+            throw Error.reject("Caller is not authorized to initialize");
+        };
+
+        daoId := newDaoId;
+        stakingId := newStakingId;
+        dao := daoTemp;
+        staking := actor(Principal.toText(newStakingId));
+        initialized := true;
+        Debug.print("Initialization complete");
     };
-    
-    Debug.print("Initialization complete");
-};
 
     // Initialize default configuration
     private func initializeConfig() {
@@ -124,12 +134,15 @@ public shared(_msg) func init(daoId: Principal, stakingId: Principal) {
             Text.hash
         );
         config := HashMap.fromIter<Text, GovernanceConfig>(
-            configEntries.vals(), 
-            configEntries.size(), 
-            Text.equal, 
+            configEntries.vals(),
+            configEntries.size(),
+            Text.equal,
             Text.hash
         );
-        
+
+        dao := actor(Principal.toText(daoId));
+        staking := actor(Principal.toText(stakingId));
+
         if (config.size() == 0) {
             initializeConfig();
         };
