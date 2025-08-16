@@ -7,7 +7,7 @@
     "dev": "vite --port 5173",
     "setup": "npm i && dfx canister create dao_backend && dfx canister create staking && dfx generate dao_backend && npm run deploy:local",
     "start": "vite",
-    "prebuild": "dfx generate",
+    "prebuild": "dfx generate && cp -r ../../src/declarations/* src/declarations/ 2>/dev/null || true",
     "build": "vite build",
     "format": "prettier --write \"src/**/*.{json,js,jsx,ts,tsx,css,scss}\"",
     "deploy:local": "dfx deploy dao_backend && dfx deploy staking && dfx deploy governance --argument \"(principal \\\"$(dfx canister id dao_backend)\\\", principal \\\"$(dfx canister id staking)\\\")\" && dfx deploy treasury && dfx deploy proposals && dfx deploy assets && dfx deploy dao_frontend",
