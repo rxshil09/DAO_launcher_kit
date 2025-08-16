@@ -196,6 +196,54 @@ export class DAOAPIWrapper {
             errorCount: errors.length
         };
     }
+
+    // Enhanced error handling with retry logic
+    async callAPIWithRetry(apiCall, operationName, maxRetries = 3) {
+        let lastError;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await this.callAPI(apiCall, operationName);
+            } catch (error) {
+                lastError = error;
+                console.warn(`${operationName} attempt ${attempt} failed:`, error.message);
+                
+                if (attempt < maxRetries) {
+                    // Wait before retrying (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+                }
+            }
+        }
+        
+        throw lastError;
+    }
+
+    // Validation helpers
+    validateDAOConfig(config) {
+        const errors = [];
+        
+        if (!config.category || config.category.trim() === '') {
+            errors.push('Category is required');
+        }
+        
+        if (!config.tokenName || config.tokenName.trim() === '') {
+            errors.push('Token name is required');
+        }
+        
+        if (!config.tokenSymbol || config.tokenSymbol.trim() === '') {
+            errors.push('Token symbol is required');
+        }
+        
+        if (!config.totalSupply || config.totalSupply <= 0) {
+            errors.push('Total supply must be greater than 0');
+        }
+        
+        if (!config.termsAccepted) {
+            errors.push('Terms and conditions must be accepted');
+        }
+        
+        return errors;
+    }
 }
 
 /**

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useDAOAPI } from '../utils/daoAPI';
 import { useAuth } from '../context/AuthContext';
+import { useDAOManagement } from '../context/DAOManagementContext';
+import eventBus, { EVENTS } from '../utils/eventBus';
 import { Principal } from '@dfinity/principal';
 
 const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
@@ -10,6 +12,7 @@ const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
 export const useDAOOperations = () => {
     const daoAPI = useDAOAPI();
     const { principal } = useAuth();
+    const { fetchDAOs } = useDAOManagement();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -161,9 +164,23 @@ export const useDAOOperations = () => {
 
             // Step 7: Return the DAO info
             const daoInfo = await daoAPI.getDAOInfo();
+            
+            // Refresh the DAO list in the management context
+            if (fetchDAOs) {
+                await fetchDAOs();
+            }
+            
+            // Emit event for other components to listen
+            eventBus.emit(EVENTS.DAO_CREATED, {
+                daoInfo,
+                config: daoConfig,
+                creator: principal
+            });
+            
             return daoInfo;
 
         } catch (err) {
+            console.error('DAO launch failed:', err);
             setError(err.message);
             throw err;
         } finally {

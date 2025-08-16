@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
 import { DAO, DAOContextType } from '../types/dao';
 
 const DAOManagementContext = createContext<DAOContextType | undefined>(undefined);
@@ -88,16 +89,27 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
   const [selectedDAO, setSelectedDAO] = useState<DAO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated, principal } = useAuth();
 
   const fetchDAOs = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setDAOs(mockDAOs);
+      // Load DAOs from localStorage for the current user
+      if (principal) {
+        const storedDAOs = localStorage.getItem(`user_daos_${principal}`);
+        if (storedDAOs) {
+          const userDAOs = JSON.parse(storedDAOs);
+          setDAOs([...mockDAOs, ...userDAOs]);
+        } else {
+          setDAOs(mockDAOs);
+        }
+      } else {
+        setDAOs(mockDAOs);
+      }
     } catch (err) {
       setError('Failed to fetch DAOs');
+      console.error('Error fetching DAOs:', err);
     } finally {
       setLoading(false);
     }
@@ -109,9 +121,8 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
 
   const createDAO = async (daoData: Partial<DAO>) => {
     setLoading(true);
+    setError(null);
     try {
-      // Simulate DAO creation
-      await new Promise(resolve => setTimeout(resolve, 2000));
       const newDAO: DAO = {
         id: `dao-${Date.now()}`,
         name: daoData.name || 'New DAO',
@@ -136,10 +147,23 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
         },
         ...daoData
       };
+      
+      // Add to state immediately
       setDAOs(prev => [...prev, newDAO]);
       setSelectedDAO(newDAO);
+      
+      // Persist to localStorage for the current user
+      if (principal) {
+        const existingDAOs = localStorage.getItem(`user_daos_${principal}`);
+        const userDAOs = existingDAOs ? JSON.parse(existingDAOs) : [];
+        const updatedUserDAOs = [...userDAOs, newDAO];
+        localStorage.setItem(`user_daos_${principal}`, JSON.stringify(updatedUserDAOs));
+      }
+      
+      console.log('DAO created successfully:', newDAO);
     } catch (err) {
       setError('Failed to create DAO');
+      console.error('Error creating DAO:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -147,8 +171,13 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
   };
 
   useEffect(() => {
-    fetchDAOs();
-  }, []);
+    if (isAuthenticated && principal) {
+      fetchDAOs();
+    } else if (!isAuthenticated) {
+      setDAOs([]);
+      setSelectedDAO(null);
+    }
+  }, [isAuthenticated, principal]);
 
   const value: DAOContextType = {
     daos,
