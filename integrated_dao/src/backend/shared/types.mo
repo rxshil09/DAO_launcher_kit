@@ -23,6 +23,9 @@ module {
         votingPower: Nat;
     };
 
+
+
+
     // Token and Balance types
     public type TokenAmount = Nat;
     public type Balance = Nat;
