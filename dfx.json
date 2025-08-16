@@ -26,7 +26,8 @@
     },
     "assets": {
       "main": "src/dao_backend/assets/main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "init": { "args": "(null, false)" }
     },
     "dao_frontend": {
       "dependencies": [

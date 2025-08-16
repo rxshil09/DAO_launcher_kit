@@ -58,6 +58,7 @@ persistent actor AssetCanister {
     private var maxFileSize : Nat = 10_000_000; // 10MB default
     private var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
     private var currentStorageUsed : Nat = 0;
+    private var allowOpenUploads : Bool = false; // permit uploads with empty authorizedUploaders
 
     // Runtime storage
     private transient var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
@@ -73,14 +74,19 @@ persistent actor AssetCanister {
     // System functions for upgrades and initialization
 
     // During installation the deployer can optionally supply an initial
-    // principal that is immediately granted upload permissions. If omitted,
-    // the list of authorized uploaders starts empty and can be populated
-    // later via `addAuthorizedUploader`.
-    public shared ({caller = _}) func init(initialUploader : ?Principal) : async () {
+    // principal that is immediately granted upload permissions. The deployer
+    // can also enable `allowOpenUploads` to permit anyone to upload assets
+    // when no authorized uploaders are configured. By default open uploads are
+    // disabled, meaning attempts to upload assets will be rejected until at
+    // least one uploader has been authorized. If omitted, the list of
+    // authorized uploaders starts empty and can be populated later via
+    // `addAuthorizedUploader`.
+    public shared ({caller = _}) func init(initialUploader : ?Principal, openUploads : Bool) : async () {
         switch (initialUploader) {
             case (?p) { authorizedUploaders := [p] };
             case null {};
         };
+        allowOpenUploads := openUploads;
     };
 
     system func preupgrade() {
@@ -108,7 +114,9 @@ persistent actor AssetCanister {
 
     // Public functions
 
-    // Upload an asset
+    // Upload an asset.
+    // If no uploaders have been authorized, the upload will be rejected unless
+    // `allowOpenUploads` was set to true during deployment.
     public shared(msg) func uploadAsset(
         name: Text,
         contentType: Text,
@@ -117,7 +125,11 @@ persistent actor AssetCanister {
         tags: [Text]
     ) : async Result<AssetId, Text> {
         let caller = msg.caller;
-        if (authorizedUploaders.size() > 0 and not isAuthorized(caller)) {
+        if (authorizedUploaders.size() == 0) {
+            if (not allowOpenUploads) {
+                return #err("Uploads are disabled until an uploader is authorized or open uploads are enabled");
+            };
+        } else if (not isAuthorized(caller)) {
             return #err("Not authorized to upload assets");
         };
         let dataSize = data.size();
