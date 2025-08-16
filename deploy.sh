@@ -15,7 +15,7 @@ dfx start --clean --background
 
 sleep 5
 
-# Deploy base canisters first
+# Deploy base canisters first (no dependencies)
 echo "🏗️ Deploying base canisters..."
 dfx deploy dao_backend
 dfx deploy staking
@@ -31,7 +31,7 @@ echo "Debug: Staking ID: ${STAKING_ID}"
 INIT_ARG="(principal \"${DAO_BACKEND_ID}\", principal \"${STAKING_ID}\")"
 echo "Debug: Init argument: ${INIT_ARG}"
 
-# Try deploying governance
+# Deploy governance with initialization arguments
 echo "🏛️ Deploying governance canister..."
 dfx deploy governance --argument "${INIT_ARG}" || {
     echo "❌ Governance canister deployment failed"
@@ -39,11 +39,53 @@ dfx deploy governance --argument "${INIT_ARG}" || {
     exit 1
 }
 
-# Only continue if governance deployed successfully
-echo "💎 Deploying remaining components..."
+# Deploy remaining backend canisters
+echo "💎 Deploying remaining backend components..."
 dfx deploy treasury
 dfx deploy proposals
 dfx deploy assets
+
+# Deploy Internet Identity canister
+echo "🔐 Deploying Internet Identity..."
+dfx deploy internet_identity
+
+# Generate type declarations for backend canisters only (before frontend)
+echo "📋 Generating backend type declarations..."
+dfx generate dao_backend
+dfx generate governance  
+dfx generate staking
+dfx generate treasury
+dfx generate proposals
+dfx generate assets
+dfx generate internet_identity
+
+# Copy declarations to frontend location for build
+echo "📋 Copying declarations to frontend location..."
+mkdir -p src/dao_frontend/src/declarations
+cp -r src/declarations/* src/dao_frontend/src/declarations/
+
+# Build frontend with generated declarations
+echo "🔨 Building frontend..."
+cd src/dao_frontend
+npm install
+npm run build
+cd ../..
+
+# Deploy frontend canister
+echo "🌐 Deploying frontend..."
 dfx deploy dao_frontend
 
+# Generate all declarations (including frontend)
+echo "📋 Generating all type declarations..."
+dfx generate
+
+# Generate environment variables for frontend
+echo "⚙️ Updating frontend environment variables..."
+./update-env.sh > /dev/null
+
 echo "✨ Deployment complete!"
+echo ""
+echo "🎯 Next steps:"
+echo "1. Frontend will be available at: http://localhost:4943/?canisterId=$(dfx canister id dao_frontend)"
+echo "2. Start frontend development server: cd src/dao_frontend && npm run dev"
+echo "3. Environment variables have been generated in .env"

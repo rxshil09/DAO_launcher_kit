@@ -1,0 +1,83 @@
+type Time = int;
+type Result_2 = 
+ variant {
+   err: text;
+   ok: Asset;
+ };
+type Result_1 = 
+ variant {
+   err: text;
+   ok;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: AssetId;
+ };
+type AssetMetadata = 
+ record {
+   contentType: text;
+   id: AssetId;
+   isPublic: bool;
+   name: text;
+   size: nat;
+   tags: vec text;
+   uploadedAt: Time;
+   uploadedBy: principal;
+ };
+type AssetId = nat;
+type AssetData = blob;
+type Asset = 
+ record {
+   contentType: text;
+   data: AssetData;
+   id: AssetId;
+   isPublic: bool;
+   name: text;
+   size: nat;
+   tags: vec text;
+   uploadedAt: Time;
+   uploadedBy: principal;
+ };
+service : {
+  addAuthorizedUploader: ("principal": principal) -> (Result_1);
+  batchUploadAssets: (assets_data:
+   vec record {
+         text;
+         text;
+         AssetData;
+         bool;
+         vec text;
+       }) -> (vec Result);
+  deleteAsset: (assetId: AssetId) -> (Result_1);
+  getAsset: (assetId: AssetId) -> (Result_2);
+  getAssetByName: (name: text) -> (opt AssetMetadata) query;
+  getAssetMetadata: (assetId: AssetId) -> (opt AssetMetadata) query;
+  getAuthorizedUploaders: () -> (vec principal) query;
+  getPublicAssets: () -> (vec AssetMetadata) query;
+  getStorageStats: () ->
+   (record {
+      averageFileSize: nat;
+      storageAvailable: nat;
+      storageLimit: nat;
+      storageUsed: nat;
+      totalAssets: nat;
+    }) query;
+  getSupportedContentTypes: () -> (vec text) query;
+  getUserAssets: () -> (vec AssetMetadata);
+  health: () ->
+   (record {
+      status: text;
+      storageUsed: nat;
+      timestamp: Time;
+    }) query;
+  init: (initialUploader: opt principal, openUploads: bool) -> ();
+  removeAuthorizedUploader: ("principal": principal) -> (Result_1);
+  searchAssetsByTag: (tag: text) -> (vec AssetMetadata) query;
+  updateAssetMetadata: (assetId: AssetId, name: opt text, isPublic: opt bool,
+   tags: opt vec text) -> (Result_1);
+  updateStorageLimits: (maxFileSizeNew: opt nat, maxTotalStorageNew:
+   opt nat) -> (Result_1);
+  uploadAsset: (name: text, contentType: text, data: AssetData, isPublic:
+   bool, tags: vec text) -> (Result);
+}
