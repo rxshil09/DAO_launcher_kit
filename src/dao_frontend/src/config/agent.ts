@@ -104,26 +104,31 @@ const createActor = async <T>(
 };
 
 export const initializeAgents = async () => {
-  console.log("=== DEBUGGING ENVIRONMENT VARIABLES ===");
-  console.log("All import.meta.env:", import.meta.env);
-  
-  const envVars = {
-    'VITE_CANISTER_ID_DAO_BACKEND': import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
-    'VITE_CANISTER_ID_GOVERNANCE': import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
-    'VITE_CANISTER_ID_STAKING': import.meta.env.VITE_CANISTER_ID_STAKING,
-    'VITE_CANISTER_ID_TREASURY': import.meta.env.VITE_CANISTER_ID_TREASURY,
-    'VITE_CANISTER_ID_PROPOSALS': import.meta.env.VITE_CANISTER_ID_PROPOSALS,
-    'VITE_CANISTER_ID_ASSETS': import.meta.env.VITE_CANISTER_ID_ASSETS,
-    'VITE_CANISTER_ID_INTERNET_IDENTITY': import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY,
-  };
+  if (import.meta.env.DEV) {
+    console.log("=== DEBUGGING ENVIRONMENT VARIABLES ===");
+    console.log("All import.meta.env:", import.meta.env);
 
-  Object.entries(envVars).forEach(([key, value]) => {
-    console.log(`${key}:`, value);
-    console.log(`  Type: ${typeof value}`);
-    console.log(`  Length: ${value ? value.length : 'N/A'}`);
-    console.log(`  Contains underscore: ${value ? value.includes('_') : 'N/A'}`);
-    console.log(`  Raw characters:`, value ? [...value].map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A');
-  });
+    const envVars = {
+      'VITE_CANISTER_ID_DAO_BACKEND': import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
+      'VITE_CANISTER_ID_GOVERNANCE': import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+      'VITE_CANISTER_ID_STAKING': import.meta.env.VITE_CANISTER_ID_STAKING,
+      'VITE_CANISTER_ID_TREASURY': import.meta.env.VITE_CANISTER_ID_TREASURY,
+      'VITE_CANISTER_ID_PROPOSALS': import.meta.env.VITE_CANISTER_ID_PROPOSALS,
+      'VITE_CANISTER_ID_ASSETS': import.meta.env.VITE_CANISTER_ID_ASSETS,
+      'VITE_CANISTER_ID_INTERNET_IDENTITY': import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY,
+    };
+
+    Object.entries(envVars).forEach(([key, value]) => {
+      console.log(`${key}:`, value);
+      console.log(`  Type: ${typeof value}`);
+      console.log(`  Length: ${value ? value.length : 'N/A'}`);
+      console.log(`  Contains underscore: ${value ? value.includes('_') : 'N/A'}`);
+      console.log(
+        `  Raw characters:`,
+        value ? [...value].map(c => `${c}(${c.charCodeAt(0)})`).join(' ') : 'N/A'
+      );
+    });
+  }
 
   try {
     // Create actors for required canisters
