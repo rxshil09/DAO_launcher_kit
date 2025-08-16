@@ -60,6 +60,17 @@ const Navbar = () => {
     daoTokens: '1,247'
   };
 
+  // Listen for DAO creation events to update navigation
+  React.useEffect(() => {
+    const handleDAOCreated = () => {
+      // Refresh any DAO-related data in navbar if needed
+      console.log('DAO created event detected in navbar');
+    };
+
+    window.addEventListener('dao-created', handleDAOCreated);
+    return () => window.removeEventListener('dao-created', handleDAOCreated);
+  }, []);
+
   return (
     <>
       <nav className="bg-gradient-to-r from-gray-900/95 via-black/95 to-gray-900/95 backdrop-blur-xl border-b border-cyan-500/20 fixed top-0 left-0 right-0 z-50 shadow-lg shadow-cyan-500/10">

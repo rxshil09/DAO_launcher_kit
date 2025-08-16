@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDAOManagement } from '../context/DAOManagementContext';
 import BackgroundParticles from './BackgroundParticles';
 import DAOCard from './DAOCard';
+import Toast from './Toast';
 import { 
   Plus, 
   Search, 
@@ -15,15 +16,18 @@ import {
   DollarSign,
   Activity,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 
 const DAODashboard: React.FC = () => {
   const { isAuthenticated, principal, loading: authLoading } = useAuth();
-  const { daos, loading, error } = useDAOManagement();
+  const { daos, loading, error, fetchDAOs } = useDAOManagement();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [toast, setToast] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const categories = ['All', 'DeFi', 'Gaming', 'Social', 'NFT', 'Infrastructure'];
 
@@ -61,6 +65,41 @@ const DAODashboard: React.FC = () => {
       navigate('/signin');
     }
   }, [isAuthenticated, authLoading, navigate]);
+
+  // Auto-refresh DAOs when component mounts or when returning from DAO creation
+  React.useEffect(() => {
+    if (isAuthenticated && principal) {
+      fetchDAOs();
+    }
+  }, [isAuthenticated, principal]);
+
+  // Listen for storage changes to update DAOs when created in other tabs
+  React.useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === `user_daos_${principal}` && e.newValue) {
+        fetchDAOs();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [principal, fetchDAOs]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchDAOs();
+      setToast({ type: 'success', message: 'DAOs refreshed successfully!' });
+    } catch (err) {
+      setToast({ type: 'error', message: 'Failed to refresh DAOs' });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const showToast = (type, message) => {
+    setToast({ type, message });
+  };
 
   if (authLoading || loading) {
     return (
@@ -100,15 +139,27 @@ const DAODashboard: React.FC = () => {
                 {'>'} Manage your decentralized organizations
               </p>
             </div>
-            <motion.button
-              onClick={() => navigate('/launch')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold shadow-lg mt-4 md:mt-0"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Launch New DAO</span>
-            </motion.button>
+            <div className="flex items-center space-x-3 mt-4 md:mt-0">
+              <motion.button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                whileHover={{ scale: refreshing ? 1 : 1.05 }}
+                whileTap={{ scale: refreshing ? 1 : 0.95 }}
+                className="flex items-center space-x-2 px-4 py-3 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg transition-all font-semibold disabled:opacity-50"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </motion.button>
+              <motion.button
+                onClick={() => navigate('/launch')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold shadow-lg"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Launch New DAO</span>
+              </motion.button>
+            </div>
           </div>
         </motion.div>
 
@@ -257,9 +308,29 @@ const DAODashboard: React.FC = () => {
             </div>
             <h3 className="text-lg font-medium text-white mb-2 font-mono">NO DAOS FOUND</h3>
             <p className="text-gray-400 font-mono">{'>'} Try adjusting your filters or search terms</p>
+            <motion.button
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('All');
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="mt-4 px-4 py-2 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors font-mono"
+            >
+              Clear Filters
+            </motion.button>
           </motion.div>
         )}
       </div>
+
+      {/* Toast Notifications */}
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
