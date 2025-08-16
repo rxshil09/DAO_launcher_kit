@@ -1,18 +1,39 @@
 import HashMap "mo:base/HashMap";
-// import Array "mo:base/Array";
+import Array "mo:base/Array";
 import Iter "mo:base/Iter";
 import Time "mo:base/Time";
 import Result "mo:base/Result";
 import Principal "mo:base/Principal";
-// import Debug "mo:base/Debug";
+import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
+import Error "mo:base/Error";
 
 import Types "../shared/types";
 
-actor GovernanceCanister {
+/**
+ * Governance Canister
+ * 
+ * This canister manages the democratic decision-making process of the DAO:
+ * - Proposal creation, voting, and execution
+ * - Vote counting and quorum validation
+ * - Governance parameter management
+ * - Integration with staking for voting power calculation
+ * 
+ * The governance system supports multiple voting mechanisms:
+ * - Token-weighted voting (proportional to stake)
+ * - Quadratic voting (to prevent whale dominance)
+ * - Delegated voting (vote delegation to representatives)
+ * 
+ * Security features:
+ * - Proposal deposits to prevent spam
+ * - Time-locked execution for major changes
+ * - Quorum requirements for legitimacy
+ */
+persistent actor GovernanceCanister {
+    // Type aliases for improved code readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -21,16 +42,64 @@ actor GovernanceCanister {
     type GovernanceError = Types.GovernanceError;
     type CommonError = Types.CommonError;
 
-    // Stable storage for upgrades
-    private stable var nextProposalId : Nat = 1;
-    private stable var proposalsEntries : [(ProposalId, Proposal)] = [];
-    private stable var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
-    private stable var configEntries : [(Text, GovernanceConfig)] = [];
+    // Inter-canister communication setup
+    // These actor references enable cross-canister calls for governance functionality
+    var dao : actor {
+        getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
+        checkIsAdmin: shared query (Principal) -> async Bool;
+    } = actor("aaaaa-aa");
 
-    // Runtime storage
-    private var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
-    private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+    var staking : actor {
+        getUserStakingSummary: shared query (Principal) -> async {
+            totalStaked: Nat;
+            totalRewards: Nat;
+            activeStakes: Nat;
+            totalVotingPower: Nat;
+        };
+    } = actor("aaaaa-aa");
+
+    // Stable storage for upgrade persistence
+    // These arrays store serialized data that survives canister upgrades
+    private var nextProposalId : Nat = 1;
+    private var proposalsEntries : [(ProposalId, Proposal)] = [];
+    private var votesEntries : [(Text, Vote)] = []; // Key format: "proposalId_voterPrincipal"
+    private var configEntries : [(Text, GovernanceConfig)] = [];
+    private var daoId : Principal = Principal.fromText("aaaaa-aa");
+    private var stakingId : Principal = Principal.fromText("aaaaa-aa");
+    private var initialized : Bool = false;
+
+    // Runtime storage - rebuilt from stable storage after upgrades
+    // HashMaps provide O(1) lookup performance for governance operations
+    private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
+    private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+
+    public shared(msg) func init(newDaoId: Principal, newStakingId: Principal) : async () {
+        if (initialized) {
+            Debug.print("Initialization already completed");
+            throw Error.reject("Governance canister already initialized");
+        };
+
+        // Verify caller is authorized: either the canister itself or an admin
+        let caller = msg.caller;
+        let self = Principal.fromActor(GovernanceCanister);
+        let daoTemp : actor {
+            getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
+            checkIsAdmin: shared query (Principal) -> async Bool;
+        } = actor(Principal.toText(newDaoId));
+        let isAdmin = await daoTemp.checkIsAdmin(caller);
+        if (caller != self and not isAdmin) {
+            Debug.print("Unauthorized init attempt by " # Principal.toText(caller));
+            throw Error.reject("Caller is not authorized to initialize");
+        };
+
+        daoId := newDaoId;
+        stakingId := newStakingId;
+        dao := daoTemp;
+        staking := actor(Principal.toText(newStakingId));
+        initialized := true;
+        Debug.print("Initialization complete");
+    };
 
     // Initialize default configuration
     private func initializeConfig() {
@@ -65,12 +134,15 @@ actor GovernanceCanister {
             Text.hash
         );
         config := HashMap.fromIter<Text, GovernanceConfig>(
-            configEntries.vals(), 
-            configEntries.size(), 
-            Text.equal, 
+            configEntries.vals(),
+            configEntries.size(),
+            Text.equal,
             Text.hash
         );
-        
+
+        dao := actor(Principal.toText(daoId));
+        staking := actor(Principal.toText(stakingId));
+
         if (config.size() == 0) {
             initializeConfig();
         };
@@ -99,7 +171,7 @@ actor GovernanceCanister {
             case null return #err("Configuration not found");
         };
         
-        if (activeProposals.size() >= currentConfig.maxProposalsPerUser) {
+        if (Array.size(activeProposals) >= currentConfig.maxProposalsPerUser) {
             return #err("Maximum active proposals limit reached");
         };
 
@@ -136,7 +208,6 @@ actor GovernanceCanister {
     public shared(msg) func vote(
         proposalId: ProposalId,
         choice: Types.VoteChoice,
-        votingPower: Nat,
         reason: ?Text
     ) : async Result<(), Text> {
         let caller = msg.caller;
@@ -161,6 +232,20 @@ actor GovernanceCanister {
 
         if (Time.now() > proposal.votingDeadline) {
             return #err("Voting period has ended");
+        };
+
+        // Verify voter registration
+        let profileOpt = await dao.getUserProfile(caller);
+        switch (profileOpt) {
+            case null return #err("User not registered");
+            case (?_) {};
+        };
+
+        // Determine voting power from staking data
+        let summary = await staking.getUserStakingSummary(caller);
+        let votingPower = summary.totalVotingPower;
+        if (votingPower == 0) {
+            return #err("No voting power");
         };
 
         // Create vote record

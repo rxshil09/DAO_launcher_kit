@@ -9,7 +9,21 @@ import Text "mo:base/Text";
 
 import Types "shared/types";
 
-actor DAOMain {
+/**
+ * Main DAO Backend Canister
+ * 
+ * This is the central coordinator canister for the DAO system. It manages:
+ * - DAO initialization and configuration
+ * - User profile management and registration
+ * - Admin permissions and access control
+ * - Canister reference management for the modular architecture
+ * - Cross-canister communication coordination
+ * 
+ * The canister follows the upgrade-safe pattern with stable variables
+ * and proper state management for Internet Computer upgrades.
+ */
+persistent actor DAOMain {
+    // Type aliases for cleaner code and better readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -19,31 +33,44 @@ actor DAOMain {
     type TokenAmount = Types.TokenAmount;
     type UserProfile = Types.UserProfile;
     type DAOStats = Types.DAOStats;
+    type DAOConfig = Types.DAOConfig;
 
-    // Stable storage for upgrades
-    private stable var initialized : Bool = false;
-    private stable var daoName : Text = "DAO Launcher";
-    private stable var daoDescription : Text = "A decentralized autonomous organization for community governance";
-    private stable var totalMembers : Nat = 0;
-    private stable var userProfilesEntries : [(Principal, UserProfile)] = [];
-    private stable var adminPrincipalsEntries : [Principal] = [];
+    // Stable storage for upgrades - persists across canister upgrades
+    // These variables maintain their state when the canister is upgraded
+    private var initialized : Bool = false;
+    private var daoName : Text = "DAO Launcher";
+    private var daoDescription : Text = "A decentralized autonomous organization for community governance";
+    private var totalMembers : Nat = 0;
+    private var userProfilesEntries : [(Principal, UserProfile)] = [];
+    private var adminPrincipalsEntries : [Principal] = [];
+    private var daoConfig : ?DAOConfig = null;
 
-    // Runtime storage
-    private var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
-    private var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+    // Runtime storage - recreated after upgrades from stable storage
+    // These HashMaps provide efficient O(1) lookup for user data and admin permissions
+    private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+    private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
 
-    // Canister references (will be set after deployment)
-    private var governanceCanister : ?Principal = null;
-    private var stakingCanister : ?Principal = null;
-    private var treasuryCanister : ?Principal = null;
-    private var proposalsCanister : ?Principal = null;
+    // Canister references for modular architecture
+    // These maintain connections to other specialized canisters in the DAO ecosystem
+    private transient var governanceCanister : ?Principal = null;
+    private transient var stakingCanister : ?Principal = null;
+    private transient var treasuryCanister : ?Principal = null;
+    private transient var proposalsCanister : ?Principal = null;
 
     // System functions for upgrades
+    /**
+     * Pre-upgrade hook - Serializes runtime state to stable storage
+     * Called automatically before canister upgrade to preserve data
+     */
     system func preupgrade() {
         userProfilesEntries := Iter.toArray(userProfiles.entries());
         adminPrincipalsEntries := Iter.toArray(adminPrincipals.keys());
     };
 
+    /**
+     * Post-upgrade hook - Restores runtime state from stable storage
+     * Called automatically after canister upgrade to restore functionality
+     */
     system func postupgrade() {
         userProfiles := HashMap.fromIter<Principal, UserProfile>(
             userProfilesEntries.vals(), 
@@ -52,17 +79,29 @@ actor DAOMain {
             Principal.hash
         );
         
+        // Restore admin permissions from stable storage
         for (admin in adminPrincipalsEntries.vals()) {
             adminPrincipals.put(admin, true);
         };
     };
 
-    // Initialize the DAO
+    /**
+     * Initialize the DAO with basic configuration
+     * 
+     * This is the first function called when setting up a new DAO.
+     * It establishes the foundational parameters and admin structure.
+     * 
+     * @param name - Human-readable name for the DAO
+     * @param description - Brief description of the DAO's purpose
+     * @param initialAdmins - Array of Principal IDs who will have admin privileges
+     * @returns Result indicating success or failure with error message
+     */
     public shared(msg) func initialize(
         name: Text,
         description: Text,
         initialAdmins: [Principal]
     ) : async Result<(), Text> {
+        // Prevent double initialization
         if (initialized) {
             return #err("DAO already initialized");
         };
@@ -70,12 +109,12 @@ actor DAOMain {
         daoName := name;
         daoDescription := description;
         
-        // Set initial admins
+        // Set initial admins - these users can manage DAO configuration
         for (admin in initialAdmins.vals()) {
             adminPrincipals.put(admin, true);
         };
 
-        // Add deployer as admin
+        // Always add the deployer as an admin for initial setup
         adminPrincipals.put(msg.caller, true);
 
         initialized := true;
@@ -83,13 +122,25 @@ actor DAOMain {
         #ok()
     };
 
-    // Set canister references
+    /**
+     * Set references to other canisters in the DAO ecosystem
+     * 
+     * This establishes the microservices architecture by connecting
+     * the main canister to specialized function canisters.
+     * 
+     * @param governance - Principal ID of the governance canister
+     * @param staking - Principal ID of the staking canister  
+     * @param treasury - Principal ID of the treasury canister
+     * @param proposals - Principal ID of the proposals canister
+     * @returns Result indicating success or failure
+     */
     public shared(msg) func setCanisterReferences(
         governance: Principal,
         staking: Principal,
         treasury: Principal,
         proposals: Principal
     ) : async Result<(), Text> {
+        // Only admins can modify the canister architecture
         if (not isAdmin(msg.caller)) {
             return #err("Only admins can set canister references");
         };
@@ -100,6 +151,16 @@ actor DAOMain {
         proposalsCanister := ?proposals;
 
         Debug.print("Canister references set successfully");
+        #ok()
+    };
+
+    // DAO configuration
+    public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can set DAO configuration");
+        };
+        daoConfig := ?config;
+        Debug.print("DAO configuration saved");
         #ok()
     };
 
@@ -126,6 +187,33 @@ actor DAOMain {
         totalMembers += 1;
 
         Debug.print("User registered: " # displayName);
+        #ok()
+    };
+
+    public shared(msg) func adminRegisterUser(newUser: Principal, displayName: Text, bio: Text) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can register users");
+        };
+
+        switch (userProfiles.get(newUser)) {
+            case (?_) return #err("User already registered");
+            case null {};
+        };
+
+        let userProfile : UserProfile = {
+            id = newUser;
+            displayName = displayName;
+            bio = bio;
+            joinedAt = Time.now();
+            reputation = 0;
+            totalStaked = 0;
+            votingPower = 0;
+        };
+
+        userProfiles.put(newUser, userProfile);
+        totalMembers += 1;
+
+        Debug.print("User registered by admin: " # displayName);
         #ok()
     };
 
@@ -165,6 +253,10 @@ actor DAOMain {
         }
     };
 
+    public query func getDAOConfig() : async ?DAOConfig {
+        daoConfig
+    };
+
     public query func getUserProfile(userId: Principal) : async ?UserProfile {
         userProfiles.get(userId)
     };
@@ -198,9 +290,64 @@ actor DAOMain {
         }
     };
 
+    // Governance operations (temporary implementation until governance canister is ready)
+    public func getGovernanceStats() : async {
+        totalProposals: Nat;
+        activeProposals: Nat;
+        passedProposals: Nat;
+        totalVotingPower: Nat;
+    } {
+        // Temporary static data until governance canister is implemented
+        {
+            totalProposals = 0;
+            activeProposals = 0;
+            passedProposals = 0;
+            totalVotingPower = 0;
+        }
+    };
+
+    // Temporary proposal creation (will delegate to proposals canister later)
+    public shared(msg) func createProposal(
+        title: Text,
+        _description: Text,
+        _proposalType: Text
+    ) : async Result<Nat, Text> {
+        if (not isRegisteredUser(msg.caller)) {
+            return #err("Only registered users can create proposals");
+        };
+        
+        // For now, return success with a dummy proposal ID
+        // Later this will delegate to the proposals canister
+        Debug.print("Proposal created: " # title);
+        #ok(1) // Return dummy proposal ID
+    };
+
+    // Temporary voting function (will delegate to proposals canister later)
+    public shared(msg) func vote(
+        proposalId: Nat,
+        choice: Text,
+        _reason: ?Text
+    ) : async Result<(), Text> {
+        if (not isRegisteredUser(msg.caller)) {
+            return #err("Only registered users can vote");
+        };
+        
+        // For now, just log the vote
+        // Later this will delegate to the proposals canister
+        Debug.print("Vote cast on proposal " # Nat.toText(proposalId) # ": " # choice);
+        #ok()
+    };
+
     // Utility functions
     private func isAdmin(principal: Principal) : Bool {
         switch (adminPrincipals.get(principal)) {
+            case (?_) true;
+            case null false;
+        }
+    };
+
+    private func isRegisteredUser(principal: Principal) : Bool {
+        switch (userProfiles.get(principal)) {
             case (?_) true;
             case null false;
         }

@@ -1,5 +1,5 @@
 
-# DAO Platform - Decentralized Investment & Governance
+# DAO Launcher Kit 🚀
 
 [![Internet Computer](https://img.shields.io/badge/Internet%20Computer-Protocol-29ABE2?style=flat-square)](https://internetcomputer.org/)
 [![Motoko](https://img.shields.io/badge/Backend-Motoko-8A2BE2?style=flat-square)](https://github.com/dfinity/motoko)
@@ -7,89 +7,83 @@
 [![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC?style=flat-square)](https://tailwindcss.com/)
 
-A comprehensive decentralized autonomous organization (DAO) platform built on the Internet Computer blockchain, featuring secure governance, staking mechanisms, treasury management, and a modern React frontend with Internet Identity authentication.
+A modular DAO (Decentralized Autonomous Organization) creation and management platform built on the Internet Computer blockchain. Launch your own DAO with customizable governance, staking, and treasury management systems.
 
 ## 🌟 Features
 
-### Core Functionality
-- **🔐 Internet Identity Authentication**: Secure, passwordless authentication using IC's native identity system
-- **🏛️ DAO Governance**: Proposal creation, voting mechanisms, and community-driven decision making
-- **💰 Staking System**: Token staking with rewards and voting power calculation
-- **🏦 Treasury Management**: Decentralized fund management and allocation
-- **📊 Investment Dashboard**: Real-time portfolio tracking and project analytics
-- **🚀 DAO Launcher**: Create and deploy new DAOs with customizable parameters
+### Core Components
+- **🏛️ Governance System**: Create and vote on proposals with configurable parameters
+- **💰 Treasury Management**: Multi-signature control over DAO funds
+- **� Staking Mechanism**: Token staking with flexible periods and rewards
+- **📊 Proposal Framework**: Advanced proposal lifecycle management
+- **� Internet Identity**: Secure authentication and authorization
 
-### Frontend Features
-- **⚡ Real-time Updates**: Instant transaction feedback and live data
-- **📱 Responsive Design**: Mobile-first design with desktop optimization
-- **🎨 Modern UI/UX**: Gradient animations, particle effects, and smooth transitions
-- **🔍 Advanced Filtering**: Search and filter projects by category, status, and more
-- **📈 Interactive Charts**: Visual portfolio performance and analytics
-- **🌐 Multi-language Support**: Extensible internationalization framework
+### User Experience
+- **🎨 Modern UI**: Clean, responsive design with TailwindCSS
+- **⚡ Real-time Updates**: Instant feedback on transactions and votes
+- **📱 Mobile-First**: Optimized for both mobile and desktop
+- **🌐 Cross-Platform**: Works on any modern browser
 
 ## 🏗️ Architecture
 
-### Backend (Motoko)
+### Backend Structure
 ```
 src/dao_backend/
-├── main.mo                 # Main DAO actor and coordinator
-├── governance/             # Voting and proposal management
-│   └── main.mo
-├── staking/               # Token staking and rewards
-│   └── main.mo
-├── treasury/              # Fund management and allocation
-│   └── main.mo
-├── proposals/             # Proposal lifecycle management
-│   └── main.mo
-└── shared/                # Common types and utilities
-    └── types.mo
+├── main.mo                # Main DAO coordinator
+├── governance/            # Voting system
+├── staking/              # Token staking
+├── treasury/             # Fund management
+├── proposals/            # Proposal handling
+└── shared/              # Common types
 ```
 
-### Frontend (React + Vite)
+### Frontend Structure
 ```
 src/dao_frontend/
 ├── src/
-│   ├── components/        # Reusable UI components
-│   │   ├── Dashboard.jsx     # Main dashboard
-│   │   ├── LandingPage.jsx   # Home page
-│   │   ├── SignIn.jsx        # Authentication
-│   │   ├── LaunchDAO.jsx     # DAO creation wizard
-│   │   ├── Settings.jsx      # User preferences
-│   │   └── Navbar.jsx        # Navigation component
-│   ├── context/           # React context providers
-│   │   └── AuthContext.jsx   # Authentication state
-│   ├── declarations/      # Auto-generated canister interfaces
-│   └── App.jsx           # Main application component
-├── public/               # Static assets
+│   ├── components/      # UI components
+│   ├── context/         # React contexts
+│   ├── hooks/          # Custom hooks
+│   └── declarations/    # Canister interfaces
+└── public/             # Static assets
+```
 └── package.json         # Dependencies and scripts
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-
-- **Node.js**: Version 16.0.0 or higher
-- **npm**: Version 7.0.0 or higher
-- **DFX**: Internet Computer SDK (latest version)
+- Node.js ≥ 16.0.0
+- DFX (Internet Computer SDK)
+- Git
 
 ### Installation
 
-1. **Clone the repository:**
+1. Clone the repository:
    ```bash
-   git clone <repository-url>
-   cd dao
+   git clone https://github.com/tojo04/DAO_launcher_kit.git
+   cd DAO_launcher_kit
    ```
 
-2. **Install dependencies:**
+2. Install dependencies:
    ```bash
    npm install
+   cd src/dao_frontend && npm install
    ```
 
-3. **Install frontend dependencies:**
+3. Start local Internet Computer replica:
    ```bash
-   cd src/dao_frontend
-   npm install
-   cd ../..
+   dfx start --clean --background
+   ```
+
+4. Deploy the canisters:
+   ```bash
+   dfx deploy
+   ```
+
+5. Start the frontend:
+   ```bash
+   cd src/dao_frontend && npm run dev
    ```
 
 ### Development Setup
@@ -132,56 +126,58 @@ cd src/dao_frontend && npm run dev
 cd src/dao_frontend && npm run format
 ```
 
-## 📦 Project Structure
+## � Development
 
-### Core Modules
+### Environment Setup
 
-1. **DAO Backend (`dao_backend`)**
-   - Main coordinator for all DAO operations
-   - User profile management
-   - Cross-module communication
+Create a `.env` file in the frontend directory:
+```env
+VITE_CANISTER_ID_DAO_BACKEND=xxx
+VITE_CANISTER_ID_GOVERNANCE=xxx
+VITE_CANISTER_ID_STAKING=xxx
+VITE_CANISTER_ID_TREASURY=xxx
+VITE_CANISTER_ID_PROPOSALS=xxx
+```
 
-2. **Governance Module (`governance`)**
-   - Proposal creation and management
-   - Voting mechanisms (weighted and simple)
-   - Execution of approved proposals
+### Key Commands
 
-3. **Staking Module (`staking`)**
-   - Token staking and unstaking
-   - Reward calculation and distribution
-   - Voting power based on stakes
+```bash
+# Development
+dfx start --clean --background  # Start local replica
+dfx deploy                      # Deploy all canisters
+dfx deploy dao_backend         # Deploy specific canister
 
-4. **Treasury Module (`treasury`)**
-   - Fund allocation and management
-   - Multi-signature operations
-   - Budget tracking and reporting
+# Frontend
+npm run dev                    # Start development server
+npm run build                 # Build for production
 
-5. **Proposals Module (`proposals`)**
-   - Proposal lifecycle management
-   - Category-based organization
-   - Timeline and status tracking
+# Testing
+dfx test                      # Run backend tests
+npm test                      # Run frontend tests
+```
 
-### Frontend Components
+## 🔒 Security Features
 
-- **Landing Page**: Marketing site with feature showcase
-- **Dashboard**: Main user interface for portfolio management
-- **Authentication**: Internet Identity integration
-- **DAO Launcher**: Multi-step DAO creation wizard
-- **Settings**: User preferences and profile management
+- Principal-based authentication
+- Role-based access control
+- Multi-signature treasury operations
+- Secure upgrade patterns
+- Input validation and sanitization
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory (you can copy `.env.example`):
 
 ```env
 DFX_NETWORK=local
-CANISTER_ID_DAO_BACKEND=your_canister_id
-CANISTER_ID_GOVERNANCE=your_canister_id
-CANISTER_ID_STAKING=your_canister_id
-CANISTER_ID_TREASURY=your_canister_id
-CANISTER_ID_PROPOSALS=your_canister_id
+VITE_CANISTER_ID_DAO_BACKEND=your_canister_id
+VITE_CANISTER_ID_GOVERNANCE=your_canister_id
+VITE_CANISTER_ID_STAKING=your_canister_id
+VITE_CANISTER_ID_TREASURY=your_canister_id
+VITE_CANISTER_ID_PROPOSALS=your_canister_id
+VITE_CANISTER_ID_INTERNET_IDENTITY=your_canister_id
 ```
 
 ### DFX Configuration
@@ -225,6 +221,7 @@ Key configuration files:
    ```bash
    npm run build
    ```
+   
 
 ### Testing
 
@@ -334,20 +331,29 @@ The frontend can be deployed to:
    - Try incognito/private browsing mode
    - Check Internet Identity service status
 
-## 📜 License
+# Frontend Declarations
+
+These declarations are processed versions of the dfx-generated candid interfaces.
+Do not modify these files directly - instead:
+
+1. Update your candid (.did) files
+2. Run `dfx generate`
+3. The build process will update
+
+## � License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Internet Computer Foundation for the blockchain platform
-- DFINITY team for Motoko and development tools
-- React and Vite communities for excellent development experience
-- Open source contributors and the broader Web3 community
+- DFINITY Foundation for the Internet Computer
+- React and Vite communities
+- TailwindCSS team
+- All contributors and supporters
 
 ---
 
-**Built with ❤️ on the Internet Computer**
+Built with ❤️ on the Internet Computer
 
 
 hi

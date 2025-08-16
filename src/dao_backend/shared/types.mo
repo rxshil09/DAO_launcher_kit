@@ -23,6 +23,31 @@ module {
         votingPower: Nat;
     };
 
+    // DAO configuration types
+    public type ModuleFeature = {
+        moduleId: Text;
+        features: [Text];
+    };
+
+    public type DAOConfig = {
+        category: Text;
+        website: Text;
+        selectedModules: [Text];
+        moduleFeatures: [ModuleFeature];
+        tokenName: Text;
+        tokenSymbol: Text;
+        totalSupply: Nat;
+        initialPrice: Nat;
+        votingPeriod: Nat;
+        quorumThreshold: Nat;
+        proposalThreshold: Nat;
+        fundingGoal: Nat;
+        fundingDuration: Nat;
+        minInvestment: Nat;
+        termsAccepted: Bool;
+        kycRequired: Bool;
+    };
+
     // Token and Balance types
     public type TokenAmount = Nat;
     public type Balance = Nat;

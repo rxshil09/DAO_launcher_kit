@@ -10,9 +10,8 @@ import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Nat32 "mo:base/Nat32";
-import Nat8 "mo:base/Nat8";
 
-actor AssetCanister {
+persistent actor AssetCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Time = Time.Time;
 
@@ -53,25 +52,43 @@ actor AssetCanister {
     };
 
     // Stable storage for upgrades
-    private stable var nextAssetId : Nat = 1;
-    private stable var assetsEntries : [(AssetId, Asset)] = [];
-    private stable var authorizedUploaders : [Principal] = [];
-    private stable var maxFileSize : Nat = 10_000_000; // 10MB default
-    private stable var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
-    private stable var currentStorageUsed : Nat = 0;
+    private var nextAssetId : Nat = 1;
+    private var assetsEntries : [(AssetId, Asset)] = [];
+    private var authorizedUploaders : [Principal] = [];
+    private var maxFileSize : Nat = 10_000_000; // 10MB default
+    private var maxTotalStorage : Nat = 1_000_000_000; // 1GB default
+    private var currentStorageUsed : Nat = 0;
+    private var allowOpenUploads : Bool = false; // permit uploads with empty authorizedUploaders
 
     // Runtime storage
-    private var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var uploaderAssets = HashMap.HashMap<Principal, [AssetId]>(50, Principal.equal, Principal.hash);
+    private transient var assets = HashMap.HashMap<AssetId, Asset>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var uploaderAssets = HashMap.HashMap<Principal, [AssetId]>(50, Principal.equal, Principal.hash);
 
     // Supported content types
-    private let supportedTypes = [
+    private transient let supportedTypes = [
         "image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml",
         "application/pdf", "text/plain", "text/html", "text/css", "text/javascript",
         "application/json", "application/xml", "video/mp4", "audio/mpeg", "audio/wav"
     ];
 
-    // System functions for upgrades
+    // System functions for upgrades and initialization
+
+    // During installation the deployer can optionally supply an initial
+    // principal that is immediately granted upload permissions. The deployer
+    // can also enable `allowOpenUploads` to permit anyone to upload assets
+    // when no authorized uploaders are configured. By default open uploads are
+    // disabled, meaning attempts to upload assets will be rejected until at
+    // least one uploader has been authorized. If omitted, the list of
+    // authorized uploaders starts empty and can be populated later via
+    // `addAuthorizedUploader`.
+    public shared ({caller = _}) func init(initialUploader : ?Principal, openUploads : Bool) : async () {
+        switch (initialUploader) {
+            case (?p) { authorizedUploaders := [p] };
+            case null {};
+        };
+        allowOpenUploads := openUploads;
+    };
+
     system func preupgrade() {
         assetsEntries := Iter.toArray(assets.entries());
     };
@@ -97,7 +114,9 @@ actor AssetCanister {
 
     // Public functions
 
-    // Upload an asset
+    // Upload an asset.
+    // If no uploaders have been authorized, the upload will be rejected unless
+    // `allowOpenUploads` was set to true during deployment.
     public shared(msg) func uploadAsset(
         name: Text,
         contentType: Text,
@@ -106,6 +125,13 @@ actor AssetCanister {
         tags: [Text]
     ) : async Result<AssetId, Text> {
         let caller = msg.caller;
+        if (authorizedUploaders.size() == 0) {
+            if (not allowOpenUploads) {
+                return #err("Uploads are disabled until an uploader is authorized or open uploads are enabled");
+            };
+        } else if (not isAuthorized(caller)) {
+            return #err("Not authorized to upload assets");
+        };
         let dataSize = data.size();
 
         // Validate input
@@ -362,14 +388,19 @@ actor AssetCanister {
 
     // Add authorized uploader
     public shared(msg) func addAuthorizedUploader(principal: Principal) : async Result<(), Text> {
-        if (not isAuthorized(msg.caller)) {
+        // Allow the first uploader to be added by anyone when the list is empty.
+        if (authorizedUploaders.size() > 0 and not isAuthorized(msg.caller)) {
             return #err("Not authorized to add uploaders");
+        };
+
+        if (isAuthorized(principal)) {
+            return #err("Uploader already authorized");
         };
 
         let principals = Buffer.fromArray<Principal>(authorizedUploaders);
         principals.add(principal);
         authorizedUploaders := Buffer.toArray(principals);
-        
+
         Debug.print("Authorized uploader added: " # Principal.toText(principal));
         #ok()
     };
@@ -452,7 +483,7 @@ actor AssetCanister {
     };
 
     // Batch upload assets
-    public shared(msg) func batchUploadAssets(
+    public shared(_msg) func batchUploadAssets(
         assets_data: [(Text, Text, AssetData, Bool, [Text])]
     ) : async [Result<AssetId, Text>] {
         let results = Buffer.Buffer<Result<AssetId, Text>>(assets_data.size());

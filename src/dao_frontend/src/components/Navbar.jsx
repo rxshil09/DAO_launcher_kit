@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useDAO } from '../context/DAOContext';
 import { 
   Wallet, 
   User, 
@@ -22,21 +23,38 @@ import {
   Award,
   Star,
   Globe,
-  Sparkles
+  Sparkles,
+  Image,
+  BarChart3,
 } from 'lucide-react';
 
 const Navbar = () => {
   const { isAuthenticated, logout, principal, userSettings } = useAuth();
+  const { hasActiveDAO, activeDAO } = useDAO();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationCount] = useState(3);
 
-  const navigation = [
+  // Base navigation items (always visible)
+  const baseNavigation = [
     { name: 'Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/dashboard', icon: Activity },
-    { name: 'Launch DAO', href: '/launch', icon: Rocket }, // NO HIGHLIGHTING
+    { name: 'Status', href: '/status', icon: BarChart3 },
+    { name: 'Launch DAO', href: '/launch', icon: Rocket },
   ];
+
+  // DAO-specific navigation items (only visible when user has active DAO)
+  const daoNavigation = [
+    { name: 'Proposals', href: '/proposals', icon: Star },
+    { name: 'Staking', href: '/staking', icon: Award },
+    { name: 'Treasury', href: '/treasury', icon: DollarSign },
+    { name: 'Governance', href: '/governance', icon: Shield },
+    { name: 'Assets', href: '/assets', icon: Image },
+  ];
+
+  // Combine navigation based on context
+  const navigation = hasActiveDAO ? [...baseNavigation, ...daoNavigation] : baseNavigation;
 
   const isActive = (path) => location.pathname === path;
 
@@ -86,7 +104,17 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* Enhanced Desktop Navigation - NO HIGHLIGHTING */}
+            {/* Active DAO Display & Selector */}
+            {hasActiveDAO && (
+              <div className="hidden md:flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/30 rounded-xl">
+                <Shield className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-medium text-cyan-400">
+                  {activeDAO?.name || 'Active DAO'}
+                </span>
+              </div>
+            )}
+
+            {/* Enhanced Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-2">
               {navigation.map((item) => (
                 <Link

@@ -1,6 +1,29 @@
+/**
+ * LaunchDAO Component
+ * 
+ * This is the main DAO creation interface that guides users through a comprehensive
+ * 7-step wizard to configure and launch their decentralized autonomous organization.
+ * 
+ * Features:
+ * - Step-by-step wizard with validation at each stage
+ * - Real-time form validation with user-friendly error messages
+ * - Module selection for customizable DAO functionality
+ * - Preview mode for reviewing configuration before launch
+ * - Integration with Internet Identity for secure authentication
+ * - Responsive design optimized for desktop and mobile
+ * 
+ * The component manages complex state including:
+ * - Form data across multiple steps
+ * - Validation errors and user feedback
+ * - Module and feature selection logic
+ * - Team member management
+ * - Integration with blockchain operations
+ */
+
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useDAO } from '../context/DAOContext';
 import { useNavigate } from 'react-router-dom';
 import { useDAOOperations } from '../hooks/useDAOOperations';
 import BackgroundParticles from './BackgroundParticles';
@@ -37,47 +60,70 @@ import {
   LayoutDashboard
 } from 'lucide-react';
 
+/**
+ * Main LaunchDAO Functional Component
+ * 
+ * Manages the entire DAO creation flow from initial landing to final launch.
+ * Uses React hooks for state management and side effects.
+ */
 const LaunchDAO = () => {
+  // Authentication and navigation hooks
   const { isAuthenticated, loading } = useAuth();
+  const { addUserDAO } = useDAO();
   const navigate = useNavigate();
-  const [showForm, setShowForm] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [errors, setErrors] = useState({});
-  const [showPreview, setShowPreview] = useState(false);
+  
+  // UI state management
+  const [showForm, setShowForm] = useState(false);        // Toggle between landing and form
+  const [currentStep, setCurrentStep] = useState(1);      // Current step in the 7-step wizard
+  const [errors, setErrors] = useState({});               // Form validation errors
+  const [showPreview, setShowPreview] = useState(false);  // Preview modal state
 
+  /**
+   * Form Data State
+   * 
+   * This object contains all the configuration data for the DAO being created.
+   * It's structured to match the backend API requirements and includes:
+   * - Basic information (name, description, category)
+   * - Module selection and feature configuration
+   * - Economic parameters (tokenomics, funding)
+   * - Governance settings (voting, proposals)
+   * - Team member information
+   * - Legal and compliance settings
+   */
   const [formData, setFormData] = useState({
-    // Basic Info
-    daoName: '',
-    description: '',
-    category: '',
-    website: '',
+    // Step 1: Basic Info - Core DAO identification and categorization
+    daoName: '',          // Human-readable name for the DAO
+    description: '',      // Detailed description of DAO purpose and goals
+    category: '',         // DAO category (DeFi, Gaming, Investment, etc.)
+    website: '',          // Official website or documentation URL
     
-    // Module Selection
-    selectedModules: [],
-    selectedFeatures: {},
+    // Step 2: Module Selection - Functional components to include
+    selectedModules: [],          // Array of selected module IDs
+    selectedFeatures: {},         // Object mapping modules to their selected features
     
-    // Tokenomics
-    tokenName: '',
-    tokenSymbol: '',
-    totalSupply: '',
-    initialPrice: '',
+    // Step 3: Tokenomics - Economic model configuration
+    tokenName: '',               // Full name of the DAO token
+    tokenSymbol: '',             // Ticker symbol (3-4 characters)
+    totalSupply: '',             // Maximum token supply
+    initialPrice: '',            // Starting price per token
     
-    // Governance
-    votingPeriod: '7',
-    quorumThreshold: '10',
-    proposalThreshold: '1',
+    // Step 4: Governance - Democratic decision-making parameters
+    votingPeriod: '604800',      // Duration for voting (default: 7 days in seconds)
+    quorumThreshold: '10',       // Minimum participation for valid votes (%)
+    proposalThreshold: '1',      // Minimum tokens needed to create proposals (%)
     
-    // Funding
-    fundingGoal: '',
-    fundingDuration: '30',
-    minInvestment: '',
+    // Step 5: Funding - Initial capital raising configuration
+    fundingGoal: '',             // Target amount to raise
+    fundingDuration: '2592000',  // Fundraising period (default: 30 days in seconds)
+    minInvestment: '',           // Minimum individual investment amount
     
-    // Team
-    teamMembers: [{ name: '', role: '', wallet: '' }],
+    // Step 6: Team - Core team member information
+    teamMembers: [{ name: '', role: '', wallet: '' }],  // Array of team member objects
     
-    // Legal
-    termsAccepted: false,
-    kycRequired: false
+    // Step 7: Legal - Compliance and terms
+    termsAccepted: false,        // User agreement to terms of service
+    kycRequired: false           // Whether KYC verification is required for investors
+
   });
 
   useEffect(() => {
@@ -155,7 +201,7 @@ const LaunchDAO = () => {
     }
   ];
 
-  const validateStep = (step) => {
+  const getStepErrors = (step) => {
     const newErrors = {};
 
     switch (step) {
@@ -164,50 +210,67 @@ const LaunchDAO = () => {
         if (!formData.description.trim()) newErrors.description = 'Description is required';
         if (!formData.category) newErrors.category = 'Category is required';
         break;
-      
+
       case 2:
         // Check if required modules are selected
         const requiredModules = modules.filter(m => m.required).map(m => m.id);
         const missingRequired = requiredModules.filter(id => !formData.selectedModules.includes(id));
-        
+
         if (missingRequired.length > 0) {
           missingRequired.forEach(moduleId => {
             const module = modules.find(m => m.id === moduleId);
-            newErrors[moduleId] = `${module.name} module is required`;
+            newErrors[moduleId] = module.name + ' module is required';
           });
         }
         break;
-      
+
       case 3:
         if (!formData.tokenName.trim()) newErrors.tokenName = 'Token name is required';
         if (!formData.tokenSymbol.trim()) newErrors.tokenSymbol = 'Token symbol is required';
         if (!formData.totalSupply) newErrors.totalSupply = 'Total supply is required';
         if (!formData.initialPrice) newErrors.initialPrice = 'Initial price is required';
         break;
-      
+
       case 4:
         if (!formData.votingPeriod) newErrors.votingPeriod = 'Voting period is required';
         if (!formData.quorumThreshold) newErrors.quorumThreshold = 'Quorum threshold is required';
         break;
-      
+
       case 5:
         if (!formData.fundingGoal) newErrors.fundingGoal = 'Funding goal is required';
         if (!formData.minInvestment) newErrors.minInvestment = 'Minimum investment is required';
         break;
-      
+
       case 6:
         if (formData.teamMembers.some(member => !member.name.trim() || !member.role.trim())) {
           newErrors.teamMembers = 'All team members must have name and role';
         }
         break;
-      
+
       case 7:
         if (!formData.termsAccepted) newErrors.termsAccepted = 'You must accept the terms of service';
         break;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors;
+  };
+
+  const validateStep = (step) => {
+    const stepErrors = getStepErrors(step);
+    setErrors(stepErrors);
+    return Object.keys(stepErrors).length === 0;
+  };
+
+  const validateAllSteps = () => {
+    let aggregatedErrors = {};
+    for (let step = 1; step <= 7; step++) {
+      const stepErrors = getStepErrors(step);
+      if (Object.keys(stepErrors).length > 0) {
+        aggregatedErrors = { ...aggregatedErrors, ...stepErrors };
+      }
+    }
+    setErrors(aggregatedErrors);
+    return { isValid: Object.keys(aggregatedErrors).length === 0, errors: aggregatedErrors };
   };
 
   const handleNext = () => {
@@ -271,16 +334,34 @@ const LaunchDAO = () => {
   const { launchDAO, loading: launchLoading, error: launchError } = useDAOOperations();
   
   const handleLaunch = async () => {
-    if (validateStep(7)) {
+    const { isValid, errors: allErrors } = validateAllSteps();
+    if (isValid) {
       try {
         const result = await launchDAO(formData);
         console.log('DAO launched successfully:', result);
+
+        // Add the DAO to user's context
+        const newDAO = {
+          id: result.daoId || Date.now().toString(),
+          name: formData.daoName,
+          description: formData.description,
+          category: formData.category,
+          modules: formData.selectedModules,
+          createdAt: new Date().toISOString(),
+          canisterId: result.canisterId
+        };
+
+        addUserDAO(newDAO);
+
         alert('DAO launched successfully! 🚀');
         navigate('/dashboard');
       } catch (error) {
         console.error('Failed to launch DAO:', error);
         alert(`Failed to launch DAO: ${error.message}`);
       }
+    } else {
+      const errorMessages = Object.values(allErrors).join('\n');
+      alert(`Please fix the following errors before launching:\n${errorMessages}`);
     }
   };
 
@@ -738,7 +819,7 @@ const LaunchDAO = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-                    Voting Period (days) <span className="text-red-400">*</span>
+                    Voting Period (seconds) <span className="text-red-400">*</span>
                   </label>
                   <input
                     type="number"
@@ -747,8 +828,8 @@ const LaunchDAO = () => {
                     className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono ${
                       errors.votingPeriod ? 'border-red-500' : 'border-gray-600'
                     }`}
-                    min="1"
-                    max="30"
+                    min="86400"
+                    max="2592000"
                   />
                 </div>
 
@@ -809,15 +890,15 @@ const LaunchDAO = () => {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-                    Funding Duration (days)
+                    Funding Duration (seconds)
                   </label>
                   <input
                     type="number"
                     value={formData.fundingDuration}
                     onChange={(e) => setFormData(prev => ({ ...prev, fundingDuration: e.target.value }))}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
-                    min="7"
-                    max="365"
+                    min="604800"
+                    max="31536000"
                   />
                 </div>
 
@@ -1149,7 +1230,7 @@ const LaunchDAO = () => {
                         </div>
                         <div>
                           <span className="text-gray-400">Duration:</span>
-                          <div className="text-white font-semibold">{formData.fundingDuration} days</div>
+                          <div className="text-white font-semibold">{formData.fundingDuration} seconds</div>
                         </div>
                         <div>
                           <span className="text-gray-400">Min Investment:</span>

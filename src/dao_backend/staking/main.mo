@@ -14,7 +14,29 @@ import Nat32 "mo:base/Nat32";
 
 import Types "../shared/types";
 
-actor StakingCanister {
+/**
+ * Staking Canister
+ * 
+ * This canister manages the token staking system that provides:
+ * - Multiple staking periods with different reward rates
+ * - Voting power calculation based on staked amounts and duration
+ * - Automated reward distribution and compounding
+ * - Flexible unstaking with penalty mechanisms
+ * 
+ * Staking Mechanics:
+ * - Instant staking: No lock period, lower rewards, full liquidity
+ * - Locked staking: 30/90/180/365 days with increasing reward multipliers
+ * - Voting power: Calculated as staked_amount * time_multiplier
+ * - Rewards: Distributed continuously, compounded automatically
+ * 
+ * Security Features:
+ * - Minimum/maximum stake limits
+ * - Early unstaking penalties
+ * - Slashing protection for governance participation
+ * - Anti-gaming mechanisms for reward distribution
+ */
+persistent actor StakingCanister {
+    // Type aliases for better code readability
     type Result<T, E> = Result.Result<T, E>;
     type Stake = Types.Stake;
     type StakeId = Types.StakeId;
@@ -24,21 +46,24 @@ actor StakingCanister {
     type StakingError = Types.StakingError;
     type CommonError = Types.CommonError;
 
-    // Stable storage for upgrades
-    private stable var nextStakeId : Nat = 1;
-    private stable var stakesEntries : [(StakeId, Stake)] = [];
-    private stable var userStakesEntries : [(Principal, [StakeId])] = [];
-    private stable var totalStakedAmount : TokenAmount = 0;
-    private stable var totalRewardsDistributed : TokenAmount = 0;
+    // Stable storage for upgrade persistence
+    // Core staking data that must survive canister upgrades
+    private var nextStakeId : Nat = 1;
+    private var stakesEntries : [(StakeId, Stake)] = [];
+    private var userStakesEntries : [(Principal, [StakeId])] = [];
+    private var totalStakedAmount : TokenAmount = 0;
+    private var totalRewardsDistributed : TokenAmount = 0;
 
-    // Runtime storage
-    private var stakes = HashMap.HashMap<StakeId, Stake>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var userStakes = HashMap.HashMap<Principal, [StakeId]>(50, Principal.equal, Principal.hash);
+    // Runtime storage - rebuilt from stable storage after upgrades
+    // HashMaps provide efficient lookup and management of stake data
+    private transient var stakes = HashMap.HashMap<StakeId, Stake>(100, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var userStakes = HashMap.HashMap<Principal, [StakeId]>(50, Principal.equal, Principal.hash);
 
-    // Staking configuration
-    private stable var stakingEnabled : Bool = true;
-    private stable var minimumStakeAmount : TokenAmount = 10; // Minimum 10 tokens
-    private stable var maximumStakeAmount : TokenAmount = 1000000; // Maximum 1M tokens
+    // Staking configuration parameters
+    // These control the economic parameters of the staking system
+    private var stakingEnabled : Bool = true;
+    private var minimumStakeAmount : TokenAmount = 10; // Minimum 10 tokens to prevent dust attacks
+    private var maximumStakeAmount : TokenAmount = 1000000; // Maximum 1M tokens to prevent centralization
 
     // System functions for upgrades
     system func preupgrade() {

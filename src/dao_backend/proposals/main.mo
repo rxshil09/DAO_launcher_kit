@@ -12,7 +12,7 @@ import Nat32 "mo:base/Nat32";
 
 import Types "../shared/types";
 
-actor ProposalsCanister {
+persistent actor ProposalsCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
     type Vote = Types.Vote;
@@ -37,20 +37,30 @@ actor ProposalsCanister {
     };
 
     // Stable storage for upgrades
-    private stable var nextProposalId : Nat = 1;
-    private stable var nextTemplateId : Nat = 1;
-    private stable var proposalsEntries : [(ProposalId, Proposal)] = [];
-    private stable var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
-    private stable var templatesEntries : [(Nat, ProposalTemplate)] = [];
-    private stable var categoriesEntries : [(Text, ProposalCategory)] = [];
-    private stable var configEntries : [(Text, GovernanceConfig)] = [];
+    private var nextProposalId : Nat = 1;
+    private var nextTemplateId : Nat = 1;
+    private var proposalsEntries : [(ProposalId, Proposal)] = [];
+    private var votesEntries : [(Text, Vote)] = []; // Key: proposalId_voter
+    private var templatesEntries : [(Nat, ProposalTemplate)] = [];
+    private var categoriesEntries : [(Text, ProposalCategory)] = [];
+    private var configEntries : [(Text, GovernanceConfig)] = [];
 
     // Runtime storage
-    private var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
-    private var templates = HashMap.HashMap<Nat, ProposalTemplate>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
-    private var categories = HashMap.HashMap<Text, ProposalCategory>(10, Text.equal, Text.hash);
-    private var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+    private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
+    private transient var templates = HashMap.HashMap<Nat, ProposalTemplate>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
+    private transient var categories = HashMap.HashMap<Text, ProposalCategory>(10, Text.equal, Text.hash);
+    private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+
+    // Inter-canister reference to staking for voting power
+    var staking : actor {
+        getUserStakingSummary: shared query (Principal) -> async {
+            totalStaked: Nat;
+            totalRewards: Nat;
+            activeStakes: Nat;
+            totalVotingPower: Nat;
+        };
+    } = actor("aaaaa-aa");
 
     // Initialize default data
     private func initializeDefaults() {
@@ -163,6 +173,11 @@ actor ProposalsCanister {
         initializeDefaults();
     };
 
+    // Set staking canister reference
+    public shared(_msg) func init(stakingId: Principal) {
+        staking := actor(Principal.toText(stakingId));
+    };
+
     // Public functions
 
     // Create a new proposal
@@ -182,7 +197,7 @@ actor ProposalsCanister {
             case null return #err("Configuration not found");
         };
         
-        if (activeProposals.size() >= currentConfig.maxProposalsPerUser) {
+        if (Array.size(activeProposals) >= currentConfig.maxProposalsPerUser) {
             return #err("Maximum active proposals limit reached");
         };
 
@@ -253,12 +268,12 @@ actor ProposalsCanister {
 
     // Batch vote on multiple proposals
     public shared(_msg) func batchVote(
-        votes: [(ProposalId, Types.VoteChoice, Nat, ?Text)]
+        votes: [(ProposalId, Types.VoteChoice, ?Text)]
     ) : async [Result<(), Text>] {
         let results = Buffer.Buffer<Result<(), Text>>(votes.size());
-        
-        for ((proposalId, choice, votingPower, reason) in votes.vals()) {
-            let result = await vote(proposalId, choice, votingPower, reason);
+
+        for ((proposalId, choice, reason) in votes.vals()) {
+            let result = await vote(proposalId, choice, reason);
             results.add(result);
         };
         
@@ -269,7 +284,6 @@ actor ProposalsCanister {
     public shared(msg) func vote(
         proposalId: ProposalId,
         choice: Types.VoteChoice,
-        votingPower: Nat,
         reason: ?Text
     ) : async Result<(), Text> {
         let caller = msg.caller;
@@ -294,6 +308,17 @@ actor ProposalsCanister {
 
         if (Time.now() > proposal.votingDeadline) {
             return #err("Voting period has ended");
+        };
+
+        // Determine voting power from staking
+        let summary = try {
+            await staking.getUserStakingSummary(caller)
+        } catch (_) {
+            return #err("Failed to get staking summary");
+        };
+        let votingPower = summary.totalVotingPower;
+        if (votingPower == 0) {
+            return #err("No staking found for voter");
         };
 
         // Create vote record

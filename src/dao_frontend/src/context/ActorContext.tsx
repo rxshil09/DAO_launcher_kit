@@ -1,41 +1,64 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { initializeAgents } from '../config/agent';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { initializeAgents } from "../config/agent";
+// @ts-ignore - AuthContext is a .jsx file, ignore TypeScript error
+import { useAuth } from "./AuthContext";
 
-const ActorContext = createContext<any>(null);
+type Actors = Awaited<ReturnType<typeof initializeAgents>>;
 
-export const ActorProvider = ({ children }: { children: React.ReactNode }) => {
-    const [actors, setActors] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+const ActorContext = createContext<Actors | null>(null);
 
-    useEffect(() => {
-        const setup = async () => {
-            try {
-                const initializedActors = await initializeAgents();
-                setActors(initializedActors);
-            } catch (error) {
-                console.error('Failed to initialize actors:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        setup();
-    }, []);
+interface ActorProviderProps {
+  children: ReactNode;
+}
 
-    if (loading) {
-        return <div>Loading...</div>;
-    }
+export const ActorProvider = ({ children }: ActorProviderProps) => {
+  const [actors, setActors] = useState<Actors | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { identity } = useAuth();
 
-    return (
-        <ActorContext.Provider value={actors}>
-            {children}
-        </ActorContext.Provider>
-    );
+  useEffect(() => {
+    const setup = async () => {
+      setLoading(true);
+      try {
+        const initializedActors = await initializeAgents(identity);
+        setActors(initializedActors);
+      } catch (err) {
+        console.error("Failed to initialize actors:", err);
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    setup();
+  }, [identity]);
+
+  return (
+    <ActorContext.Provider value={actors}>
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+        </div>
+      ) : error ? (
+        <div className="flex items-center justify-center min-h-screen text-red-600">
+          Error: {error}
+        </div>
+      ) : (
+        children
+      )}
+    </ActorContext.Provider>
+  );
 };
 
 export const useActors = () => {
-    const context = useContext(ActorContext);
-    if (!context) {
-        throw new Error('useActors must be used within an ActorProvider');
-    }
-    return context;
+  const context = useContext(ActorContext);
+  // Don't throw error during loading phase, allow null context
+  return context;
 };
+

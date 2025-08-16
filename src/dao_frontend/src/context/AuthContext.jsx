@@ -5,14 +5,20 @@ import { AuthClient } from '@dfinity/auth-client';
 const AuthContext = createContext();
 
 // AuthProvider component to wrap the app and provide auth state
+
+
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [principal, setPrincipal] = useState(null);
+
   const [userSettings, setUserSettings] = useState({
     displayName: 'Anonymous User'
   });
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
+  const [identity, setIdentity] = useState(null);
+
+
 
   // Initialize auth client and check authentication status
   useEffect(() => {
@@ -22,18 +28,23 @@ export const AuthProvider = ({ children }) => {
         setAuthClient(client);
 
         // Check if user is already authenticated
+
         const isAuthenticated = await client.isAuthenticated();
         
+
         if (isAuthenticated) {
-          const identity = client.getIdentity();
-          const principalId = identity.getPrincipal().toString();
-          
+          const currentIdentity = client.getIdentity();
+          const principalId = currentIdentity.getPrincipal().toString();
+          const displayName = `User ${principalId.slice(0, 8)}`;
+
           setIsAuthenticated(true);
+          setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
-            displayName: `User ${principalId.slice(0, 8)}`
+            displayName
           });
         }
+
       } catch (error) {
         console.error('Failed to initialize auth client:', error);
       } finally {
@@ -57,19 +68,29 @@ export const AuthProvider = ({ children }) => {
         ? "https://identity.ic0.app"
         : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
 
+
       await authClient.login({
         identityProvider,
         onSuccess: async () => {
-          const identity = authClient.getIdentity();
-          const principal = identity.getPrincipal();
+
+          const currentIdentity = authClient.getIdentity();
+          const principal = currentIdentity.getPrincipal();
+
+
           const principalId = principal.toString();
-          
+          const displayName = `User ${principalId.slice(0, 8)}`;
+
           setIsAuthenticated(true);
+
+
+          setIdentity(currentIdentity);
           setPrincipal(principalId);
           setUserSettings({
-            displayName: `User ${principalId.slice(0, 8)}`
+            displayName
           });
         },
+
+
         onError: (error) => {
           console.error("Login failed:", error);
           setLoading(false);
@@ -98,6 +119,7 @@ export const AuthProvider = ({ children }) => {
       
       setIsAuthenticated(false);
       setPrincipal(null);
+      setIdentity(null);
       setUserSettings({
         displayName: 'Anonymous User'
       });
@@ -117,7 +139,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    authClient
+    authClient,
+    identity
   };
 
   return (
