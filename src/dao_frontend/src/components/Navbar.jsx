@@ -38,23 +38,13 @@ const Navbar = () => {
 
   // Base navigation items (always visible)
   const baseNavigation = [
-    { name: 'Home', href: '/', icon: Globe },
     { name: 'Dashboard', href: '/dashboard', icon: Activity },
-    { name: 'Status', href: '/status', icon: BarChart3 },
     { name: 'Launch DAO', href: '/launch', icon: Rocket },
+    { name: 'Explore', href: '/explore', icon: Globe },
   ];
 
-  // DAO-specific navigation items (only visible when user has active DAO)
-  const daoNavigation = [
-    { name: 'Proposals', href: '/proposals', icon: Star },
-    { name: 'Staking', href: '/staking', icon: Award },
-    { name: 'Treasury', href: '/treasury', icon: DollarSign },
-    { name: 'Governance', href: '/governance', icon: Shield },
-    { name: 'Assets', href: '/assets', icon: Image },
-  ];
-
-  // Combine navigation based on context
-  const navigation = hasActiveDAO ? [...baseNavigation, ...daoNavigation] : baseNavigation;
+  // Use only base navigation - DAO management is handled through dashboard
+  const navigation = baseNavigation;
 
   const isActive = (path) => location.pathname === path;
 
