@@ -103,6 +103,7 @@ const createActor = async <T>(
   }
 };
 
+
 export const initializeAgents = async () => {
   if (import.meta.env.DEV) {
     console.log("=== DEBUGGING ENVIRONMENT VARIABLES ===");
@@ -130,16 +131,19 @@ export const initializeAgents = async () => {
     });
   }
 
+
   try {
     // Create actors for required canisters
     const daoBackend = await createActor<DaoBackendService>(
-      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND, 
-      daoBackendIdl
+      import.meta.env.VITE_CANISTER_ID_DAO_BACKEND,
+      daoBackendIdl,
+      identity
     );
-    
+
     const assets = await createActor<AssetsService>(
-      import.meta.env.VITE_CANISTER_ID_ASSETS, 
-      assetsIdl
+      import.meta.env.VITE_CANISTER_ID_ASSETS,
+      assetsIdl,
+      identity
     );
 
     // Create mock actors for optional canisters if they don't exist
@@ -171,8 +175,9 @@ export const initializeAgents = async () => {
     try {
       if (import.meta.env.VITE_CANISTER_ID_GOVERNANCE) {
         governance = await createActor<GovernanceService>(
-          import.meta.env.VITE_CANISTER_ID_GOVERNANCE, 
-          governanceIdl
+          import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+          governanceIdl,
+          identity
         );
       } else {
         governance = createMockActor<GovernanceService>();
@@ -185,8 +190,9 @@ export const initializeAgents = async () => {
     try {
       if (import.meta.env.VITE_CANISTER_ID_STAKING) {
         staking = await createActor<StakingService>(
-          import.meta.env.VITE_CANISTER_ID_STAKING, 
-          stakingIdl
+          import.meta.env.VITE_CANISTER_ID_STAKING,
+          stakingIdl,
+          identity
         );
       } else {
         staking = createMockActor<StakingService>();
@@ -199,8 +205,9 @@ export const initializeAgents = async () => {
     try {
       if (import.meta.env.VITE_CANISTER_ID_TREASURY) {
         treasury = await createActor<TreasuryService>(
-          import.meta.env.VITE_CANISTER_ID_TREASURY, 
-          treasuryIdl
+          import.meta.env.VITE_CANISTER_ID_TREASURY,
+          treasuryIdl,
+          identity
         );
       } else {
         treasury = createMockActor<TreasuryService>();
@@ -213,8 +220,9 @@ export const initializeAgents = async () => {
     try {
       if (import.meta.env.VITE_CANISTER_ID_PROPOSALS) {
         proposals = await createActor<ProposalsService>(
-          import.meta.env.VITE_CANISTER_ID_PROPOSALS, 
-          proposalsIdl
+          import.meta.env.VITE_CANISTER_ID_PROPOSALS,
+          proposalsIdl,
+          identity
         );
       } else {
         proposals = createMockActor<ProposalsService>();
