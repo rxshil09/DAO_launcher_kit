@@ -99,6 +99,45 @@ DFX_NETWORK=local
 - **Frontend Coordination**: `useDAOOperations.js` orchestrates multi-canister operations
 - **State Synchronization**: React Context provides global state, custom hooks handle business logic
 
+## Token Economics & DAO Governance
+
+### Staking Mechanisms
+- **Multi-Period Staking**: Instant (no lock), 30/90/180/365 day locks with increasing reward multipliers
+- **Voting Power Calculation**: `staked_amount * time_multiplier` - longer locks = more governance influence
+- **Reward Distribution**: Continuous compounding with automatic reinvestment
+- **Penalty System**: Early unstaking incurs penalties, slashing protection for governance participation
+
+### Governance Patterns
+```motoko
+// Proposal lifecycle in governance/main.mo
+type ProposalStatus = {
+    #pending;   // Created, awaiting voting period
+    #active;    // Currently accepting votes
+    #succeeded; // Passed quorum and approval thresholds
+    #failed;    // Did not meet requirements
+    #executed;  // Successfully implemented
+    #cancelled; // Terminated before completion
+};
+```
+
+### Voting Mechanisms
+- **Token-Weighted**: Proportional to staked amount (default)
+- **Quadratic Voting**: Prevents whale dominance via `sqrt(stake)` calculation
+- **Delegated Voting**: Users can delegate voting power to representatives
+- **Quorum Requirements**: Minimum participation thresholds for proposal legitimacy
+
+### Proposal Types in `shared/types.mo`
+- **Text Proposals**: Governance decisions without code execution
+- **Treasury Transfers**: Multi-sig controlled fund movements
+- **Parameter Changes**: DAO configuration updates (voting periods, thresholds)
+- **Membership Changes**: Admin role additions/removals
+
+### Cross-Canister Governance Flow
+1. **Proposal Creation**: `governance` canister validates proposer credentials via `dao_backend`
+2. **Voting Power**: `governance` queries `staking` for user's current voting weight
+3. **Execution**: Successful proposals trigger actions across relevant canisters
+4. **Treasury Operations**: `treasury` canister enforces multi-signature requirements
+
 ## Common Troubleshooting
 
 ### Deployment Issues
