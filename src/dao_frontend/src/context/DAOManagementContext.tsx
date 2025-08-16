@@ -99,7 +99,10 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
       if (principal) {
         const storedDAOs = localStorage.getItem(`user_daos_${principal}`);
         if (storedDAOs) {
-          const userDAOs = JSON.parse(storedDAOs);
+          const userDAOs = JSON.parse(storedDAOs).map((dao: any) => ({
+            ...dao,
+            createdAt: new Date(dao.createdAt) // Convert string back to Date
+          }));
           setDAOs([...mockDAOs, ...userDAOs]);
         } else {
           setDAOs(mockDAOs);
@@ -170,6 +173,37 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
     }
   };
 
+  const refreshDAOs = async () => {
+    await fetchDAOs();
+  };
+
+  const deleteDAO = async (daoId: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Remove from state
+      setDAOs(prev => prev.filter(dao => dao.id !== daoId));
+      
+      // Remove from localStorage if it's a user-created DAO
+      if (principal) {
+        const existingDAOs = localStorage.getItem(`user_daos_${principal}`);
+        if (existingDAOs) {
+          const userDAOs = JSON.parse(existingDAOs);
+          const updatedUserDAOs = userDAOs.filter((dao: DAO) => dao.id !== daoId);
+          localStorage.setItem(`user_daos_${principal}`, JSON.stringify(updatedUserDAOs));
+        }
+      }
+      
+      console.log('DAO deleted successfully:', daoId);
+    } catch (err) {
+      setError('Failed to delete DAO');
+      console.error('Error deleting DAO:', err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && principal) {
       fetchDAOs();
@@ -186,7 +220,9 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
     error,
     fetchDAOs,
     selectDAO,
-    createDAO
+    createDAO,
+    refreshDAOs,
+    deleteDAO
   };
 
   return (
