@@ -282,11 +282,11 @@ const login = async () => {
 const actors = {
     daoBackend: Actor.createActor(daoBackendIdl, {
         agent: new HttpAgent({ host: 'http://localhost:4943' }),
-        canisterId: process.env.CANISTER_ID_DAO_BACKEND
+        canisterId: import.meta.env.VITE_CANISTER_ID_DAO_BACKEND
     }),
     governance: Actor.createActor(governanceIdl, {
         agent: new HttpAgent({ host: 'http://localhost:4943' }),
-        canisterId: process.env.CANISTER_ID_GOVERNANCE
+        canisterId: import.meta.env.VITE_CANISTER_ID_GOVERNANCE
     })
 };
 
