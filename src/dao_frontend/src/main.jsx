@@ -10,11 +10,11 @@ import './app.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
-      <DAOProvider>
-        <ActorProvider>
+      <ActorProvider>
+        <DAOProvider>
           <App />
-        </ActorProvider>
-      </DAOProvider>
+        </DAOProvider>
+      </ActorProvider>
     </AuthProvider>
   </React.StrictMode>,
 )
