@@ -26,7 +26,7 @@ export const ActorProvider = ({ children }: ActorProviderProps) => {
     const setup = async () => {
       setLoading(true);
       try {
-        const initializedActors = await initializeAgents(identity ?? undefined);
+        const initializedActors = await initializeAgents(identity);
         setActors(initializedActors);
       } catch (err) {
         console.error("Failed to initialize actors:", err);
