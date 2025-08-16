@@ -311,8 +311,11 @@ persistent actor ProposalsCanister {
         };
 
         // Determine voting power from staking
-        let summary = await staking.getUserStakingSummary(caller)
-            catch return #err("Failed to get staking summary");
+        let summary = try {
+            await staking.getUserStakingSummary(caller)
+        } catch (_) {
+            return #err("Failed to get staking summary");
+        };
         let votingPower = summary.totalVotingPower;
         if (votingPower == 0) {
             return #err("No staking found for voter");
