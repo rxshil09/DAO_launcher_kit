@@ -82,11 +82,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'batchVote' : IDL.Func(
-        [
-          IDL.Vec(
-            IDL.Tuple(ProposalId, VoteChoice, IDL.Opt(IDL.Text))
-          ),
-        ],
+        [IDL.Vec(IDL.Tuple(ProposalId, VoteChoice, IDL.Opt(IDL.Text)))],
         [IDL.Vec(Result)],
         [],
       ),
@@ -148,6 +144,7 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(Proposal)],
         ['query'],
       ),
+    'init' : IDL.Func([IDL.Principal], [], ['oneway']),
     'vote' : IDL.Func(
         [ProposalId, VoteChoice, IDL.Opt(IDL.Text)],
         [Result],

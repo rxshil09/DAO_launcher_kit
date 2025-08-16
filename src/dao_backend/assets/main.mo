@@ -132,7 +132,7 @@ persistent actor AssetCanister {
         } else if (not isAuthorized(caller)) {
             return #err("Not authorized to upload assets");
         };
-        let dataSize = Blob.size(data);
+        let dataSize = data.size();
 
         // Validate input
         if (name == "") {

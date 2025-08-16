@@ -108,7 +108,7 @@ service : {
   getProposalVotes: (proposalId: ProposalId) -> (vec Vote) query;
   getProposalsByStatus: (status: ProposalStatus) -> (vec Proposal) query;
   getUserVote: (proposalId: ProposalId, user: principal) -> (opt Vote) query;
-  init: (daoId: principal, stakingId: principal) -> () oneway;
+  init: (newDaoId: principal, newStakingId: principal) -> ();
   updateConfig: (newConfig: GovernanceConfig) -> (Result);
   vote: (proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
    (Result);
