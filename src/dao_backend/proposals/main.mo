@@ -52,6 +52,16 @@ persistent actor ProposalsCanister {
     private transient var categories = HashMap.HashMap<Text, ProposalCategory>(10, Text.equal, Text.hash);
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
 
+    // Inter-canister reference to staking for voting power
+    var staking : actor {
+        getUserStakingSummary: shared query (Principal) -> async {
+            totalStaked: Nat;
+            totalRewards: Nat;
+            activeStakes: Nat;
+            totalVotingPower: Nat;
+        };
+    } = actor("aaaaa-aa");
+
     // Initialize default data
     private func initializeDefaults() {
         // Initialize default configuration
@@ -163,6 +173,11 @@ persistent actor ProposalsCanister {
         initializeDefaults();
     };
 
+    // Set staking canister reference
+    public shared(_msg) func init(stakingId: Principal) {
+        staking := actor(Principal.toText(stakingId));
+    };
+
     // Public functions
 
     // Create a new proposal
@@ -253,12 +268,12 @@ persistent actor ProposalsCanister {
 
     // Batch vote on multiple proposals
     public shared(_msg) func batchVote(
-        votes: [(ProposalId, Types.VoteChoice, Nat, ?Text)]
+        votes: [(ProposalId, Types.VoteChoice, ?Text)]
     ) : async [Result<(), Text>] {
         let results = Buffer.Buffer<Result<(), Text>>(votes.size());
-        
-        for ((proposalId, choice, votingPower, reason) in votes.vals()) {
-            let result = await vote(proposalId, choice, votingPower, reason);
+
+        for ((proposalId, choice, reason) in votes.vals()) {
+            let result = await vote(proposalId, choice, reason);
             results.add(result);
         };
         
@@ -269,7 +284,6 @@ persistent actor ProposalsCanister {
     public shared(msg) func vote(
         proposalId: ProposalId,
         choice: Types.VoteChoice,
-        votingPower: Nat,
         reason: ?Text
     ) : async Result<(), Text> {
         let caller = msg.caller;
@@ -294,6 +308,14 @@ persistent actor ProposalsCanister {
 
         if (Time.now() > proposal.votingDeadline) {
             return #err("Voting period has ended");
+        };
+
+        // Determine voting power from staking
+        let summary = await staking.getUserStakingSummary(caller)
+            catch return #err("Failed to get staking summary");
+        let votingPower = summary.totalVotingPower;
+        if (votingPower == 0) {
+            return #err("No staking found for voter");
         };
 
         // Create vote record
