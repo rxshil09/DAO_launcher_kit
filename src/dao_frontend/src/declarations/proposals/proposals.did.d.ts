@@ -78,7 +78,7 @@ export interface _SERVICE {
     Result_2
   >,
   'batchVote' : ActorMethod<
-    [Array<[ProposalId, VoteChoice, bigint, [] | [string]]>],
+    [Array<[ProposalId, VoteChoice, [] | [string]>]],
     Array<Result>
   >,
   'createProposal' : ActorMethod<
@@ -109,7 +109,7 @@ export interface _SERVICE {
   'getTemplate' : ActorMethod<[bigint], [] | [ProposalTemplate]>,
   'getTemplatesByCategory' : ActorMethod<[string], Array<ProposalTemplate>>,
   'getTrendingProposals' : ActorMethod<[bigint], Array<Proposal>>,
-  'vote' : ActorMethod<[ProposalId, VoteChoice, bigint, [] | [string]], Result>,
+  'vote' : ActorMethod<[ProposalId, VoteChoice, [] | [string]], Result>,
 }
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];
