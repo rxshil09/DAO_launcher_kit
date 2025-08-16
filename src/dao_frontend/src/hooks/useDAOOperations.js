@@ -51,25 +51,28 @@ export const useDAOOperations = () => {
                 initialAdmins
             );
 
-            // Step 3: Set up canister references (using fallbacks for now)
+            // Step 3: Set up canister references
             const getCanisterPrincipal = (key) => {
                 const id = import.meta.env[key];
                 if (!id || typeof id !== 'string' || id.trim() === '') {
-                    // Return the dao_backend canister ID as fallback
-                    return Principal.fromText(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND);
+                    throw new Error(`Missing canister ID for ${key}`);
                 }
                 try {
                     return Principal.fromText(id);
-                } catch (err) {
-                    // Return the dao_backend canister ID as fallback
-                    return Principal.fromText(import.meta.env.VITE_CANISTER_ID_DAO_BACKEND);
+                } catch {
+                    throw new Error(`Invalid canister ID for ${key}`);
                 }
             };
 
-            const governanceCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_GOVERNANCE');
-            const stakingCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_STAKING');
-            const treasuryCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_TREASURY');
-            const proposalsCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_PROPOSALS');
+            let governanceCanisterId, stakingCanisterId, treasuryCanisterId, proposalsCanisterId;
+            try {
+                governanceCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_GOVERNANCE');
+                stakingCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_STAKING');
+                treasuryCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_TREASURY');
+                proposalsCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_PROPOSALS');
+            } catch (err) {
+                throw new Error(`Canister configuration error: ${err.message}`);
+            }
 
             await daoAPI.setCanisterReferences(
                 governanceCanisterId,
