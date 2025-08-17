@@ -130,9 +130,8 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.treasury.getAllTransactions();
-      if ('err' in res) throw new Error(res.err);
-      return 'ok' in res ? res.ok : res;
+      const txs = await actors.treasury.getAllTransactions();
+      return txs;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -185,11 +184,58 @@ export const useTreasury = () => {
     }
   };
 
+  const addAuthorizedPrincipal = async (principalId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const principal = Principal.fromText(principalId);
+      const res = await actors.treasury.addAuthorizedPrincipal(principal);
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeAuthorizedPrincipal = async (principalId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const principal = Principal.fromText(principalId);
+      const res = await actors.treasury.removeAuthorizedPrincipal(principal);
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAuthorizedPrincipals = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.treasury.getAuthorizedPrincipals();
+      return res.map((p) => (typeof p.toText === 'function' ? p.toText() : p));
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     deposit,
     withdraw,
     lockTokens,
     unlockTokens,
+
     reserveTokens,
     releaseReservedTokens,
     getBalance,
@@ -197,7 +243,11 @@ export const useTreasury = () => {
     getTransactionsByType,
     getRecentTransactions,
     getTreasuryStats,
+    addAuthorizedPrincipal,
+    removeAuthorizedPrincipal,
+    getAuthorizedPrincipals,
     loading,
     error,
   };
 };
+

@@ -146,19 +146,18 @@ export const initializeAgents = async (identity?: Identity) => {
       identity
     );
 
-    // Create mock actors for optional canisters if they don't exist
-    // This prevents errors during development when not all canisters are deployed
+    // Create mock actors for optional canisters during development if they don't exist
+    // In production, missing canister IDs will throw an error instead of creating mocks
     const createMockActor = <T>(): ActorSubclass<T> => {
       return new Proxy({} as ActorSubclass<T>, {
         get: (target, prop) => {
           if (typeof prop === 'string') {
             return async (...args: any[]) => {
               console.warn(`Mock actor method called: ${prop}`, args);
-              // Return mock data based on the method name
               if (prop.includes('get') || prop.includes('fetch') || prop.includes('list')) {
-                return null; // Query methods return null for now
+                return null;
               }
-              return { ok: true }; // Update methods return success
+              return { ok: true };
             };
           }
           return target[prop as keyof ActorSubclass<T>];
@@ -166,71 +165,58 @@ export const initializeAgents = async (identity?: Identity) => {
       });
     };
 
-    // Try to create real actors, fall back to mock actors
+    // Helper to handle optional canisters
+    const handleOptionalActor = async <T>(
+      canisterId: string | undefined,
+      idl: IDL.InterfaceFactory,
+      name: string
+    ): Promise<ActorSubclass<T>> => {
+      if (!canisterId) {
+        if (import.meta.env.DEV) {
+          return createMockActor<T>();
+        }
+        throw new Error(`Missing environment variable: VITE_CANISTER_ID_${name}`);
+      }
+      try {
+        return await createActor<T>(canisterId, idl, identity);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn(`Failed to create ${name.toLowerCase()} actor, using mock:`, error);
+          return createMockActor<T>();
+        }
+        throw error;
+      }
+    };
+
+    // Create actors, using mocks only in development
     let governance: ActorSubclass<GovernanceService>;
     let staking: ActorSubclass<StakingService>;
     let treasury: ActorSubclass<TreasuryService>;
     let proposals: ActorSubclass<ProposalsService>;
 
-    try {
-      if (import.meta.env.VITE_CANISTER_ID_GOVERNANCE) {
-        governance = await createActor<GovernanceService>(
-          import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
-          governanceIdl,
-          identity
-        );
-      } else {
-        governance = createMockActor<GovernanceService>();
-      }
-    } catch (error) {
-      console.warn("Failed to create governance actor, using mock:", error);
-      governance = createMockActor<GovernanceService>();
-    }
+    governance = await handleOptionalActor<GovernanceService>(
+      import.meta.env.VITE_CANISTER_ID_GOVERNANCE,
+      governanceIdl,
+      "GOVERNANCE"
+    );
 
-    try {
-      if (import.meta.env.VITE_CANISTER_ID_STAKING) {
-        staking = await createActor<StakingService>(
-          import.meta.env.VITE_CANISTER_ID_STAKING,
-          stakingIdl,
-          identity
-        );
-      } else {
-        staking = createMockActor<StakingService>();
-      }
-    } catch (error) {
-      console.warn("Failed to create staking actor, using mock:", error);
-      staking = createMockActor<StakingService>();
-    }
+    staking = await handleOptionalActor<StakingService>(
+      import.meta.env.VITE_CANISTER_ID_STAKING,
+      stakingIdl,
+      "STAKING"
+    );
 
-    try {
-      if (import.meta.env.VITE_CANISTER_ID_TREASURY) {
-        treasury = await createActor<TreasuryService>(
-          import.meta.env.VITE_CANISTER_ID_TREASURY,
-          treasuryIdl,
-          identity
-        );
-      } else {
-        treasury = createMockActor<TreasuryService>();
-      }
-    } catch (error) {
-      console.warn("Failed to create treasury actor, using mock:", error);
-      treasury = createMockActor<TreasuryService>();
-    }
+    treasury = await handleOptionalActor<TreasuryService>(
+      import.meta.env.VITE_CANISTER_ID_TREASURY,
+      treasuryIdl,
+      "TREASURY"
+    );
 
-    try {
-      if (import.meta.env.VITE_CANISTER_ID_PROPOSALS) {
-        proposals = await createActor<ProposalsService>(
-          import.meta.env.VITE_CANISTER_ID_PROPOSALS,
-          proposalsIdl,
-          identity
-        );
-      } else {
-        proposals = createMockActor<ProposalsService>();
-      }
-    } catch (error) {
-      console.warn("Failed to create proposals actor, using mock:", error);
-      proposals = createMockActor<ProposalsService>();
-    }
+    proposals = await handleOptionalActor<ProposalsService>(
+      import.meta.env.VITE_CANISTER_ID_PROPOSALS,
+      proposalsIdl,
+      "PROPOSALS"
+    );
 
     return {
       daoBackend,

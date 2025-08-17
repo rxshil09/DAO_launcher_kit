@@ -1,22 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  FileText, 
-  Plus, 
-  Vote,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Users,
-  Calendar,
-  Target,
-  TrendingUp
-} from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useProposals } from '../../hooks/useProposals';
 
 const ManagementProposals: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const { getAllProposals, createProposal } = useProposals();
+  const [proposals, setProposals] = useState<any[]>([]);
+
+  const loadProposals = async () => {
+    try {
+      const res = await getAllProposals();
+      setProposals(res);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    loadProposals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCreateProposal = async () => {
+    const title = prompt('Proposal title');
+    if (!title) return;
+    const description = prompt('Proposal description') || '';
+    try {
+      await createProposal(title, description);
+      await loadProposals();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -31,6 +51,7 @@ const ManagementProposals: React.FC = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={handleCreateProposal}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
         >
           <Plus className="w-4 h-4" />
@@ -38,31 +59,31 @@ const ManagementProposals: React.FC = () => {
         </motion.button>
       </div>
 
-      {/* Placeholder Content */}
+      {/* Proposals List */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 text-center"
+        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8"
       >
-        <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2 font-mono">PROPOSALS MANAGEMENT</h3>
-        <p className="text-gray-400 mb-6">
-          This section will contain detailed proposal management functionality
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-lg">
-            <Vote className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-blue-400 font-mono">Create Proposals</p>
+        <h3 className="text-xl font-bold text-white mb-6 font-mono">EXISTING PROPOSALS</h3>
+        {proposals.length === 0 ? (
+          <div className="text-center text-gray-400">
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p>No proposals found.</p>
           </div>
-          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-lg">
-            <Users className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-green-400 font-mono">Vote on Proposals</p>
-          </div>
-          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-lg">
-            <TrendingUp className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <p className="text-purple-400 font-mono">Track Results</p>
-          </div>
-        </div>
+        ) : (
+          <ul className="space-y-4">
+            {proposals.map((p) => (
+              <li
+                key={p.id.toString()}
+                className="p-6 bg-gray-900/50 rounded-lg border border-gray-700/30"
+              >
+                <h4 className="text-lg font-semibold text-white">{p.title}</h4>
+                <p className="text-gray-400 text-sm">{p.description}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </motion.div>
     </div>
   );

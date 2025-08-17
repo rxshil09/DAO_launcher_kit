@@ -146,7 +146,12 @@ const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-400 font-mono">Created</span>
-            <span className="text-gray-300">{dao.createdAt.toLocaleDateString()}</span>
+            <span className="text-gray-300">
+              {dao.createdAt 
+                ? new Date(dao.createdAt).toLocaleDateString() 
+                : 'N/A'
+              }
+            </span>
           </div>
         </div>
 

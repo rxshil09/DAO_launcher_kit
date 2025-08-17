@@ -675,4 +675,36 @@ const useDAO = () => {
 };
 ```
 
-This API documentation provides comprehensive coverage of all endpoints and their usage patterns. For more detailed examples and integration guides, refer to the user guides documentation.
+  This API documentation provides comprehensive coverage of all endpoints and their usage patterns. For more detailed examples and integration guides, refer to the user guides documentation.
+
+## Frontend Hook Summary
+
+### Assets
+- `uploadAsset`
+- `getAsset`
+- `getPublicAssets`
+- `searchAssetsByTag`
+- `deleteAsset`
+- `updateAssetMetadata`
+- `getStorageStats`
+
+### Proposals
+- `createProposal`
+- `vote`
+- `getAllProposals`
+- `getProposalsByCategory`
+- `getProposalTemplates`
+
+### Treasury
+- `deposit`
+- `withdraw`
+- `lockTokens`
+- `unlockTokens`
+- `reserveTokens`
+- `releaseReservedTokens`
+- `getBalance`
+- `getTransactionsByType`
+- `getRecentTransactions`
+- `getTreasuryStats`
+
+> Unused methods such as `getUserAssets`, `getAssetMetadata`, `addTemplate`, `getTrendingProposals`, and `getAllTransactions` have been removed to keep the hooks aligned with the current UI.
