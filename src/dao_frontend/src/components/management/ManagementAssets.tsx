@@ -1,12 +1,15 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
 import { Upload, Download, File } from 'lucide-react';
 import { useAssets } from '../../hooks/useAssets';
 import { DAO } from '../../types/dao';
+import { useAssets } from '../../hooks/useAssets';
 
 const ManagementAssets: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+
   const { getUserAssets, getPublicAssets, uploadAsset, getAsset } = useAssets();
   const [assets, setAssets] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -24,12 +27,14 @@ const ManagementAssets: React.FC = () => {
         ...publicAssets.filter((a: any) => !userIds.has(Number(a.id))),
       ];
       setAssets(combined);
+
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
+
     fetchAssets();
   }, []);
 
@@ -69,6 +74,7 @@ const ManagementAssets: React.FC = () => {
       link.download = asset.name;
       link.click();
       URL.revokeObjectURL(url);
+
     } catch (err) {
       console.error(err);
     }
@@ -109,6 +115,7 @@ const ManagementAssets: React.FC = () => {
           )}
         </div>
       </div>
+
 
       {assets.length === 0 ? (
         <motion.div
@@ -156,8 +163,10 @@ const ManagementAssets: React.FC = () => {
           ))}
         </motion.ul>
       )}
+
     </div>
   );
 };
 
 export default ManagementAssets;
+
