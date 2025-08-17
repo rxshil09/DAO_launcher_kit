@@ -149,7 +149,10 @@ const DAOManagement: React.FC = () => {
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Dashboard</span>
               </Link>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors font-mono">
+              <button
+                onClick={() => navigate('/settings')}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors font-mono"
+              >
                 <Settings className="w-4 h-4" />
                 <span>Settings</span>
               </button>
