@@ -14,6 +14,11 @@ import {
   Plus,
   X
 
+
+  Shield,
+  Plus,
+  X
+
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useTreasury } from '../../hooks/useTreasury';
@@ -62,6 +67,7 @@ const ManagementTreasury: React.FC = () => {
       setPrincipals(list);
     } catch (err) {
       console.error(err);
+
 const{
     deposit,
     withdraw,
@@ -127,6 +133,7 @@ const{
       await fetchData();
     } catch (e) {
       console.error(e);
+
 
     }
   };
