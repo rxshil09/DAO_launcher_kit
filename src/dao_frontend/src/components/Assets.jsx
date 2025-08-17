@@ -10,17 +10,23 @@ const Assets = () => {
     deleteAsset,
     updateAssetMetadata,
     getStorageStats,
+    getSupportedContentTypes,
+    batchUploadAssets,
+    getAssetByName,
     loading,
     error,
   } = useAssets();
   const [file, setFile] = useState(null);
+  const [batchFiles, setBatchFiles] = useState([]);
   const [assets, setAssets] = useState([]);
   const [tag, setTag] = useState('');
+  const [name, setName] = useState('');
   const [stats, setStats] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editPublic, setEditPublic] = useState(true);
+  const [message, setMessage] = useState('');
 
   const fetchStats = async () => {
     try {
@@ -48,9 +54,16 @@ const Assets = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!file) return;
+    setMessage('');
     try {
+      const supported = await getSupportedContentTypes();
+      if (!supported.includes(file.type)) {
+        setMessage(`Unsupported file type: ${file.type}`);
+        return;
+      }
       await uploadAsset(file, true, []);
       setFile(null);
+      setMessage('File uploaded');
       fetchAssets(tag);
       fetchStats();
     } catch (err) {
@@ -61,6 +74,44 @@ const Assets = () => {
   const handleSearch = async (e) => {
     e.preventDefault();
     await fetchAssets(tag);
+  };
+
+  const handleNameSearch = async (e) => {
+    e.preventDefault();
+    if (!name) return;
+    setMessage('');
+    try {
+      const res = await getAssetByName(name);
+      if (res.length === 0) {
+        setAssets([]);
+        setMessage('No asset found');
+      } else {
+        setAssets([res[0]]);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleBatchUpload = async (e) => {
+    e.preventDefault();
+    if (batchFiles.length === 0) return;
+    setMessage('');
+    try {
+      const supported = await getSupportedContentTypes();
+      const unsupported = batchFiles.filter((f) => !supported.includes(f.type));
+      if (unsupported.length > 0) {
+        setMessage(`Unsupported file types: ${unsupported.map((f) => f.name).join(', ')}`);
+        return;
+      }
+      await batchUploadAssets(batchFiles.map((f) => ({ file: f, isPublic: true, tags: [] })));
+      setBatchFiles([]);
+      setMessage('Batch upload successful');
+      fetchAssets(tag);
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleView = async (id) => {
@@ -128,6 +179,17 @@ const Assets = () => {
           {loading ? 'Uploading...' : 'Upload'}
         </button>
       </form>
+      <form onSubmit={handleBatchUpload} className="mb-6">
+        <input
+          type="file"
+          multiple
+          onChange={(e) => setBatchFiles(Array.from(e.target.files))}
+          className="mb-2"
+        />
+        <button type="submit" className="px-4 py-2 bg-cyan-600 rounded">
+          Batch Upload
+        </button>
+      </form>
       <form onSubmit={handleSearch} className="mb-6 flex space-x-2">
         <input
           type="text"
@@ -150,7 +212,30 @@ const Assets = () => {
           Clear
         </button>
       </form>
+      <form onSubmit={handleNameSearch} className="mb-6 flex space-x-2">
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Search by name"
+          className="px-2 py-1 text-black"
+        />
+        <button type="submit" className="px-3 py-1 bg-cyan-600 rounded">
+          Search
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setName('');
+            fetchAssets(tag);
+          }}
+          className="px-3 py-1 bg-gray-600 rounded"
+        >
+          Clear
+        </button>
+      </form>
       {error && <p className="text-red-500 mb-4">{error}</p>}
+      {message && <p className="text-yellow-400 mb-4">{message}</p>}
       <ul>
         {assets.map((asset) => (
           <li key={Number(asset.id)} className="mb-2">
