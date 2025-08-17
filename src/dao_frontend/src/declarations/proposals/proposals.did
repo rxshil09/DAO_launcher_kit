@@ -12,12 +12,7 @@ type TreasuryTransferProposal =
  };
 type TokenAmount = nat;
 type Time = int;
-type Result_2 = 
- variant {
-   err: text;
-   ok: nat;
- };
-type Result_1 = 
+type Result_1 =
  variant {
    err: text;
    ok: ProposalId;
@@ -96,8 +91,6 @@ type MembershipChangeProposal =
 service : {
   addCategory: (id: text, name: text, description: text, color: text) ->
    (Result);
-  addTemplate: (name: text, description: text, category: text,
-   requiredFields: vec text, template: text) -> (Result_2);
   batchVote: (votes: vec record {
                            ProposalId;
                            VoteChoice;
@@ -127,7 +120,6 @@ service : {
   getProposalsByCategory: (category: text) -> (vec Proposal) query;
   getTemplate: (templateId: nat) -> (opt ProposalTemplate) query;
   getTemplatesByCategory: (category: text) -> (vec ProposalTemplate) query;
-  getTrendingProposals: (limit: nat) -> (vec Proposal) query;
   init: (stakingId: principal) -> () oneway;
   vote: (proposalId: ProposalId, choice: VoteChoice, reason: opt text) ->
    (Result);

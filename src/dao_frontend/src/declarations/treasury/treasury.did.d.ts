@@ -37,7 +37,6 @@ export type TreasuryTransactionType = { 'fee' : null } |
 export interface _SERVICE {
   'addAuthorizedPrincipal' : ActorMethod<[Principal], Result_1>,
   'deposit' : ActorMethod<[TokenAmount, string], Result>,
-  'getAllTransactions' : ActorMethod<[], Array<TreasuryTransaction>>,
   'getAuthorizedPrincipals' : ActorMethod<[], Array<Principal>>,
   'getBalance' : ActorMethod<[], TreasuryBalance>,
   'getRecentTransactions' : ActorMethod<[bigint], Array<TreasuryTransaction>>,

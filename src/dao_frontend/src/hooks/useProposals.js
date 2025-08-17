@@ -55,49 +55,11 @@ export const useProposals = () => {
     }
   };
 
-  const getTrendingProposals = async (limit) => {
-    setLoading(true);
-    setError(null);
-    try {
-      return await actors.proposals.getTrendingProposals(BigInt(limit));
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getProposalTemplates = async () => {
     setLoading(true);
     setError(null);
     try {
       return await actors.proposals.getProposalTemplates();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addTemplate = async (
-    name,
-    description,
-    category,
-    requiredFields,
-    template
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      return await actors.proposals.addTemplate(
-        name,
-        description,
-        category,
-        requiredFields,
-        template
-      );
     } catch (err) {
       setError(err.message);
       throw err;
@@ -131,9 +93,7 @@ export const useProposals = () => {
     vote,
     getAllProposals,
     getProposalsByCategory,
-    getTrendingProposals,
     getProposalTemplates,
-    addTemplate,
     loading,
     error,
   };

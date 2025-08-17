@@ -49,37 +49,11 @@ export const useAssets = () => {
     }
   };
 
-  const getAssetMetadata = async (assetId) => {
-    setLoading(true);
-    setError(null);
-    try {
-      return await actors.assets.getAssetMetadata(BigInt(assetId));
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getPublicAssets = async () => {
     setLoading(true);
     setError(null);
     try {
       return await actors.assets.getPublicAssets();
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getUserAssets = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      return await actors.assets.getUserAssets();
     } catch (err) {
       setError(err.message);
       throw err;
@@ -287,16 +261,20 @@ export const useAssets = () => {
     }
   };
 
+icAssets,
+
   return {
     uploadAsset,
     getAsset,
     getAssetMetadata,
     getPublicAssets,
     getUserAssets,
+
     searchAssetsByTag,
     deleteAsset,
     updateAssetMetadata,
     getStorageStats,
+
     getAuthorizedUploaders,
     addAuthorizedUploader,
     removeAuthorizedUploader,
@@ -309,3 +287,4 @@ export const useAssets = () => {
     error,
   };
 };
+

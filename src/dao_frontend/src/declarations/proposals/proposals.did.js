@@ -1,6 +1,5 @@
 export const idlFactory = ({ IDL }) => {
   const Result = IDL.Variant({ 'ok' : IDL.Null, 'err' : IDL.Text });
-  const Result_2 = IDL.Variant({ 'ok' : IDL.Nat, 'err' : IDL.Text });
   const ProposalId = IDL.Nat;
   const VoteChoice = IDL.Variant({
     'against' : IDL.Null,
@@ -76,11 +75,6 @@ export const idlFactory = ({ IDL }) => {
         [Result],
         [],
       ),
-    'addTemplate' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Vec(IDL.Text), IDL.Text],
-        [Result_2],
-        [],
-      ),
     'batchVote' : IDL.Func(
         [IDL.Vec(IDL.Tuple(ProposalId, VoteChoice, IDL.Opt(IDL.Text)))],
         [IDL.Vec(Result)],
@@ -137,11 +131,6 @@ export const idlFactory = ({ IDL }) => {
     'getTemplatesByCategory' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(ProposalTemplate)],
-        ['query'],
-      ),
-    'getTrendingProposals' : IDL.Func(
-        [IDL.Nat],
-        [IDL.Vec(Proposal)],
         ['query'],
       ),
     'init' : IDL.Func([IDL.Principal], [], ['oneway']),
