@@ -126,21 +126,6 @@ export const useTreasury = () => {
     }
   };
 
-  const getAllTransactions = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await actors.treasury.getAllTransactions();
-      if ('err' in res) throw new Error(res.err);
-      return 'ok' in res ? res.ok : res;
-    } catch (err) {
-      setError(err.message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getTransactionsByType = async (type) => {
     setLoading(true);
     setError(null);
@@ -193,7 +178,6 @@ export const useTreasury = () => {
     reserveTokens,
     releaseReservedTokens,
     getBalance,
-    getAllTransactions,
     getTransactionsByType,
     getRecentTransactions,
     getTreasuryStats,

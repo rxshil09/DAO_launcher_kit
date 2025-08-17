@@ -50,11 +50,6 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Opt(AssetMetadata)],
         ['query'],
       ),
-    'getAssetMetadata' : IDL.Func(
-        [AssetId],
-        [IDL.Opt(AssetMetadata)],
-        ['query'],
-      ),
     'getAuthorizedUploaders' : IDL.Func(
         [],
         [IDL.Vec(IDL.Principal)],
@@ -75,7 +70,6 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getSupportedContentTypes' : IDL.Func([], [IDL.Vec(IDL.Text)], ['query']),
-    'getUserAssets' : IDL.Func([], [IDL.Vec(AssetMetadata)], []),
     'health' : IDL.Func(
         [],
         [

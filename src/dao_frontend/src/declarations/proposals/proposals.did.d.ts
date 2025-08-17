@@ -59,8 +59,6 @@ export type Result = { 'ok' : null } |
   { 'err' : string };
 export type Result_1 = { 'ok' : ProposalId } |
   { 'err' : string };
-export type Result_2 = { 'ok' : bigint } |
-  { 'err' : string };
 export type Time = bigint;
 export type TokenAmount = bigint;
 export interface TreasuryTransferProposal {
@@ -73,10 +71,6 @@ export type VoteChoice = { 'against' : null } |
   { 'inFavor' : null };
 export interface _SERVICE {
   'addCategory' : ActorMethod<[string, string, string, string], Result>,
-  'addTemplate' : ActorMethod<
-    [string, string, string, Array<string>, string],
-    Result_2
-  >,
   'batchVote' : ActorMethod<
     [Array<[ProposalId, VoteChoice, [] | [string]]>],
     Array<Result>
@@ -108,7 +102,6 @@ export interface _SERVICE {
   'getProposalsByCategory' : ActorMethod<[string], Array<Proposal>>,
   'getTemplate' : ActorMethod<[bigint], [] | [ProposalTemplate]>,
   'getTemplatesByCategory' : ActorMethod<[string], Array<ProposalTemplate>>,
-  'getTrendingProposals' : ActorMethod<[bigint], Array<Proposal>>,
   'init' : ActorMethod<[Principal], undefined>,
   'vote' : ActorMethod<[ProposalId, VoteChoice, [] | [string]], Result>,
 }
