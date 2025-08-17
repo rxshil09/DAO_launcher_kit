@@ -1,80 +1,80 @@
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { Upload } from 'lucide-react';
+import { Upload, Download, File } from 'lucide-react';
+import { useAssets } from '../../hooks/useAssets';
 import { DAO } from '../../types/dao';
 import { useAssets } from '../../hooks/useAssets';
 
 const ManagementAssets: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  const {
-    getAuthorizedUploaders,
-    addAuthorizedUploader,
-    removeAuthorizedUploader,
-    updateStorageLimits,
-    getStorageStats,
-  } = useAssets();
 
-  const [uploaders, setUploaders] = useState<string[]>([]);
-  const [newUploader, setNewUploader] = useState('');
-  const [maxFileSize, setMaxFileSize] = useState('');
-  const [maxTotalStorage, setMaxTotalStorage] = useState('');
-  const [stats, setStats] = useState<any>(null);
+  const { getUserAssets, getPublicAssets, uploadAsset, getAsset } = useAssets();
+  const [assets, setAssets] = useState<any[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchUploaders = async () => {
+  const fetchAssets = async () => {
     try {
-      const list = await getAuthorizedUploaders();
-      setUploaders(list);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      const [userAssets, publicAssets] = await Promise.all([
+        getUserAssets(),
+        getPublicAssets(),
+      ]);
+      const userIds = new Set(userAssets.map((a: any) => Number(a.id)));
+      const combined = [
+        ...userAssets,
+        ...publicAssets.filter((a: any) => !userIds.has(Number(a.id))),
+      ];
+      setAssets(combined);
 
-  const fetchStats = async () => {
-    try {
-      const s = await getStorageStats();
-      setStats(s);
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchUploaders();
-    fetchStats();
+
+    fetchAssets();
   }, []);
 
-  const handleAddUploader = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUploader) return;
+  const handleFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress((p) => (p < 90 ? p + 10 : p));
+    }, 200);
     try {
-      await addAuthorizedUploader(newUploader);
-      setNewUploader('');
-      fetchUploaders();
+      await uploadAsset(file, true, []);
+      setUploadProgress(100);
+      await fetchAssets();
     } catch (err) {
       console.error(err);
+    } finally {
+      clearInterval(interval);
+      setTimeout(() => setUploadProgress(0), 500);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const handleRemoveUploader = async (p: string) => {
+  const handleDownload = async (id: bigint) => {
     try {
-      await removeAuthorizedUploader(p);
-      fetchUploaders();
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      const asset = await getAsset(id);
+      const blob = new Blob([new Uint8Array(asset.data)], {
+        type: asset.contentType,
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = asset.name;
+      link.click();
+      URL.revokeObjectURL(url);
 
-  const handleUpdateLimits = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await updateStorageLimits(
-        maxFileSize ? BigInt(maxFileSize) : null,
-        maxTotalStorage ? BigInt(maxTotalStorage) : null
-      );
-      setMaxFileSize('');
-      setMaxTotalStorage('');
-      fetchStats();
     } catch (err) {
       console.error(err);
     }
@@ -89,91 +89,81 @@ const ManagementAssets: React.FC = () => {
             Manage digital assets and files for {dao.name}
           </p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all font-semibold"
-        >
-          <Upload className="w-4 h-4" />
-          <span>Upload Asset</span>
-        </motion.button>
+        <div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg transition-all font-semibold"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="w-4 h-4" />
+            <span>Upload Asset</span>
+          </motion.button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          {uploadProgress > 0 && (
+            <div className="mt-2 h-2 w-full bg-gray-700 rounded">
+              <div
+                className="h-full bg-green-500 rounded"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      <section>
-        <h3 className="text-xl font-bold text-white mb-4 font-mono">
-          Authorized Uploaders
-        </h3>
-        <form onSubmit={handleAddUploader} className="flex space-x-2 mb-4">
-          <input
-            type="text"
-            value={newUploader}
-            onChange={(e) => setNewUploader(e.target.value)}
-            placeholder="Principal"
-            className="px-2 py-1 text-black flex-1"
-          />
-          <button type="submit" className="px-3 py-1 bg-blue-600 rounded">
-            Add
-          </button>
-        </form>
-        <ul className="space-y-2">
-          {uploaders.map((u) => (
+
+      {assets.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 text-center"
+        >
+          <File className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2 font-mono">
+            NO ASSETS AVAILABLE
+          </h3>
+          <p className="text-gray-400 mb-6">
+            Upload files to start building your asset library.
+          </p>
+        </motion.div>
+      ) : (
+        <motion.ul
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          {assets.map((asset: any) => (
             <li
-              key={u}
-              className="flex justify-between items-center bg-gray-800/50 p-2 rounded"
+              key={Number(asset.id)}
+              className="flex justify-between items-center bg-gray-800/50 border border-gray-700/50 rounded-lg p-4"
             >
-              <span className="font-mono text-sm break-all">{u}</span>
+              <div className="flex items-center space-x-3">
+                <File className="w-6 h-6 text-blue-400" />
+                <div>
+                  <p className="text-white font-mono">{asset.name}</p>
+                  {asset.tags && asset.tags.length > 0 && (
+                    <p className="text-gray-400 text-sm">
+                      {asset.tags.join(', ')}
+                    </p>
+                  )}
+                </div>
+              </div>
               <button
-                onClick={() => handleRemoveUploader(u)}
-                className="text-red-400 text-sm"
+                onClick={() => handleDownload(asset.id)}
+                className="text-green-400 hover:text-green-300"
               >
-                Remove
+                <Download className="w-5 h-5" />
               </button>
             </li>
           ))}
-          {uploaders.length === 0 && (
-            <li className="text-gray-400 text-sm">No authorized uploaders</li>
-          )}
-        </ul>
-      </section>
+        </motion.ul>
+      )}
 
-      <section>
-        <h3 className="text-xl font-bold text-white mb-4 font-mono">
-          Storage Limits
-        </h3>
-        {stats && (
-          <div className="text-sm text-gray-300 mb-4">
-            <p>
-              Storage Used: {Number(stats.storageUsed)} /{' '}
-              {Number(stats.storageLimit)}
-            </p>
-          </div>
-        )}
-        <form
-          onSubmit={handleUpdateLimits}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
-        >
-          <input
-            type="number"
-            value={maxFileSize}
-            onChange={(e) => setMaxFileSize(e.target.value)}
-            placeholder="Max file size"
-            className="px-2 py-1 text-black"
-          />
-          <input
-            type="number"
-            value={maxTotalStorage}
-            onChange={(e) => setMaxTotalStorage(e.target.value)}
-            placeholder="Max total storage"
-            className="px-2 py-1 text-black"
-          />
-          <button
-            type="submit"
-            className="px-3 py-1 bg-green-600 rounded text-white"
-          >
-            Update
-          </button>
-        </form>
-      </section>
     </div>
   );
 };
