@@ -5,7 +5,6 @@ import { useOutletContext } from 'react-router-dom';
 import { Upload, Download, File } from 'lucide-react';
 import { useAssets } from '../../hooks/useAssets';
 import { DAO } from '../../types/dao';
-import { useAssets } from '../../hooks/useAssets';
 
 const ManagementAssets: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
