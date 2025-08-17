@@ -1,91 +1,176 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  DollarSign, 
-  TrendingUp, 
+import {
+  DollarSign,
+  TrendingUp,
   TrendingDown,
   ArrowUpRight,
   ArrowDownLeft,
-  PieChart,
-  BarChart3,
   Wallet,
   Lock,
-  Shield
+
+  Shield,
+  Plus,
+  X
+
+
+  Shield,
+  Plus,
+  X
+
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useTreasury } from '../../hooks/useTreasury';
 
 const ManagementTreasury: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const {
+    getAuthorizedPrincipals,
+    addAuthorizedPrincipal,
+    removeAuthorizedPrincipal,
+    loading,
+    error
+  } = useTreasury();
+
+  const [principals, setPrincipals] = useState<string[]>([]);
+  const [newPrincipal, setNewPrincipal] = useState('');
+
+  useEffect(() => {
+    const fetchPrincipals = async () => {
+      try {
+        const list = await getAuthorizedPrincipals();
+        setPrincipals(list);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchPrincipals();
+  }, [getAuthorizedPrincipals]);
+
+  const handleAdd = async () => {
+    if (!newPrincipal.trim()) return;
+    try {
+      await addAuthorizedPrincipal(newPrincipal.trim());
+      const list = await getAuthorizedPrincipals();
+      setPrincipals(list);
+      setNewPrincipal('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRemove = async (principal: string) => {
+    try {
+      await removeAuthorizedPrincipal(principal);
+      const list = await getAuthorizedPrincipals();
+      setPrincipals(list);
+    } catch (err) {
+      console.error(err);
+
+const{
+    deposit,
+    withdraw,
+    getBalance,
+    getTreasuryStats,
+    getRecentTransactions,
+  } = useTreasury();
+
+  const [balance, setBalance] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+
+  const fetchData = async () => {
+    try {
+      const bal = await getBalance();
+      setBalance(bal);
+      const s = await getTreasuryStats();
+      setStats(s);
+      const txs = await getRecentTransactions(5);
+      const formatted = txs.map((tx: any) => {
+        const isInflow =
+          'deposit' in tx.transactionType || 'stakingReward' in tx.transactionType;
+        return {
+          id: Number(tx.id),
+          type: isInflow ? 'inflow' : 'outflow',
+          description: tx.description,
+          amount: `${isInflow ? '+' : '-'}${tx.amount.toString()}`,
+          timestamp: new Date(
+            Number(tx.timestamp / BigInt(1_000_000))
+          ).toLocaleString(),
+          status: Object.keys(tx.status)[0],
+        };
+      });
+      setRecentTransactions(formatted);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleDeposit = async () => {
+    const amount = prompt('Enter deposit amount');
+    if (!amount) return;
+    const description = prompt('Enter description') || '';
+    try {
+      await deposit(amount, description);
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const recipient = prompt('Enter recipient principal');
+    const amount = prompt('Enter withdrawal amount');
+    if (!recipient || !amount) return;
+    const description = prompt('Enter description') || '';
+    try {
+      await withdraw(recipient, amount, description);
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+
+
+    }
+  };
 
   const treasuryStats = [
     {
       label: 'Total Balance',
-      value: dao.treasury.balance,
-      change: '+5.2%',
+      value: balance ? balance.total.toString() : dao.treasury.balance,
+      change: '+0%',
       trend: 'up',
       icon: Wallet,
-      color: 'green'
+      color: 'green',
     },
     {
-      label: 'Monthly Inflow',
-      value: dao.treasury.monthlyInflow,
-      change: '+12.8%',
+      label: 'Total Deposits',
+      value: stats ? stats.totalDeposits.toString() : dao.treasury.monthlyInflow,
+      change: '+0%',
       trend: 'up',
       icon: TrendingUp,
-      color: 'blue'
+      color: 'blue',
     },
     {
       label: 'Available Funds',
-      value: '$680K',
-      change: '-2.1%',
+      value: balance ? balance.available.toString() : '$0',
+      change: '+0%',
       trend: 'down',
       icon: DollarSign,
-      color: 'purple'
+      color: 'purple',
     },
     {
       label: 'Locked Funds',
-      value: '$170K',
-      change: '+8.5%',
+      value: balance ? balance.locked.toString() : '$0',
+      change: '+0%',
       trend: 'up',
       icon: Lock,
-      color: 'orange'
-    }
-  ];
-
-  const recentTransactions = [
-    {
-      id: 1,
-      type: 'inflow',
-      description: 'Revenue sharing from protocol fees',
-      amount: '+$12,500',
-      timestamp: '2 hours ago',
-      status: 'completed'
+      color: 'orange',
     },
-    {
-      id: 2,
-      type: 'outflow',
-      description: 'Development team payment',
-      amount: '-$8,000',
-      timestamp: '1 day ago',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      type: 'inflow',
-      description: 'Staking rewards distribution',
-      amount: '+$3,200',
-      timestamp: '2 days ago',
-      status: 'completed'
-    },
-    {
-      id: 4,
-      type: 'outflow',
-      description: 'Marketing campaign funding',
-      amount: '-$5,500',
-      timestamp: '3 days ago',
-      status: 'completed'
-    }
   ];
 
   const allocation = [
@@ -124,6 +209,7 @@ const ManagementTreasury: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleDeposit}
             className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors font-mono"
           >
             <ArrowUpRight className="w-4 h-4" />
@@ -132,6 +218,7 @@ const ManagementTreasury: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            onClick={handleWithdraw}
             className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-mono"
           >
             <ArrowDownLeft className="w-4 h-4" />
@@ -274,6 +361,59 @@ const ManagementTreasury: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Authorized Principals Management */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
+      >
+        <h3 className="text-lg font-bold text-white mb-4 font-mono">
+          AUTHORIZED PRINCIPALS
+        </h3>
+
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={newPrincipal}
+            onChange={(e) => setNewPrincipal(e.target.value)}
+            placeholder="Principal ID"
+            className="flex-grow px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white font-mono"
+          />
+          <button
+            onClick={handleAdd}
+            disabled={loading}
+            className="flex items-center space-x-1 px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors font-mono"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add</span>
+          </button>
+        </div>
+
+        {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
+
+        <ul className="space-y-2">
+          {principals.map((p) => (
+            <li
+              key={p}
+              className="flex items-center justify-between p-2 bg-gray-900/50 rounded-lg border border-gray-700/30"
+            >
+              <span className="text-white text-sm font-mono break-all">{p}</span>
+              <button
+                onClick={() => handleRemove(p)}
+                disabled={loading}
+                className="text-red-400 hover:text-red-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </li>
+          ))}
+          {principals.length === 0 && (
+            <li className="text-sm text-gray-400 font-mono">No authorized principals</li>
+          )}
+        </ul>
+      </motion.div>
     </div>
   );
 };

@@ -57,6 +57,13 @@ export class DAOAPIWrapper {
         );
     }
 
+    async getCanisterReferences() {
+        return this.callAPI(
+            () => this.actors.daoBackend.getCanisterReferences(),
+            'Get Canister References'
+        );
+    }
+
     async setDAOConfig(config) {
         return this.callAPI(
             () => this.actors.daoBackend.setDAOConfig(config),

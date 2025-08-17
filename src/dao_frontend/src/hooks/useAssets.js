@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 
 export const useAssets = () => {
@@ -126,15 +127,164 @@ export const useAssets = () => {
     }
   };
 
+  const getAuthorizedUploaders = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.assets.getAuthorizedUploaders();
+      return res.map((p) => p.toText());
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addAuthorizedUploader = async (principal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.assets.addAuthorizedUploader(
+        Principal.fromText(principal)
+      );
+      if (res.err) {
+        throw new Error(res.err);
+      }
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeAuthorizedUploader = async (principal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.assets.removeAuthorizedUploader(
+        Principal.fromText(principal)
+      );
+      if (res.err) {
+        throw new Error(res.err);
+      }
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateStorageLimits = async (
+    maxFileSizeNew = null,
+    maxTotalStorageNew = null
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.assets.updateStorageLimits(
+        maxFileSizeNew === null ? [] : [BigInt(maxFileSizeNew)],
+        maxTotalStorageNew === null ? [] : [BigInt(maxTotalStorageNew)]
+      );
+      if (res.err) {
+        throw new Error(res.err);
+      }
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSupportedContentTypes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.assets.getSupportedContentTypes();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getAssetByName = async (name) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.assets.getAssetByName(name);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const batchUploadAssets = async (files) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const formatted = await Promise.all(
+        files.map(async ({ file, isPublic = true, tags = [] }) => {
+          const arrayBuffer = await file.arrayBuffer();
+          const data = Array.from(new Uint8Array(arrayBuffer));
+          return [file.name, file.type, data, isPublic, tags];
+        })
+      );
+      return await actors.assets.batchUploadAssets(formatted);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getHealth = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await actors.assets.health();
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+icAssets,
+
   return {
     uploadAsset,
     getAsset,
+    getAssetMetadata,
     getPublicAssets,
+    getUserAssets,
+
     searchAssetsByTag,
     deleteAsset,
     updateAssetMetadata,
     getStorageStats,
+
+    getAuthorizedUploaders,
+    addAuthorizedUploader,
+    removeAuthorizedUploader,
+    updateStorageLimits,
+    getSupportedContentTypes,
+    getAssetByName,
+    batchUploadAssets,
+    getHealth,
     loading,
     error,
   };
 };
+
