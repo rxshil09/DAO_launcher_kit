@@ -43,6 +43,13 @@ export const idlFactory = ({ IDL }) => {
     'totalStaked' : TokenAmount,
     'activeProposals' : IDL.Nat,
   });
+  const Activity = IDL.Record({
+    'activityType' : IDL.Text,
+    'title' : IDL.Text,
+    'description' : IDL.Text,
+    'timestamp' : Time,
+    'status' : IDL.Text,
+  });
   return IDL.Service({
     'addAdmin' : IDL.Func([IDL.Principal], [Result], []),
     'adminRegisterUser' : IDL.Func(
@@ -79,6 +86,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getDAOStats' : IDL.Func([], [DAOStats], ['query']),
+    'getRecentActivity' : IDL.Func([], [IDL.Vec(Activity)], ['query']),
     'getGovernanceStats' : IDL.Func(
         [],
         [

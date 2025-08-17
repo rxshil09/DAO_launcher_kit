@@ -182,6 +182,15 @@ module {
         #fee;
     };
 
+    // Activity types
+    public type Activity = {
+        activityType: Text;
+        title: Text;
+        description: Text;
+        timestamp: Time;
+        status: Text;
+    };
+
     // Governance types
     public type GovernanceConfig = {
         votingPeriod: Nat; // Duration in nanoseconds

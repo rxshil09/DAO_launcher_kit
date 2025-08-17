@@ -26,17 +26,25 @@ type ModuleFeature =
    features: vec text;
    moduleId: text;
  };
-type DAOStats = 
- record {
+type DAOStats =
+record {
    activeProposals: nat;
    totalMembers: nat;
    totalProposals: nat;
    totalStaked: TokenAmount;
    totalVotingPower: nat;
    treasuryBalance: TokenAmount;
- };
-type DAOConfig = 
+};
+type Activity =
  record {
+   activityType: text;
+   title: text;
+   description: text;
+   timestamp: Time;
+   status: text;
+ };
+type DAOConfig =
+record {
    category: text;
    fundingDuration: nat;
    fundingGoal: nat;
@@ -78,6 +86,7 @@ service : {
       totalMembers: nat;
     }) query;
   getDAOStats: () -> (DAOStats) query;
+  getRecentActivity: () -> (vec Activity) query;
   getGovernanceStats: () ->
    (record {
       activeProposals: nat;

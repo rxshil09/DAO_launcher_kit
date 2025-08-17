@@ -18,6 +18,7 @@ import ManagementStaking from './components/management/ManagementStaking';
 import ManagementTreasury from './components/management/ManagementTreasury';
 import ManagementProposals from './components/management/ManagementProposals';
 import ManagementAssets from './components/management/ManagementAssets';
+import ManagementAdmins from './components/management/ManagementAdmins';
 import './app.css';
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
                 <Route path="treasury" element={<ManagementTreasury />} />
                 <Route path="proposals" element={<ManagementProposals />} />
                 <Route path="assets" element={<ManagementAssets />} />
+                <Route path="admins" element={<ManagementAdmins />} />
               </Route>
             </Routes>
           </div>
