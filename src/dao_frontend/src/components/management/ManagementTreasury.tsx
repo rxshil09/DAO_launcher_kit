@@ -9,6 +9,11 @@ import {
   ArrowDownLeft,
   Wallet,
   Lock,
+
+  Shield,
+  Plus,
+  X
+
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useTreasury } from '../../hooks/useTreasury';
@@ -16,6 +21,48 @@ import { useTreasury } from '../../hooks/useTreasury';
 const ManagementTreasury: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
   const {
+    getAuthorizedPrincipals,
+    addAuthorizedPrincipal,
+    removeAuthorizedPrincipal,
+    loading,
+    error
+  } = useTreasury();
+
+  const [principals, setPrincipals] = useState<string[]>([]);
+  const [newPrincipal, setNewPrincipal] = useState('');
+
+  useEffect(() => {
+    const fetchPrincipals = async () => {
+      try {
+        const list = await getAuthorizedPrincipals();
+        setPrincipals(list);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchPrincipals();
+  }, [getAuthorizedPrincipals]);
+
+  const handleAdd = async () => {
+    if (!newPrincipal.trim()) return;
+    try {
+      await addAuthorizedPrincipal(newPrincipal.trim());
+      const list = await getAuthorizedPrincipals();
+      setPrincipals(list);
+      setNewPrincipal('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRemove = async (principal: string) => {
+    try {
+      await removeAuthorizedPrincipal(principal);
+      const list = await getAuthorizedPrincipals();
+      setPrincipals(list);
+    } catch (err) {
+      console.error(err);
+const{
     deposit,
     withdraw,
     getBalance,
@@ -80,6 +127,7 @@ const ManagementTreasury: React.FC = () => {
       await fetchData();
     } catch (e) {
       console.error(e);
+
     }
   };
 
@@ -306,6 +354,59 @@ const ManagementTreasury: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Authorized Principals Management */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
+      >
+        <h3 className="text-lg font-bold text-white mb-4 font-mono">
+          AUTHORIZED PRINCIPALS
+        </h3>
+
+        <div className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={newPrincipal}
+            onChange={(e) => setNewPrincipal(e.target.value)}
+            placeholder="Principal ID"
+            className="flex-grow px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white font-mono"
+          />
+          <button
+            onClick={handleAdd}
+            disabled={loading}
+            className="flex items-center space-x-1 px-4 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors font-mono"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add</span>
+          </button>
+        </div>
+
+        {error && <p className="text-red-400 mb-4 text-sm">{error}</p>}
+
+        <ul className="space-y-2">
+          {principals.map((p) => (
+            <li
+              key={p}
+              className="flex items-center justify-between p-2 bg-gray-900/50 rounded-lg border border-gray-700/30"
+            >
+              <span className="text-white text-sm font-mono break-all">{p}</span>
+              <button
+                onClick={() => handleRemove(p)}
+                disabled={loading}
+                className="text-red-400 hover:text-red-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </li>
+          ))}
+          {principals.length === 0 && (
+            <li className="text-sm text-gray-400 font-mono">No authorized principals</li>
+          )}
+        </ul>
+      </motion.div>
     </div>
   );
 };
