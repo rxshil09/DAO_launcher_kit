@@ -9,7 +9,6 @@ import {
   ArrowDownLeft,
   Wallet,
   Lock,
-  Shield,
   Plus,
   X,
 } from 'lucide-react';
@@ -26,7 +25,7 @@ const ManagementTreasury: React.FC = () => {
     withdraw,
     getBalance,
     getTreasuryStats,
-    getRecentTransactions,
+    getAllTransactions,
     loading,
     error,
   } = useTreasury();
@@ -70,7 +69,11 @@ const ManagementTreasury: React.FC = () => {
 
   const [balance, setBalance] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+
+  const [filter, setFilter] = useState<'all' | 'inflow' | 'outflow'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
   const fetchData = async () => {
     try {
@@ -78,7 +81,7 @@ const ManagementTreasury: React.FC = () => {
       setBalance(bal);
       const s = await getTreasuryStats();
       setStats(s);
-      const txs = await getRecentTransactions(5);
+      const txs = await getAllTransactions();
       const formatted = txs.map((tx: any) => {
         const isInflow =
           'deposit' in tx.transactionType || 'stakingReward' in tx.transactionType;
@@ -93,8 +96,8 @@ const ManagementTreasury: React.FC = () => {
           status: Object.keys(tx.status)[0],
         };
       });
-      setRecentTransactions(formatted);
-    } catch (e) {
+      setTransactions(formatted);
+      } catch (e) {
       console.error(e);
     }
   };
@@ -187,6 +190,15 @@ const ManagementTreasury: React.FC = () => {
     }
   };
 
+  const filteredTransactions = transactions.filter(
+    (t) => filter === 'all' || t.type === filter
+  );
+  const totalPages = Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE) || 1;
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -253,7 +265,7 @@ const ManagementTreasury: React.FC = () => {
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Recent Transactions */}
+        {/* Transactions */}
         <div className="lg:col-span-2">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -262,14 +274,40 @@ const ManagementTreasury: React.FC = () => {
             className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white font-mono">RECENT TRANSACTIONS</h3>
-              <button className="text-blue-400 hover:text-blue-300 transition-colors text-sm font-mono">
-                View All
-              </button>
+              <h3 className="text-xl font-bold text-white font-mono">TRANSACTIONS</h3>
+              <div className="flex space-x-2">
+                {['all', 'inflow', 'outflow'].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      setFilter(t as 'all' | 'inflow' | 'outflow');
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-sm font-mono border transition-colors ${
+                      filter === t
+                        ? 'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                        : 'bg-gray-900 border-gray-700 text-gray-400'
+                    }`}
+                  >
+                    {t === 'all' ? 'All' : t === 'inflow' ? 'Inflows' : 'Outflows'}
+                  </button>
+                ))}
+              </div>
             </div>
-            
+
+            {loading && transactions.length === 0 && (
+              <p className="text-gray-400 text-sm font-mono">Loading transactions...</p>
+            )}
+            {error && (
+              <p className="text-red-400 text-sm font-mono mb-4">{error}</p>
+            )}
+
+            {!loading && paginatedTransactions.length === 0 && (
+              <p className="text-gray-400 text-sm font-mono">No transactions found</p>
+            )}
+
             <div className="space-y-4">
-              {recentTransactions.map((transaction, index) => (
+              {paginatedTransactions.map((transaction, index) => (
                 <motion.div
                   key={transaction.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -278,15 +316,29 @@ const ManagementTreasury: React.FC = () => {
                   className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-gray-700/30"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      transaction.type === 'inflow' 
-                        ? 'bg-green-500/20 border border-green-500/30' 
-                        : 'bg-red-500/20 border border-red-500/30'
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        transaction.type === 'inflow'
+                          ? 'bg-green-500/20 border border-green-500/30'
+                          : 'bg-red-500/20 border border-red-500/30'
+                      }`}
+                    >
                       {transaction.type === 'inflow' ? (
-                        <ArrowUpRight className={`w-5 h-5 ${transaction.type === 'inflow' ? 'text-green-400' : 'text-red-400'}`} />
+                        <ArrowUpRight
+                          className={`w-5 h-5 ${
+                            transaction.type === 'inflow'
+                              ? 'text-green-400'
+                              : 'text-red-400'
+                          }`}
+                        />
                       ) : (
-                        <ArrowDownLeft className={`w-5 h-5 ${transaction.type === 'inflow' ? 'text-green-400' : 'text-red-400'}`} />
+                        <ArrowDownLeft
+                          className={`w-5 h-5 ${
+                            transaction.type === 'inflow'
+                              ? 'text-green-400'
+                              : 'text-red-400'
+                          }`}
+                        />
                       )}
                     </div>
                     <div>
@@ -295,9 +347,13 @@ const ManagementTreasury: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-bold ${
-                      transaction.type === 'inflow' ? 'text-green-400' : 'text-red-400'
-                    }`}>
+                    <p
+                      className={`font-bold ${
+                        transaction.type === 'inflow'
+                          ? 'text-green-400'
+                          : 'text-red-400'
+                      }`}
+                    >
                       {transaction.amount}
                     </p>
                     <p className="text-xs text-gray-400 font-mono">{transaction.status}</p>
@@ -305,6 +361,28 @@ const ManagementTreasury: React.FC = () => {
                 </motion.div>
               ))}
             </div>
+
+            {filteredTransactions.length > ITEMS_PER_PAGE && (
+              <div className="flex justify-between items-center mt-4 text-sm font-mono">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-gray-900 border border-gray-700 rounded-lg disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <span className="text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => (p < totalPages ? p + 1 : p))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 bg-gray-900 border border-gray-700 rounded-lg disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </motion.div>
         </div>
 
