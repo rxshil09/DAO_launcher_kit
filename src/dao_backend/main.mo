@@ -34,6 +34,7 @@ persistent actor DAOMain {
     type UserProfile = Types.UserProfile;
     type DAOStats = Types.DAOStats;
     type DAOConfig = Types.DAOConfig;
+    type Activity = Types.Activity;
 
     // Stable storage for upgrades - persists across canister upgrades
     // These variables maintain their state when the canister is upgraded
@@ -288,6 +289,13 @@ persistent actor DAOMain {
             treasuryBalance = 0; // Will be fetched from treasury canister
             totalVotingPower = 0; // Will be calculated from staking data
         }
+    };
+
+    // Recent activity
+    public query func getRecentActivity() : async [Activity] {
+        // This function will aggregate recent activity from various DAO modules.
+        // For now, return an empty list as a placeholder implementation.
+        []
     };
 
     // Governance operations (temporary implementation until governance canister is ready)

@@ -28,6 +28,13 @@ export interface DAOStats {
   'totalStaked' : TokenAmount,
   'activeProposals' : bigint,
 }
+export interface Activity {
+  'activityType' : string,
+  'title' : string,
+  'description' : string,
+  'timestamp' : Time,
+  'status' : string,
+}
 export interface ModuleFeature {
   'moduleId' : string,
   'features' : Array<string>,
@@ -74,6 +81,7 @@ export interface _SERVICE {
     }
   >,
   'getDAOStats' : ActorMethod<[], DAOStats>,
+  'getRecentActivity' : ActorMethod<[], Array<Activity>>,
   'getGovernanceStats' : ActorMethod<
     [],
     {

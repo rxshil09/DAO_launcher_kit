@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
+import {
+  Users,
+  DollarSign,
+  TrendingUp,
   Activity,
   Vote,
   Coins,
@@ -17,26 +17,17 @@ import {
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useActors } from '../../context/ActorContext';
-
-interface Activity {
-  type: string;
-  title: string;
-  description: string;
-  timestamp: string;
-  status: string;
-}
+import type { Activity as ActivityRecord } from '@declarations/dao_backend/dao_backend.did';
 
 const Overview: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
   const { daoBackend } = useActors();
 
-  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityRecord[]>([]);
 
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore - backend method may not yet be in generated types
         const activity = await daoBackend.getRecentActivity();
         setRecentActivity(activity || []);
       } catch (err) {
@@ -99,8 +90,8 @@ const Overview: React.FC = () => {
     }
   };
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
+  const getActivityIcon = (activityType: string) => {
+    switch (activityType) {
       case 'proposal':
         return Vote;
       case 'staking':
@@ -114,8 +105,8 @@ const Overview: React.FC = () => {
     }
   };
 
-  const getActivityColor = (type: string) => {
-    switch (type) {
+  const getActivityColor = (activityType: string) => {
+    switch (activityType) {
       case 'proposal':
         return 'text-blue-400';
       case 'staking':
@@ -190,7 +181,7 @@ const Overview: React.FC = () => {
             
             <div className="space-y-4">
               {recentActivity.map((activity, index) => {
-                const ActivityIcon = getActivityIcon(activity.type);
+                const ActivityIcon = getActivityIcon(activity.activityType);
                 return (
                   <motion.div
                     key={index}
@@ -199,14 +190,14 @@ const Overview: React.FC = () => {
                     transition={{ delay: 0.4 + index * 0.1 }}
                     className="flex items-start space-x-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700/30 hover:border-gray-600/50 transition-colors"
                   >
-                    <div className={`w-10 h-10 rounded-lg bg-gray-800 border border-gray-600 flex items-center justify-center ${getActivityColor(activity.type)}`}>
+                    <div className={`w-10 h-10 rounded-lg bg-gray-800 border border-gray-600 flex items-center justify-center ${getActivityColor(activity.activityType)}`}>
                       <ActivityIcon className="w-5 h-5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-white font-semibold mb-1">{activity.title}</h4>
                       <p className="text-gray-400 text-sm mb-2">{activity.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-mono">{activity.timestamp}</span>
+                        <span className="text-xs text-gray-500 font-mono">{activity.timestamp.toString()}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           activity.status === 'active' 
                             ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
