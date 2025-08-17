@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useActors } from '../context/ActorContext';
 import { useNavigate } from 'react-router-dom';
 import BackgroundParticles from './BackgroundParticles';
 import { 
@@ -31,6 +32,8 @@ import {
 
 const Settings = () => {
   const { isAuthenticated, principal, userSettings, logout, loading } = useAuth();
+  const actors = useActors();
+  const daoBackend = actors?.daoBackend;
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [showPrincipal, setShowPrincipal] = useState(false);
@@ -78,11 +81,23 @@ const Settings = () => {
   };
 
   const handleSave = async () => {
+    if (!daoBackend) {
+      setSaveMessage('Backend unavailable');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setSaveMessage('Settings saved successfully!');
+      const result = await daoBackend.updateUserProfile(
+        formData.displayName,
+        formData.bio
+      );
+
+      if ('ok' in result) {
+        setSaveMessage('Settings saved successfully!');
+      } else {
+        setSaveMessage(`Failed to save settings: ${result.err}`);
+      }
       setTimeout(() => setSaveMessage(''), 3000);
     } catch (error) {
       setSaveMessage('Failed to save settings');
