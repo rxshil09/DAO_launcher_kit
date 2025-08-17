@@ -15,11 +15,18 @@ import {
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useProposals } from '../../hooks/useProposals';
+import { useGovernance } from '../../hooks/useGovernance';
 
 const ManagementGovernance: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
   const { getAllProposals, createProposal, vote } = useProposals();
+  const {
+    getActiveProposals,
+    loading: activeLoading,
+    error: activeError,
+  } = useGovernance();
   const [proposals, setProposals] = useState<any[]>([]);
+  const [activeProposals, setActiveProposals] = useState<any[]>([]);
 
   const loadProposals = async () => {
     try {
@@ -31,8 +38,19 @@ const ManagementGovernance: React.FC = () => {
     }
   };
 
+  const loadActiveProposals = async () => {
+    try {
+      const res = await getActiveProposals();
+      setActiveProposals(res);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     loadProposals();
+    loadActiveProposals();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -179,11 +197,75 @@ const ManagementGovernance: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Proposals List */}
+      {/* Active Proposals */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
+        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-white font-mono">ACTIVE PROPOSALS</h3>
+          <button
+            onClick={loadActiveProposals}
+            className="px-3 py-1 text-sm rounded bg-gray-700 hover:bg-gray-600 text-gray-200"
+            disabled={activeLoading}
+          >
+            Refresh
+          </button>
+        </div>
+        {activeError && <p className="text-red-400 mb-4">{activeError}</p>}
+        {activeLoading ? (
+          <p className="text-gray-400">Loading...</p>
+        ) : activeProposals.length === 0 ? (
+          <p className="text-gray-400">No active proposals</p>
+        ) : (
+          <div className="space-y-4">
+            {activeProposals.map((proposal) => {
+              const timeLeft = formatTimeLeft(proposal.votingDeadline);
+              return (
+                <div
+                  key={proposal.id.toString()}
+                  className="p-4 bg-gray-900/50 rounded-lg border border-gray-700/30"
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-lg font-semibold text-white">{proposal.title}</h4>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor('active')}`}
+                    >
+                      ACTIVE
+                    </span>
+                  </div>
+                  <p className="text-gray-400 text-sm mb-3">{proposal.description}</p>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>{timeLeft}</span>
+                    <div className="space-x-2">
+                      <button
+                        onClick={() => handleVote(proposal.id, 'inFavor')}
+                        className="px-3 py-1 text-xs rounded bg-green-600 text-white"
+                      >
+                        Vote For
+                      </button>
+                      <button
+                        onClick={() => handleVote(proposal.id, 'against')}
+                        className="px-3 py-1 text-xs rounded bg-red-600 text-white"
+                      >
+                        Vote Against
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </motion.div>
+
+      {/* Proposals List */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
         className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
       >
         <h3 className="text-xl font-bold text-white mb-6 font-mono">RECENT PROPOSALS</h3>
