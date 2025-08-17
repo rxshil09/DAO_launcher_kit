@@ -7,6 +7,7 @@ import SignIn from './components/SignIn';
 import LaunchDAO from './components/LaunchDAO';
 import Settings from './components/Settings';
 import DAOStatus from './components/DAOStatus';
+import Diagnostics from './components/Diagnostics';
 import Navbar from './components/Navbar';
 import UserRegistrationHandler from './components/UserRegistrationHandler';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -32,6 +33,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/dashboard" element={<DAODashboard />} />
               <Route path="/status" element={<DAOStatus />} />
+              <Route path="/admin/diagnostics" element={<Diagnostics />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/launch" element={<LaunchDAO />} />
               <Route path="/settings" element={<Settings />} />
