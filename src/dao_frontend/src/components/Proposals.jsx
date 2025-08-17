@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useProposals } from '../hooks/useProposals';
+import { useGovernance } from '../hooks/useGovernance';
+import ProposalDetail from './ProposalDetail';
 
 const Proposals = () => {
   const {
@@ -11,6 +13,11 @@ const Proposals = () => {
     loading,
     error,
   } = useProposals();
+  const {
+    getAllProposals: getGovProposals,
+    loading: govLoading,
+    error: govError,
+  } = useGovernance();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -22,10 +29,13 @@ const Proposals = () => {
   const [proposals, setProposals] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [templates, setTemplates] = useState([]);
+  const [govProposals, setGovProposals] = useState([]);
+  const [selectedProposal, setSelectedProposal] = useState(null);
 
   useEffect(() => {
     loadProposals();
     loadTemplates();
+    loadGovProposals();
   }, []);
 
   const loadProposals = async () => {
@@ -36,6 +46,11 @@ const Proposals = () => {
   const loadTemplates = async () => {
     const tpls = await getProposalTemplates();
     setTemplates(tpls);
+  };
+
+  const loadGovProposals = async () => {
+    const gps = await getGovProposals();
+    setGovProposals(gps);
   };
 
   const handleCreate = async (e) => {
@@ -90,7 +105,9 @@ const Proposals = () => {
   return (
     <div className="p-4 space-y-8">
       <h1 className="text-2xl font-bold">Proposals</h1>
-      {error && <p className="text-red-500">{error}</p>}
+      {(error || govError) && (
+        <p className="text-red-500">{error || govError}</p>
+      )}
 
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Existing Proposals</h2>
@@ -108,6 +125,35 @@ const Proposals = () => {
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold">Governance Proposals</h2>
+        <ul className="space-y-2">
+          {govProposals.map((p) => (
+            <li key={p.id.toString()} className="border p-2 rounded">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold">{p.title}</h3>
+                  <p className="text-sm">Status: {Object.keys(p.status)[0]}</p>
+                </div>
+                <button
+                  className="bg-blue-500 text-white px-2 py-1 rounded"
+                  onClick={() => setSelectedProposal(p.id)}
+                  disabled={govLoading}
+                >
+                  View
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {selectedProposal && (
+          <ProposalDetail
+            proposalId={selectedProposal}
+            onClose={() => setSelectedProposal(null)}
+          />
+        )}
       </div>
 
       <div className="space-y-2">
