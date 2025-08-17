@@ -126,6 +126,20 @@ export const useTreasury = () => {
     }
   };
 
+  const getAllTransactions = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const txs = await actors.treasury.getAllTransactions();
+      return txs;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getTransactionsByType = async (type) => {
     setLoading(true);
     setError(null);
