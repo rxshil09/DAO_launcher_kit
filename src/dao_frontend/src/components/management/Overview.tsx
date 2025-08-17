@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import {
-  Users,
-  DollarSign,
-  TrendingUp,
+
+import { useProposals } from '../../hooks/useProposals';
+import { useStaking } from '../../hooks/useStaking';
+import { useTreasury } from '../../hooks/useTreasury';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Users, 
+  DollarSign, 
+  TrendingUp, 
+
   Activity,
   Vote,
   Coins,
@@ -22,6 +28,10 @@ import type { Activity as ActivityRecord } from '@declarations/dao_backend/dao_b
 const Overview: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
   const { daoBackend } = useActors();
+  const { createProposal } = useProposals();
+  const { stake } = useStaking();
+  const { getBalance } = useTreasury();
+  const navigate = useNavigate();
 
   const [recentActivity, setRecentActivity] = useState<ActivityRecord[]>([]);
 
@@ -253,15 +263,24 @@ const Overview: React.FC = () => {
           >
             <h3 className="text-lg font-bold text-white mb-4 font-mono">QUICK ACTIONS</h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center justify-between p-3 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors">
+              <button
+                className="w-full flex items-center justify-between p-3 bg-blue-500/20 border border-blue-500/30 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
+                onClick={() => navigate(`/dao/${dao.id}/manage/proposals`)}
+              >
                 <span className="font-mono">Create Proposal</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
-              <button className="w-full flex items-center justify-between p-3 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors">
+              <button
+                className="w-full flex items-center justify-between p-3 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors"
+                onClick={() => navigate(`/dao/${dao.id}/manage/staking`)}
+              >
                 <span className="font-mono">Stake Tokens</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
-              <button className="w-full flex items-center justify-between p-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors">
+              <button
+                className="w-full flex items-center justify-between p-3 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
+                onClick={() => navigate(`/dao/${dao.id}/manage/treasury`)}
+              >
                 <span className="font-mono">View Treasury</span>
                 <ArrowUpRight className="w-4 h-4" />
               </button>
