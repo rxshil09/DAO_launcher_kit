@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
 import { 
@@ -16,9 +16,38 @@ import {
   Target
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useActors } from '../../context/ActorContext';
+
+interface Activity {
+  type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  status: string;
+}
 
 const Overview: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const { daoBackend } = useActors();
+
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - backend method may not yet be in generated types
+        const activity = await daoBackend.getRecentActivity();
+        setRecentActivity(activity || []);
+      } catch (err) {
+        console.error('Failed to fetch recent activity', err);
+      }
+    };
+
+    if (daoBackend) {
+      fetchRecentActivity();
+    }
+  }, [daoBackend]);
 
   const quickStats = [
     {
@@ -52,37 +81,6 @@ const Overview: React.FC = () => {
       trend: 'up',
       icon: Vote,
       color: 'orange'
-    }
-  ];
-
-  const recentActivity = [
-    {
-      type: 'proposal',
-      title: 'Treasury Allocation Proposal',
-      description: 'Proposal to allocate 15% of treasury for development',
-      timestamp: '2 hours ago',
-      status: 'active'
-    },
-    {
-      type: 'staking',
-      title: 'Large Stake Deposited',
-      description: '50,000 tokens staked for 365 days',
-      timestamp: '5 hours ago',
-      status: 'completed'
-    },
-    {
-      type: 'governance',
-      title: 'Voting Period Ended',
-      description: 'Community fund proposal passed with 78% approval',
-      timestamp: '1 day ago',
-      status: 'completed'
-    },
-    {
-      type: 'treasury',
-      title: 'Treasury Deposit',
-      description: 'Revenue sharing deposit of 25,000 tokens',
-      timestamp: '2 days ago',
-      status: 'completed'
     }
   ];
 
