@@ -3,8 +3,15 @@ import { useGovernance } from '../hooks/useGovernance';
 import { safeJsonStringify } from '../utils/jsonUtils';
 
 const Governance = () => {
-  const { createProposal, vote, getConfig, getGovernanceStats, loading, error } =
-    useGovernance();
+  const {
+    createProposal,
+    vote,
+    getConfig,
+    getGovernanceStats,
+    updateConfig,
+    loading,
+    error,
+  } = useGovernance();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [proposalType, setProposalType] = useState('textProposal');
@@ -14,12 +21,28 @@ const Governance = () => {
   const [reason, setReason] = useState('');
   const [config, setConfig] = useState(null);
   const [stats, setStats] = useState(null);
+  const [newConfig, setNewConfig] = useState({
+    votingPeriod: '',
+    quorumThreshold: '',
+    approvalThreshold: '',
+    proposalDeposit: '',
+    maxProposalsPerUser: '',
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const cfg = await getConfig();
         setConfig(cfg);
+        if (cfg) {
+          setNewConfig({
+            votingPeriod: cfg.votingPeriod.toString(),
+            quorumThreshold: cfg.quorumThreshold.toString(),
+            approvalThreshold: cfg.approvalThreshold.toString(),
+            proposalDeposit: cfg.proposalDeposit.toString(),
+            maxProposalsPerUser: cfg.maxProposalsPerUser.toString(),
+          });
+        }
         const st = await getGovernanceStats();
         setStats(st);
       } catch (e) {
@@ -55,6 +78,27 @@ const Governance = () => {
       console.log('Voted on proposal');
       setProposalId('');
       setReason('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleConfigChange = (field, value) => {
+    setNewConfig((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleUpdateConfig = async (e) => {
+    e.preventDefault();
+    try {
+      const cfg = {
+        votingPeriod: BigInt(newConfig.votingPeriod || 0),
+        quorumThreshold: BigInt(newConfig.quorumThreshold || 0),
+        approvalThreshold: BigInt(newConfig.approvalThreshold || 0),
+        proposalDeposit: BigInt(newConfig.proposalDeposit || 0),
+        maxProposalsPerUser: BigInt(newConfig.maxProposalsPerUser || 0),
+      };
+      await updateConfig(cfg);
+      setConfig(cfg);
     } catch (err) {
       console.error(err);
     }
@@ -136,6 +180,45 @@ const Governance = () => {
         <pre className="bg-gray-100 p-2 overflow-auto">
           {config ? safeJsonStringify(config, 2) : 'No config'}
         </pre>
+        <form onSubmit={handleUpdateConfig} className="space-y-2 mt-2">
+          <input
+            className="border p-2 w-full"
+            placeholder="Voting Period"
+            value={newConfig.votingPeriod}
+            onChange={(e) => handleConfigChange('votingPeriod', e.target.value)}
+          />
+          <input
+            className="border p-2 w-full"
+            placeholder="Quorum Threshold"
+            value={newConfig.quorumThreshold}
+            onChange={(e) => handleConfigChange('quorumThreshold', e.target.value)}
+          />
+          <input
+            className="border p-2 w-full"
+            placeholder="Approval Threshold"
+            value={newConfig.approvalThreshold}
+            onChange={(e) => handleConfigChange('approvalThreshold', e.target.value)}
+          />
+          <input
+            className="border p-2 w-full"
+            placeholder="Proposal Deposit"
+            value={newConfig.proposalDeposit}
+            onChange={(e) => handleConfigChange('proposalDeposit', e.target.value)}
+          />
+          <input
+            className="border p-2 w-full"
+            placeholder="Max Proposals Per User"
+            value={newConfig.maxProposalsPerUser}
+            onChange={(e) => handleConfigChange('maxProposalsPerUser', e.target.value)}
+          />
+          <button
+            type="submit"
+            className="bg-purple-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            Update
+          </button>
+        </form>
       </div>
       <div>
         <h2 className="text-xl font-semibold">Stats</h2>
