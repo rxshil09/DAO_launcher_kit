@@ -1,68 +1,87 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  Vote, 
-  Plus, 
-  Clock, 
-  CheckCircle, 
+import {
+  Vote,
+  Plus,
+  Clock,
+  CheckCircle,
   XCircle,
   Users,
   TrendingUp,
   Calendar,
-  Target
+  Target,
+  Activity,
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useProposals } from '../../hooks/useProposals';
 
 const ManagementGovernance: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const { getAllProposals, createProposal, vote } = useProposals();
+  const [proposals, setProposals] = useState<any[]>([]);
 
-  const proposals = [
-    {
-      id: 1,
-      title: 'Increase Development Fund Allocation',
-      description: 'Proposal to allocate an additional 20% of treasury funds to development initiatives',
-      status: 'active',
-      votesFor: 1247,
-      votesAgainst: 234,
-      totalVotes: 1481,
-      quorum: 1000,
-      timeLeft: '3 days',
-      proposer: 'alice.dao'
-    },
-    {
-      id: 2,
-      title: 'Update Staking Rewards Structure',
-      description: 'Modify the staking rewards to incentivize longer-term commitments',
-      status: 'passed',
-      votesFor: 2156,
-      votesAgainst: 445,
-      totalVotes: 2601,
-      quorum: 1000,
-      timeLeft: 'Ended',
-      proposer: 'bob.dao'
-    },
-    {
-      id: 3,
-      title: 'Partnership with DeFi Protocol X',
-      description: 'Strategic partnership proposal for cross-protocol liquidity sharing',
-      status: 'failed',
-      votesFor: 567,
-      votesAgainst: 1234,
-      totalVotes: 1801,
-      quorum: 1000,
-      timeLeft: 'Ended',
-      proposer: 'charlie.dao'
+  const loadProposals = async () => {
+    try {
+      const res = await getAllProposals();
+      setProposals(res);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
     }
-  ];
+  };
+
+  useEffect(() => {
+    loadProposals();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCreateProposal = async () => {
+    const title = prompt('Proposal title');
+    if (!title) return;
+    const description = prompt('Proposal description') || '';
+    try {
+      await createProposal(title, description);
+      await loadProposals();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
+  };
+
+  const handleVote = async (id: bigint, choice: 'inFavor' | 'against' | 'abstain') => {
+    try {
+      await vote(id, choice);
+      await loadProposals();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(err);
+    }
+  };
+
+  const parseStatus = (status: any) => Object.keys(status)[0];
+
+  const formatTimeLeft = (deadline: bigint) => {
+    const diff = Number(deadline / 1_000_000n) - Date.now();
+    if (diff <= 0) return 'Ended';
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days > 0) return `${days}d`;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours > 0) return `${hours}h`;
+    const minutes = Math.floor(diff / (1000 * 60));
+    return `${minutes}m`;
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
+      case 'pending':
         return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'passed':
+      case 'succeeded':
+      case 'executed':
         return 'bg-green-500/20 text-green-400 border-green-500/30';
       case 'failed':
+      case 'cancelled':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
       default:
         return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
@@ -72,10 +91,13 @@ const ManagementGovernance: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active':
+      case 'pending':
         return Clock;
-      case 'passed':
+      case 'succeeded':
+      case 'executed':
         return CheckCircle;
       case 'failed':
+      case 'cancelled':
         return XCircle;
       default:
         return Clock;
@@ -95,6 +117,7 @@ const ManagementGovernance: React.FC = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
+          onClick={handleCreateProposal}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
         >
           <Plus className="w-4 h-4" />
@@ -167,12 +190,18 @@ const ManagementGovernance: React.FC = () => {
         
         <div className="space-y-4">
           {proposals.map((proposal, index) => {
-            const StatusIcon = getStatusIcon(proposal.status);
-            const approvalRate = Math.round((proposal.votesFor / proposal.totalVotes) * 100);
+            const status = parseStatus(proposal.status);
+            const StatusIcon = getStatusIcon(status);
+            const votesFor = Number(proposal.votesInFavor);
+            const votesAgainst = Number(proposal.votesAgainst);
+            const totalVotes = votesFor + votesAgainst;
+            const approvalRate =
+              totalVotes > 0 ? Math.round((votesFor / totalVotes) * 100) : 0;
+            const timeLeft = formatTimeLeft(proposal.votingDeadline);
             
             return (
               <motion.div
-                key={proposal.id}
+                key={proposal.id.toString()}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.5 + index * 0.1 }}
@@ -182,16 +211,16 @@ const ManagementGovernance: React.FC = () => {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-2">
                       <h4 className="text-lg font-semibold text-white">{proposal.title}</h4>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(proposal.status)}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(status)}`}>
                         <StatusIcon className="w-3 h-3 inline mr-1" />
-                        {proposal.status.toUpperCase()}
+                        {status.toUpperCase()}
                       </span>
                     </div>
                     <p className="text-gray-400 text-sm mb-3">{proposal.description}</p>
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span>Proposed by {proposal.proposer}</span>
+                      <span>Proposed by {proposal.proposer.toString()}</span>
                       <span>•</span>
-                      <span>{proposal.timeLeft}</span>
+                      <span>{timeLeft}</span>
                     </div>
                   </div>
                 </div>
@@ -203,11 +232,13 @@ const ManagementGovernance: React.FC = () => {
                     <span className="text-blue-400 font-bold">{approvalRate}%</span>
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <motion.div 
+                    <motion.div
                       className={`h-2 rounded-full ${
-                        proposal.status === 'passed' ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                        proposal.status === 'failed' ? 'bg-gradient-to-r from-red-500 to-pink-500' :
-                        'bg-gradient-to-r from-blue-500 to-purple-500'
+                        status === 'succeeded' || status === 'executed'
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                          : status === 'failed' || status === 'cancelled'
+                            ? 'bg-gradient-to-r from-red-500 to-pink-500'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-500'
                       }`}
                       initial={{ width: 0 }}
                       animate={{ width: `${approvalRate}%` }}
@@ -216,8 +247,23 @@ const ManagementGovernance: React.FC = () => {
                   </div>
                   
                   <div className="flex justify-between text-sm font-mono">
-                    <span className="text-green-400">For: {proposal.votesFor.toLocaleString()}</span>
-                    <span className="text-red-400">Against: {proposal.votesAgainst.toLocaleString()}</span>
+                    <span className="text-green-400">For: {votesFor.toLocaleString()}</span>
+                    <span className="text-red-400">Against: {votesAgainst.toLocaleString()}</span>
+                  </div>
+
+                  <div className="flex space-x-2 pt-2">
+                    <button
+                      onClick={() => handleVote(proposal.id, 'inFavor')}
+                      className="px-3 py-1 text-xs rounded bg-green-600 text-white"
+                    >
+                      Vote For
+                    </button>
+                    <button
+                      onClick={() => handleVote(proposal.id, 'against')}
+                      className="px-3 py-1 text-xs rounded bg-red-600 text-white"
+                    >
+                      Vote Against
+                    </button>
                   </div>
                 </div>
               </motion.div>
