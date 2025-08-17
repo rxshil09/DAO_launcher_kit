@@ -46,6 +46,7 @@ type Principal = principal;
 service : {
   addAuthorizedPrincipal: ("principal": principal) -> (Result_1);
   deposit: (amount: TokenAmount, description: text) -> (Result);
+  getAllTransactions: () -> (vec TreasuryTransaction) query;
   getAuthorizedPrincipals: () -> (vec principal) query;
   getBalance: () -> (TreasuryBalance) query;
   getRecentTransactions: (limit: nat) -> (vec TreasuryTransaction) query;

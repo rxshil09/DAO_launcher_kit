@@ -52,6 +52,7 @@ service : {
   deleteAsset: (assetId: AssetId) -> (Result_1);
   getAsset: (assetId: AssetId) -> (Result_2);
   getAssetByName: (name: text) -> (opt AssetMetadata) query;
+  getAssetMetadata: (assetId: AssetId) -> (opt AssetMetadata) query;
   getAuthorizedUploaders: () -> (vec principal) query;
   getPublicAssets: () -> (vec AssetMetadata) query;
   getStorageStats: () ->
@@ -63,6 +64,7 @@ service : {
       totalAssets: nat;
     }) query;
   getSupportedContentTypes: () -> (vec text) query;
+  getUserAssets: () -> (vec AssetMetadata);
   health: () ->
    (record {
       status: text;

@@ -41,6 +41,7 @@ export interface _SERVICE {
   'deleteAsset' : ActorMethod<[AssetId], Result_1>,
   'getAsset' : ActorMethod<[AssetId], Result_2>,
   'getAssetByName' : ActorMethod<[string], [] | [AssetMetadata]>,
+  'getAssetMetadata' : ActorMethod<[AssetId], [] | [AssetMetadata]>,
   'getAuthorizedUploaders' : ActorMethod<[], Array<Principal>>,
   'getPublicAssets' : ActorMethod<[], Array<AssetMetadata>>,
   'getStorageStats' : ActorMethod<
@@ -54,6 +55,7 @@ export interface _SERVICE {
     }
   >,
   'getSupportedContentTypes' : ActorMethod<[], Array<string>>,
+  'getUserAssets' : ActorMethod<[], Array<AssetMetadata>>,
   'health' : ActorMethod<
     [],
     { 'status' : string, 'storageUsed' : bigint, 'timestamp' : Time }

@@ -36,6 +36,11 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'addAuthorizedPrincipal' : IDL.Func([IDL.Principal], [Result_1], []),
     'deposit' : IDL.Func([TokenAmount, IDL.Text], [Result], []),
+    'getAllTransactions' : IDL.Func(
+        [],
+        [IDL.Vec(TreasuryTransaction)],
+        ['query'],
+      ),
     'getAuthorizedPrincipals' : IDL.Func(
         [],
         [IDL.Vec(IDL.Principal)],
