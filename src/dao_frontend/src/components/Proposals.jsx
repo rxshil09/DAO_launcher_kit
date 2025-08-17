@@ -15,6 +15,7 @@ const Proposals = () => {
   } = useProposals();
   const {
     getAllProposals: getGovProposals,
+    getProposalsByStatus,
     loading: govLoading,
     error: govError,
   } = useGovernance();
@@ -31,6 +32,7 @@ const Proposals = () => {
   const [templates, setTemplates] = useState([]);
   const [govProposals, setGovProposals] = useState([]);
   const [selectedProposal, setSelectedProposal] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('');
 
   useEffect(() => {
     loadProposals();
@@ -51,6 +53,17 @@ const Proposals = () => {
   const loadGovProposals = async () => {
     const gps = await getGovProposals();
     setGovProposals(gps);
+  };
+
+  const handleStatusFilter = async (e) => {
+    const value = e.target.value;
+    setStatusFilter(value);
+    if (value) {
+      const filtered = await getProposalsByStatus(value);
+      setGovProposals(filtered);
+    } else {
+      loadGovProposals();
+    }
   };
 
   const handleCreate = async (e) => {
@@ -129,6 +142,19 @@ const Proposals = () => {
 
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Governance Proposals</h2>
+        <select
+          className="border p-2 w-full"
+          value={statusFilter}
+          onChange={handleStatusFilter}
+        >
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="active">Active</option>
+          <option value="succeeded">Succeeded</option>
+          <option value="executed">Executed</option>
+          <option value="failed">Failed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
         <ul className="space-y-2">
           {govProposals.map((p) => (
             <li key={p.id.toString()} className="border p-2 rounded">

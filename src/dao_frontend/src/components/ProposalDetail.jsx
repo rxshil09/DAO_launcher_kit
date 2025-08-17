@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useGovernance } from '../hooks/useGovernance';
+import { useAuth } from '../context/AuthContext';
 
 const ProposalDetail = ({ proposalId, onClose }) => {
-  const { getProposal, getProposalVotes, executeProposal, loading, error } = useGovernance();
+  const {
+    getProposal,
+    getProposalVotes,
+    executeProposal,
+    getUserVote,
+    loading,
+    error,
+  } = useGovernance();
+  const { principal } = useAuth();
   const [proposal, setProposal] = useState(null);
   const [votes, setVotes] = useState([]);
+  const [userVote, setUserVote] = useState(null);
 
   useEffect(() => {
     const load = async () => {
@@ -12,9 +22,13 @@ const ProposalDetail = ({ proposalId, onClose }) => {
       setProposal(p);
       const v = await getProposalVotes(proposalId);
       setVotes(v);
+      if (principal) {
+        const uv = await getUserVote(proposalId, principal);
+        setUserVote(uv);
+      }
     };
     load();
-  }, [proposalId]);
+  }, [proposalId, principal]);
 
   const handleExecute = async () => {
     try {
@@ -45,6 +59,15 @@ const ProposalDetail = ({ proposalId, onClose }) => {
             <p>Votes in Favor: {voteSummary.inFavor.toString()}</p>
             <p>Votes Against: {voteSummary.against.toString()}</p>
             <p>Votes Abstain: {voteSummary.abstain.toString()}</p>
+          </div>
+          <div className="mb-2">
+            {userVote ? (
+              <p>
+                Your Vote: {Object.keys(userVote.choice)[0]}
+              </p>
+            ) : (
+              <p>You have not voted.</p>
+            )}
           </div>
           {Object.keys(proposal.status)[0] === 'succeeded' && (
             <button
