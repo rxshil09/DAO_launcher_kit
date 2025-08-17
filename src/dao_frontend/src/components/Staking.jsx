@@ -9,6 +9,8 @@ const Staking = () => {
     claimRewards,
     extendStakingPeriod,
     getUserStakingSummary,
+    getStake,
+    getStakingRewards,
     setMinimumStakeAmount,
     setMaximumStakeAmount,
     setStakingEnabled,
@@ -19,7 +21,10 @@ const Staking = () => {
   const [amount, setAmount] = useState('');
   const [period, setPeriod] = useState('instant');
   const [unstakeId, setUnstakeId] = useState('');
-  const [claimId, setClaimId] = useState('');
+  const [fetchId, setFetchId] = useState('');
+  const [fetchedStake, setFetchedStake] = useState(null);
+  const [pendingRewards, setPendingRewards] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
   const [summary, setSummary] = useState(null);
   const [extendId, setExtendId] = useState('');
   const [extendPeriod, setExtendPeriod] = useState('locked30');
@@ -49,12 +54,33 @@ const Staking = () => {
     }
   };
 
-  const handleClaim = async (e) => {
+  const handleFetchStake = async (e) => {
     e.preventDefault();
     try {
-      const rewards = await claimRewards(claimId);
+      setFetchError(null);
+      const stakeRes = await getStake(fetchId);
+      if (!stakeRes || stakeRes.length === 0) {
+        setFetchedStake(null);
+        setPendingRewards(null);
+        setFetchError('Stake not found');
+        return;
+      }
+      setFetchedStake(stakeRes[0]);
+      const rewardsRes = await getStakingRewards(fetchId);
+      setPendingRewards(rewardsRes[0] || null);
+    } catch (err) {
+      console.error(err);
+      setFetchError(err.message);
+    }
+  };
+
+  const handleClaimFetched = async () => {
+    try {
+      const rewards = await claimRewards(fetchId);
       console.log('Rewards claimed:', rewards);
-      setClaimId('');
+      setFetchId('');
+      setFetchedStake(null);
+      setPendingRewards(null);
     } catch (err) {
       console.error(err);
     }
@@ -155,21 +181,44 @@ const Staking = () => {
         </button>
       </form>
 
-      <form onSubmit={handleClaim} className="space-y-2">
+      <form onSubmit={handleFetchStake} className="space-y-2">
         <input
           className="border p-2 w-full"
           placeholder="Stake ID"
-          value={claimId}
-          onChange={(e) => setClaimId(e.target.value)}
+          value={fetchId}
+          onChange={(e) => setFetchId(e.target.value)}
         />
         <button
           type="submit"
           className="bg-purple-500 text-white px-4 py-2 rounded"
           disabled={loading}
         >
-          Claim Rewards
+          Fetch Stake
         </button>
       </form>
+      {loading && <p>Loading...</p>}
+      {fetchError && <p className="text-red-500">{fetchError}</p>}
+      {fetchedStake && (
+        <div className="p-2 border rounded space-y-2">
+          <p>Amount: {fetchedStake.amount.toString()}</p>
+          <p>
+            Period: {Object.keys(fetchedStake.stakingPeriod)[0]}
+          </p>
+          <p>Active: {fetchedStake.isActive ? 'Yes' : 'No'}</p>
+          {pendingRewards && (
+            <p>
+              Pending Rewards: {pendingRewards.claimableRewards?.toString()}
+            </p>
+          )}
+          <button
+            onClick={handleClaimFetched}
+            className="bg-purple-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            Claim Rewards
+          </button>
+        </div>
+      )}
 
       <div className="space-y-2">
         <button
