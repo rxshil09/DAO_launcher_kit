@@ -9,16 +9,9 @@ import {
   ArrowDownLeft,
   Wallet,
   Lock,
-
   Shield,
   Plus,
-  X
-
-
-  Shield,
-  Plus,
-  X
-
+  X,
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useTreasury } from '../../hooks/useTreasury';
@@ -29,8 +22,13 @@ const ManagementTreasury: React.FC = () => {
     getAuthorizedPrincipals,
     addAuthorizedPrincipal,
     removeAuthorizedPrincipal,
+    deposit,
+    withdraw,
+    getBalance,
+    getTreasuryStats,
+    getRecentTransactions,
     loading,
-    error
+    error,
   } = useTreasury();
 
   const [principals, setPrincipals] = useState<string[]>([]);
@@ -67,14 +65,8 @@ const ManagementTreasury: React.FC = () => {
       setPrincipals(list);
     } catch (err) {
       console.error(err);
-
-const{
-    deposit,
-    withdraw,
-    getBalance,
-    getTreasuryStats,
-    getRecentTransactions,
-  } = useTreasury();
+    }
+  };
 
   const [balance, setBalance] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
