@@ -1,24 +1,87 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
-import { 
-  Image, 
-  Upload, 
-  Download,
-  Folder,
-  File,
-  Video,
-  Music,
-  Archive
-} from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { DAO } from '../../types/dao';
+import { useAssets } from '../../hooks/useAssets';
 
 const ManagementAssets: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const {
+    getAuthorizedUploaders,
+    addAuthorizedUploader,
+    removeAuthorizedUploader,
+    updateStorageLimits,
+    getStorageStats,
+  } = useAssets();
+
+  const [uploaders, setUploaders] = useState<string[]>([]);
+  const [newUploader, setNewUploader] = useState('');
+  const [maxFileSize, setMaxFileSize] = useState('');
+  const [maxTotalStorage, setMaxTotalStorage] = useState('');
+  const [stats, setStats] = useState<any>(null);
+
+  const fetchUploaders = async () => {
+    try {
+      const list = await getAuthorizedUploaders();
+      setUploaders(list);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const s = await getStorageStats();
+      setStats(s);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchUploaders();
+    fetchStats();
+  }, []);
+
+  const handleAddUploader = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUploader) return;
+    try {
+      await addAuthorizedUploader(newUploader);
+      setNewUploader('');
+      fetchUploaders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRemoveUploader = async (p: string) => {
+    try {
+      await removeAuthorizedUploader(p);
+      fetchUploaders();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUpdateLimits = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateStorageLimits(
+        maxFileSize ? BigInt(maxFileSize) : null,
+        maxTotalStorage ? BigInt(maxTotalStorage) : null
+      );
+      setMaxFileSize('');
+      setMaxTotalStorage('');
+      fetchStats();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white mb-2 font-mono">ASSETS</h2>
@@ -36,38 +99,84 @@ const ManagementAssets: React.FC = () => {
         </motion.button>
       </div>
 
-      {/* Placeholder Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-8 text-center"
-      >
-        <Image className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-white mb-2 font-mono">ASSET MANAGEMENT</h3>
-        <p className="text-gray-400 mb-6">
-          This section will contain comprehensive asset management functionality
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-lg">
-            <Image className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-            <p className="text-blue-400 font-mono text-sm">Images</p>
+      <section>
+        <h3 className="text-xl font-bold text-white mb-4 font-mono">
+          Authorized Uploaders
+        </h3>
+        <form onSubmit={handleAddUploader} className="flex space-x-2 mb-4">
+          <input
+            type="text"
+            value={newUploader}
+            onChange={(e) => setNewUploader(e.target.value)}
+            placeholder="Principal"
+            className="px-2 py-1 text-black flex-1"
+          />
+          <button type="submit" className="px-3 py-1 bg-blue-600 rounded">
+            Add
+          </button>
+        </form>
+        <ul className="space-y-2">
+          {uploaders.map((u) => (
+            <li
+              key={u}
+              className="flex justify-between items-center bg-gray-800/50 p-2 rounded"
+            >
+              <span className="font-mono text-sm break-all">{u}</span>
+              <button
+                onClick={() => handleRemoveUploader(u)}
+                className="text-red-400 text-sm"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+          {uploaders.length === 0 && (
+            <li className="text-gray-400 text-sm">No authorized uploaders</li>
+          )}
+        </ul>
+      </section>
+
+      <section>
+        <h3 className="text-xl font-bold text-white mb-4 font-mono">
+          Storage Limits
+        </h3>
+        {stats && (
+          <div className="text-sm text-gray-300 mb-4">
+            <p>
+              Storage Used: {Number(stats.storageUsed)} /{' '}
+              {Number(stats.storageLimit)}
+            </p>
           </div>
-          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-lg">
-            <Video className="w-8 h-8 text-green-400 mx-auto mb-2" />
-            <p className="text-green-400 font-mono text-sm">Videos</p>
-          </div>
-          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-lg">
-            <File className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-            <p className="text-purple-400 font-mono text-sm">Documents</p>
-          </div>
-          <div className="bg-gray-900/50 border border-orange-500/30 p-4 rounded-lg">
-            <Archive className="w-8 h-8 text-orange-400 mx-auto mb-2" />
-            <p className="text-orange-400 font-mono text-sm">Archives</p>
-          </div>
-        </div>
-      </motion.div>
+        )}
+        <form
+          onSubmit={handleUpdateLimits}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          <input
+            type="number"
+            value={maxFileSize}
+            onChange={(e) => setMaxFileSize(e.target.value)}
+            placeholder="Max file size"
+            className="px-2 py-1 text-black"
+          />
+          <input
+            type="number"
+            value={maxTotalStorage}
+            onChange={(e) => setMaxTotalStorage(e.target.value)}
+            placeholder="Max total storage"
+            className="px-2 py-1 text-black"
+          />
+          <button
+            type="submit"
+            className="px-3 py-1 bg-green-600 rounded text-white"
+          >
+            Update
+          </button>
+        </form>
+      </section>
     </div>
   );
 };
 
 export default ManagementAssets;
+
