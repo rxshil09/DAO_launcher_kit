@@ -4,11 +4,13 @@ import { useOutletContext } from 'react-router-dom';
 import { FileText, Plus } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useProposals } from '../../hooks/useProposals';
+import { CreateProposalModal } from '../modals';
 
 const ManagementProposals: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  const { getAllProposals, createProposal } = useProposals();
+  const { getAllProposals } = useProposals();
   const [proposals, setProposals] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loadProposals = async () => {
     try {
@@ -25,18 +27,6 @@ const ManagementProposals: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCreateProposal = async () => {
-    const title = prompt('Proposal title');
-    if (!title) return;
-    const description = prompt('Proposal description') || '';
-    try {
-      await createProposal(title, description);
-      await loadProposals();
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-    }
-  };
 
   return (
     <div className="space-y-8">
@@ -51,7 +41,7 @@ const ManagementProposals: React.FC = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={handleCreateProposal}
+          onClick={() => setShowCreateModal(true)}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
         >
           <Plus className="w-4 h-4" />
@@ -85,6 +75,13 @@ const ManagementProposals: React.FC = () => {
           </ul>
         )}
       </motion.div>
+
+      {/* Modals */}
+      <CreateProposalModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={loadProposals}
+      />
     </div>
   );
 };

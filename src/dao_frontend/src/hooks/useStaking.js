@@ -89,7 +89,8 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.staking.getStakingRewards(BigInt(stakeId));
+      const res = await actors.staking.getStakingRewards(BigInt(stakeId));
+      return res && res.length ? res[0] : null;
     } catch (err) {
       setError(err.message);
       throw err;

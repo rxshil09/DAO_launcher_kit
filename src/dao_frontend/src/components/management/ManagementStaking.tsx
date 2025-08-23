@@ -19,16 +19,23 @@ import { useActors } from '../../context/ActorContext';
 // @ts-ignore - AuthContext is a .jsx file
 import { useAuth } from '../../context/AuthContext';
 import type { Stake, StakingPeriod } from '../../declarations/staking/staking.did';
+import { StakeTokensModal, UnstakeModal, ClaimRewardsModal } from '../modals';
 
 const ManagementStaking: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  const { stake, unstake, claimRewards } = useStaking();
+  const { unstake, claimRewards, getStakingRewards } = useStaking();
   const actors = useActors();
   const { principal } = useAuth();
 
   const [stakingPools, setStakingPools] = useState<any[]>([]);
   const [userStakes, setUserStakes] = useState<Stake[]>([]);
   const [stakingStats, setStakingStats] = useState<any>(null);
+  const [showStakeModal, setShowStakeModal] = useState(false);
+  const [showUnstakeModal, setShowUnstakeModal] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [selectedStake, setSelectedStake] = useState<Stake | null>(null);
+  const [selectedStakeRewards, setSelectedStakeRewards] = useState<any>(null);
+  const [userBalance] = useState('10000'); // Mock user balance
 
   const poolConfig: Record<string, { name: string; duration: string; apr: string; multiplier: string }> = {
     instant: { name: 'Flexible Staking', duration: 'No lock', apr: '5.2%', multiplier: '1.0x' },
@@ -136,17 +143,7 @@ const ManagementStaking: React.FC = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-lg transition-all font-semibold"
-          onClick={async () => {
-            const amount = prompt('Amount to stake?');
-            const period = prompt('Staking period (instant, locked30, locked90, locked180, locked365)?');
-            if (!amount || !period) return;
-            try {
-              await stake(amount, period);
-              await fetchData();
-            } catch (e) {
-              console.error(e);
-            }
-          }}
+          onClick={() => setShowStakeModal(true)}
         >
           <Plus className="w-4 h-4" />
           <span>Stake Tokens</span>
@@ -248,16 +245,7 @@ const ManagementStaking: React.FC = () => {
 
               <button
                 className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-semibold"
-                onClick={async () => {
-                  const amount = prompt('Amount to stake?');
-                  if (!amount) return;
-                  try {
-                    await stake(amount, pool.periodKey);
-                    await fetchData();
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }}
+                onClick={() => setShowStakeModal(true)}
               >
                 {pool.userStaked === '0' ? 'Stake Now' : 'Add More'}
               </button>
@@ -310,25 +298,24 @@ const ManagementStaking: React.FC = () => {
                 <button
                   className="flex-1 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors font-mono"
                   onClick={async () => {
+                    setSelectedStake(stake);
                     try {
-                      await claimRewards(stake.id);
-                      await fetchData();
+                      const rewards = await getStakingRewards(stake.id);
+                      setSelectedStakeRewards(rewards);
                     } catch (e) {
                       console.error(e);
+                      setSelectedStakeRewards(null);
                     }
+                    setShowClaimModal(true);
                   }}
                 >
                   Claim Rewards
                 </button>
                 <button
                   className="flex-1 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-mono"
-                  onClick={async () => {
-                    try {
-                      await unstake(stake.id);
-                      await fetchData();
-                    } catch (e) {
-                      console.error(e);
-                    }
+                  onClick={() => {
+                    setSelectedStake(stake);
+                    setShowUnstakeModal(true);
                   }}
                 >
                   Unstake
@@ -338,6 +325,36 @@ const ManagementStaking: React.FC = () => {
           ))}
         </div>
       </motion.div>
+
+      {/* Modals */}
+      <StakeTokensModal
+        isOpen={showStakeModal}
+        onClose={() => setShowStakeModal(false)}
+        onSuccess={fetchData}
+        userBalance={userBalance}
+      />
+
+      <UnstakeModal
+        isOpen={showUnstakeModal}
+        onClose={() => {
+          setShowUnstakeModal(false);
+          setSelectedStake(null);
+        }}
+        onSuccess={fetchData}
+        stake={selectedStake}
+      />
+
+      <ClaimRewardsModal
+        isOpen={showClaimModal}
+        onClose={() => {
+          setShowClaimModal(false);
+          setSelectedStake(null);
+          setSelectedStakeRewards(null);
+        }}
+        onSuccess={fetchData}
+        stake={selectedStake}
+        rewardsData={selectedStakeRewards}
+      />
     </div>
   );
 };

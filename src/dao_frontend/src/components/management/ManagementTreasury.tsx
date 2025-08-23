@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useTreasury } from '../../hooks/useTreasury';
+import { DepositModal, WithdrawModal } from '../modals';
 
 const ManagementTreasury: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
@@ -21,8 +22,6 @@ const ManagementTreasury: React.FC = () => {
     getAuthorizedPrincipals,
     addAuthorizedPrincipal,
     removeAuthorizedPrincipal,
-    deposit,
-    withdraw,
     getBalance,
     getTreasuryStats,
     getAllTransactions,
@@ -32,6 +31,8 @@ const ManagementTreasury: React.FC = () => {
 
   const [principals, setPrincipals] = useState<string[]>([]);
   const [newPrincipal, setNewPrincipal] = useState('');
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
   useEffect(() => {
     const fetchPrincipals = async () => {
@@ -106,32 +107,8 @@ const ManagementTreasury: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleDeposit = async () => {
-    const amount = prompt('Enter deposit amount');
-    if (!amount) return;
-    const description = prompt('Enter description') || '';
-    try {
-      await deposit(amount, description);
-      await fetchData();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleWithdraw = async () => {
-    const recipient = prompt('Enter recipient principal');
-    const amount = prompt('Enter withdrawal amount');
-    if (!recipient || !amount) return;
-    const description = prompt('Enter description') || '';
-    try {
-      await withdraw(recipient, amount, description);
-      await fetchData();
-    } catch (e) {
-      console.error(e);
 
 
-    }
-  };
 
   const treasuryStats = [
     {
@@ -213,7 +190,7 @@ const ManagementTreasury: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleDeposit}
+            onClick={() => setShowDepositModal(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors font-mono"
           >
             <ArrowUpRight className="w-4 h-4" />
@@ -222,7 +199,7 @@ const ManagementTreasury: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={handleWithdraw}
+            onClick={() => setShowWithdrawModal(true)}
             className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-mono"
           >
             <ArrowDownLeft className="w-4 h-4" />
@@ -484,6 +461,22 @@ const ManagementTreasury: React.FC = () => {
           )}
         </ul>
       </motion.div>
+
+      {/* Modals */}
+      <DepositModal
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+        onSuccess={fetchData}
+        userBalance="10000" // Mock user balance
+        currentTreasuryBalance={balance?.available?.toString() || '0'}
+      />
+
+      <WithdrawModal
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        onSuccess={fetchData}
+        availableBalance={balance?.available?.toString() || '0'}
+      />
     </div>
   );
 };

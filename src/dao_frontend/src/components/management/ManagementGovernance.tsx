@@ -16,10 +16,11 @@ import {
 import { DAO } from '../../types/dao';
 import { useProposals } from '../../hooks/useProposals';
 import { useGovernance } from '../../hooks/useGovernance';
+import { CreateProposalModal } from '../modals';
 
 const ManagementGovernance: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  const { getAllProposals, createProposal, vote } = useProposals();
+  const { getAllProposals, vote } = useProposals();
   const {
     getActiveProposals,
     loading: activeLoading,
@@ -27,6 +28,7 @@ const ManagementGovernance: React.FC = () => {
   } = useGovernance();
   const [proposals, setProposals] = useState<any[]>([]);
   const [activeProposals, setActiveProposals] = useState<any[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loadProposals = async () => {
     try {
@@ -54,18 +56,6 @@ const ManagementGovernance: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCreateProposal = async () => {
-    const title = prompt('Proposal title');
-    if (!title) return;
-    const description = prompt('Proposal description') || '';
-    try {
-      await createProposal(title, description);
-      await loadProposals();
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error(err);
-    }
-  };
 
   const handleVote = async (id: bigint, choice: 'inFavor' | 'against' | 'abstain') => {
     try {
@@ -135,7 +125,7 @@ const ManagementGovernance: React.FC = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={handleCreateProposal}
+          onClick={() => setShowCreateModal(true)}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
         >
           <Plus className="w-4 h-4" />
@@ -353,6 +343,16 @@ const ManagementGovernance: React.FC = () => {
           })}
         </div>
       </motion.div>
+
+      {/* Modals */}
+      <CreateProposalModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={() => {
+          loadProposals();
+          loadActiveProposals();
+        }}
+      />
     </div>
   );
 };
