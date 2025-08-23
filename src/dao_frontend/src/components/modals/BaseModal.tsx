@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -52,48 +53,51 @@ const BaseModal: React.FC<BaseModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            onClick={(e) => e.stopPropagation()}
-            className={`relative w-full ${getMaxWidthClass()} bg-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 overflow-hidden`}
-          >
-            {/* Animated border */}
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl"></div>
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-purple-500"></div>
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
             
-            {/* Header */}
-            <div className="relative z-10 flex items-center justify-between p-6 border-b border-gray-700/50">
-              <h2 className="text-xl font-bold text-white font-mono">{title}</h2>
-              {showCloseButton && (
-                <button
-                  onClick={onClose}
-                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-            
-            {/* Content */}
-            <div className="relative z-10 p-6">
-              {children}
-            </div>
-          </motion.div>
-        </div>
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative w-full ${getMaxWidthClass()} bg-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 overflow-hidden max-h-[90vh] overflow-y-auto`}
+            >
+              {/* Animated border */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl"></div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-purple-500"></div>
+              
+              {/* Header */}
+              <div className="relative z-10 flex items-center justify-between p-6 border-b border-gray-700/50 sticky top-0 bg-gray-900/95 backdrop-blur-sm">
+                <h2 className="text-xl font-bold text-white font-mono">{title}</h2>
+                {showCloseButton && (
+                  <button
+                    onClick={onClose}
+                    className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+              
+              {/* Content */}
+              <div className="relative z-10 p-6">
+                {children}
+              </div>
+            </motion.div>
+          </div>,
+          document.body
+        )
       )}
     </AnimatePresence>
   );

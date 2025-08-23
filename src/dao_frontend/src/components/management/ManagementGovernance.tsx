@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -345,14 +346,18 @@ const ManagementGovernance: React.FC = () => {
       </motion.div>
 
       {/* Modals */}
-      <CreateProposalModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => {
-          loadProposals();
-          loadActiveProposals();
-        }}
-      />
+      {/* Modals rendered at document root */}
+      {typeof window !== 'undefined' && createPortal(
+        <CreateProposalModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            loadProposals();
+            loadActiveProposals();
+          }}
+        />,
+        document.body
+      )}
     </div>
   );
 };

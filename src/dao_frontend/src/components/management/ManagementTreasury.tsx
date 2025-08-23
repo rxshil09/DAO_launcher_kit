@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -463,20 +464,26 @@ const ManagementTreasury: React.FC = () => {
       </motion.div>
 
       {/* Modals */}
-      <DepositModal
-        isOpen={showDepositModal}
-        onClose={() => setShowDepositModal(false)}
-        onSuccess={fetchData}
-        userBalance="10000" // Mock user balance
-        currentTreasuryBalance={balance?.available?.toString() || '0'}
-      />
+      {/* Modals rendered at document root */}
+      {typeof window !== 'undefined' && createPortal(
+        <>
+          <DepositModal
+            isOpen={showDepositModal}
+            onClose={() => setShowDepositModal(false)}
+            onSuccess={fetchData}
+            userBalance="10000" // Mock user balance
+            currentTreasuryBalance={balance?.available?.toString() || '0'}
+          />
 
-      <WithdrawModal
-        isOpen={showWithdrawModal}
-        onClose={() => setShowWithdrawModal(false)}
-        onSuccess={fetchData}
-        availableBalance={balance?.available?.toString() || '0'}
-      />
+          <WithdrawModal
+            isOpen={showWithdrawModal}
+            onClose={() => setShowWithdrawModal(false)}
+            onSuccess={fetchData}
+            availableBalance={balance?.available?.toString() || '0'}
+          />
+        </>,
+        document.body
+      )}
     </div>
   );
 };

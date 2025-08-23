@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -327,34 +328,40 @@ const ManagementStaking: React.FC = () => {
       </motion.div>
 
       {/* Modals */}
-      <StakeTokensModal
-        isOpen={showStakeModal}
-        onClose={() => setShowStakeModal(false)}
-        onSuccess={fetchData}
-        userBalance={userBalance}
-      />
+      {/* Modals rendered at document root */}
+      {typeof window !== 'undefined' && createPortal(
+        <>
+          <StakeTokensModal
+            isOpen={showStakeModal}
+            onClose={() => setShowStakeModal(false)}
+            onSuccess={fetchData}
+            userBalance={userBalance}
+          />
 
-      <UnstakeModal
-        isOpen={showUnstakeModal}
-        onClose={() => {
-          setShowUnstakeModal(false);
-          setSelectedStake(null);
-        }}
-        onSuccess={fetchData}
-        stake={selectedStake}
-      />
+          <UnstakeModal
+            isOpen={showUnstakeModal}
+            onClose={() => {
+              setShowUnstakeModal(false);
+              setSelectedStake(null);
+            }}
+            onSuccess={fetchData}
+            stake={selectedStake}
+          />
 
-      <ClaimRewardsModal
-        isOpen={showClaimModal}
-        onClose={() => {
-          setShowClaimModal(false);
-          setSelectedStake(null);
-          setSelectedStakeRewards(null);
-        }}
-        onSuccess={fetchData}
-        stake={selectedStake}
-        rewardsData={selectedStakeRewards}
-      />
+          <ClaimRewardsModal
+            isOpen={showClaimModal}
+            onClose={() => {
+              setShowClaimModal(false);
+              setSelectedStake(null);
+              setSelectedStakeRewards(null);
+            }}
+            onSuccess={fetchData}
+            stake={selectedStake}
+            rewardsData={selectedStakeRewards}
+          />
+        </>,
+        document.body
+      )}
     </div>
   );
 };
