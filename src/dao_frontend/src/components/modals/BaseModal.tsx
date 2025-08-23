@@ -52,14 +52,14 @@ const BaseModal: React.FC<BaseModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
           />
           
           {/* Modal */}
@@ -69,14 +69,14 @@ const BaseModal: React.FC<BaseModalProps> = ({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
-            className={`relative w-full ${getMaxWidthClass()} bg-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 overflow-hidden`}
+            className={`relative w-full ${getMaxWidthClass()} bg-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 overflow-hidden my-8 flex flex-col min-h-0`}
           >
             {/* Animated border */}
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl"></div>
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-purple-500"></div>
             
             {/* Header */}
-            <div className="relative z-10 flex items-center justify-between p-6 border-b border-gray-700/50">
+            <div className="relative z-10 flex items-center justify-between p-6 border-b border-gray-700/50 flex-shrink-0">
               <h2 className="text-xl font-bold text-white font-mono">{title}</h2>
               {showCloseButton && (
                 <button
@@ -89,7 +89,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
             </div>
             
             {/* Content */}
-            <div className="relative z-10 p-6">
+            <div className="relative z-10 p-6 overflow-y-auto flex-1 max-h-[calc(90vh-8rem)]">
               {children}
             </div>
           </motion.div>
