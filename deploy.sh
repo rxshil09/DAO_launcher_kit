@@ -75,7 +75,7 @@ cd ../..
 echo "🌐 Deploying frontend..."
 dfx deploy dao_frontend
 
-# Generate all declarations (including frontend)
+# Generate all declarations 
 echo "📋 Generating all type declarations..."
 dfx generate
 
