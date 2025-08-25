@@ -52,11 +52,26 @@
       "frontend": {},
       "remote": {
         "id": {
-          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+          "ic": "rdmx6-jaaaa-aaaah-qdrqq-cai",
+          "playground": "rdmx6-jaaaa-aaaah-qdrqq-cai"
         }
       },
       "type": "custom",
       "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:4943",
+      "type": "ephemeral"
+    },
+    "playground": {
+      "providers": ["https://playground.ic0.app"],
+      "type": "persistent"
+    },
+    "ic": {
+      "providers": ["https://ic0.app"],
+      "type": "persistent"
     }
   },
   "defaults": {

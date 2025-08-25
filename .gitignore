@@ -33,3 +33,6 @@ dist/
 src/dao_frontend/.env.local
 .env.new
 
+# Generated declarations
+src/dao_frontend/src/declarations/
+declarations/
