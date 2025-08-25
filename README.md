@@ -136,10 +136,6 @@ dao_backend       ← Core coordinator
 
 ### Alternative Deployment Options
 
-**Quick deployment to IC Playground:**
-```bash
-./deploy-playground.sh
-```
 
 **Environment variable management:**
 ```bash
@@ -295,11 +291,7 @@ dfx deploy assets
 dfx deploy dao_frontend
 ```
 
-### IC Playground Deployment
-```bash
-# Deploy to the IC playground network for testing
-./deploy-playground.sh
-```
+
 
 ### IC Mainnet Deployment
 ```bash
@@ -446,3 +438,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **DAOVerse** - Democratizing DAO creation on the Internet Computer
+
