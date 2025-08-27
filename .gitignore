@@ -30,9 +30,25 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.mainnet
 src/dao_frontend/.env.local
+src/dao_frontend/.env.production
 .env.new
 
 # Generated declarations
 src/dao_frontend/src/declarations/
 declarations/
+canister_ids.json
+mainnet_identity_backup.pem
+.env.mainnet
+
+# Backup files and sensitive data
+backups/
+*.pem
+*.backup
+
+#Too much Documentation 
+docs/MAINNET_DEPLOYMENT_CHECKLIST.md
+docs/PRODUCTION_README.md
+docs/INLINE_CODE_DOCUMENTATION.md

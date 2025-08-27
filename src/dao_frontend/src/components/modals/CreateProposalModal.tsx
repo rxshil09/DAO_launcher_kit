@@ -134,7 +134,7 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
         {/* Title Input */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-            PROPOSAL TITLE *
+            PROPOSAL TITLE 
           </label>
           <input
             type="text"
@@ -160,7 +160,7 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
         {/* Description Input */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-            DESCRIPTION *
+            DESCRIPTION 
           </label>
           <textarea
             value={formData.description}

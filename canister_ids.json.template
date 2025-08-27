@@ -1,0 +1,26 @@
+{
+  "assets": {
+    "ic": 
+  },
+  "dao_backend": {
+    "ic": 
+  },
+  "dao_frontend": {
+    "ic": 
+  },
+  "governance": {
+    "ic": 
+  },
+  "internet_identity": {
+    "ic": 
+  },
+  "proposals": {
+    "ic": 
+  },
+  "staking": {
+    "ic": 
+  },
+  "treasury": {
+    "ic": 
+  }
+}

@@ -5,8 +5,8 @@ import environment from 'vite-plugin-environment';
 import path from 'path';
 
 export default defineConfig(({ command, mode }) => {
-  // Load environment variables from the parent directory
-  const env = loadEnv(mode, path.resolve(__dirname, '../..'), '');
+  // Load environment variables based on mode
+  const env = loadEnv(mode, path.resolve(__dirname), '');
   
   return {
     plugins: [
@@ -48,6 +48,16 @@ export default defineConfig(({ command, mode }) => {
       outDir: 'dist',
       emptyOutDir: true,
       target: 'esnext',
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            agent: ['@dfinity/agent', '@dfinity/auth-client'],
+          },
+        },
+      },
+      minify: mode === 'production' ? 'esbuild' : false,
+      sourcemap: mode !== 'production',
     },
     resolve: {
       alias: {

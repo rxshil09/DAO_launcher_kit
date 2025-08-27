@@ -8,6 +8,42 @@
 
 A comprehensive DAO (Decentralized Autonomous Organization) creation and management platform built on the Internet Computer blockchain. Create, deploy, and manage DAOs with advanced governance systems, treasury management, and staking mechanisms.
 
+## 🌐 Live Deployment
+
+**DAOVerse is now live on IC Mainnet!**
+
+🚀 **Frontend Application**: https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/
+
+### Mainnet Canister Links
+
+#### **Frontend Interface**
+- **🎯 DAOVerse Application**: https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/
+- **🔐 Internet Identity**: https://7wzyf-fiaaa-aaaao-a4pca-cai.icp0.io/
+
+#### **Backend Candid Interfaces**
+- **🏛️ DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7k5cu-siaaa-aaaao-a4paa-cai
+- **🗳️ Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7d6ji-eaaaa-aaaao-a4pbq-cai
+- **💰 Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6suxx-4iaaa-aaaao-a4pea-cai
+- **🏦 Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6vvrd-rqaaa-aaaao-a4peq-cai
+- **📋 Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=772tz-taaaa-aaaao-a4pdq-cai
+- **🗃️ Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
+
+### Mainnet Canister IDs
+```
+DAO Backend:     7k5cu-siaaa-aaaao-a4paa-cai
+Frontend:        7e7p4-jyaaa-aaaao-a4pba-cai
+Governance:      7d6ji-eaaaa-aaaao-a4pbq-cai
+Staking:         6suxx-4iaaa-aaaao-a4pea-cai
+Treasury:        6vvrd-rqaaa-aaaao-a4peq-cai
+Proposals:       772tz-taaaa-aaaao-a4pdq-cai
+Assets:          uulqk-jaaaa-aaaao-a4o7q-cai
+Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
+```
+
+> 🎯 **Quick Start**: Visit [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/) to start using DAOVerse immediately!
+
+> 📖 **For Developers**: Follow the [Quick Start](#quick-start) section below to deploy your own instance.
+
 ## Key Features
 
 ### Core DAO Components
@@ -172,11 +208,23 @@ VITE_HOST=http://127.0.0.1:4943
 VITE_DFX_NETWORK=local
 ```
 
-**Production** (`.env.production`):
+**Mainnet Production** (`.env.production`):
 ```env
-VITE_DFX_NETWORK=ic
+# Mainnet Production Configuration
+VITE_CANISTER_ID_DAO_BACKEND=7k5cu-siaaa-aaaao-a4paa-cai
+VITE_CANISTER_ID_GOVERNANCE=7d6ji-eaaaa-aaaao-a4pbq-cai
+VITE_CANISTER_ID_STAKING=6suxx-4iaaa-aaaao-a4pea-cai
+VITE_CANISTER_ID_TREASURY=6vvrd-rqaaa-aaaao-a4peq-cai
+VITE_CANISTER_ID_PROPOSALS=772tz-taaaa-aaaao-a4pdq-cai
+VITE_CANISTER_ID_ASSETS=uulqk-jaaaa-aaaao-a4o7q-cai
+VITE_CANISTER_ID_INTERNET_IDENTITY=rdmx6-jaaaa-aaaah-qdrqq-cai
 VITE_HOST=https://icp0.io
-# Production canister IDs will be different
+VITE_DFX_NETWORK=ic
+VITE_IC_HOST=https://icp0.io
+VITE_NODE_ENV=production
+VITE_BUILD_MODE=production
+VITE_ENABLE_ANALYTICS=true
+VITE_ENABLE_ERROR_REPORTING=true
 ```
 
 ### Essential Development Commands
@@ -196,11 +244,30 @@ npm run build                    # Build for production
 npm run format                   # Format code with Prettier
 npm test                         # Run tests
 
-# Environment Management
+# Deployment Scripts
+./deploy.sh                      # Local development deployment
+./deploy-mainnet.sh              # Mainnet production deployment  
+./update-frontend.sh             # Update frontend only (mainnet)
 ./update-env.sh                  # Update environment variables
-./deploy.sh                      # Full deployment script
-./deploy-playground.sh           # Deploy to IC playground
 ```
+
+### Deployment Scripts
+
+**`./deploy-mainnet.sh`** - Complete mainnet deployment:
+- Checks identity and cycles balance
+- Deploys all backend canisters in correct order
+- Updates environment variables automatically
+- Builds and deploys production frontend
+- Provides comprehensive deployment summary
+
+**`./update-frontend.sh`** - Frontend-only update:
+- Updates frontend with existing canister IDs
+- Rebuilds with production configuration
+- Deploys updated frontend to mainnet
+
+**`./deploy.sh`** - Local development setup:
+- Full local deployment for development
+- Sets up all canisters for testing
 
 ### Development Workflow
 
@@ -279,7 +346,57 @@ Key configuration files in the project:
 
 ## Deployment
 
-### Local Development Deployment
+### 🚀 Mainnet Deployment (Production)
+
+**DAOVerse is already deployed and running on IC Mainnet!**
+
+To deploy your own instance to mainnet:
+
+```bash
+# Prerequisites: Ensure you have sufficient cycles (minimum 3.5T cycles)
+# Create and fund a mainnet identity
+dfx identity new mainnet_deploy
+dfx identity use mainnet_deploy
+
+# Fund your canister (you'll need to transfer cycles)
+# Visit: https://faucet.dfinity.org/ for testnet cycles
+# For mainnet: https://nns.ic0.app/ to manage cycles
+
+# Use the comprehensive mainnet deployment script
+./deploy-mainnet.sh
+```
+
+The `deploy-mainnet.sh` script will:
+- ✅ Check cycles balance and identity
+- ✅ Deploy all backend canisters in correct order
+- ✅ Update environment variables with deployed canister IDs
+- ✅ Build frontend with production configuration
+- ✅ Deploy frontend canister
+- ✅ Provide all access URLs and canister IDs
+
+**Alternative: Manual Mainnet Deployment**
+```bash
+# Deploy backend canisters first
+dfx deploy dao_backend --network ic
+dfx deploy staking --network ic
+dfx deploy treasury --network ic
+dfx deploy proposals --network ic
+dfx deploy assets --network ic
+
+# Deploy governance with proper arguments
+dfx deploy governance --network ic --argument "(principal \"$(dfx canister id dao_backend --network ic)\", principal \"$(dfx canister id staking --network ic)\")"
+
+# Update environment variables and build frontend
+cd src/dao_frontend
+# Update .env.production with deployed canister IDs
+NODE_ENV=production npm run build -- --mode production
+
+# Deploy frontend
+cd ../..
+dfx deploy dao_frontend --network ic
+```
+
+### 🔧 Local Development Deployment
 ```bash
 # Full local setup using the deployment script
 ./deploy.sh
@@ -295,28 +412,26 @@ dfx deploy assets
 dfx deploy dao_frontend
 ```
 
-### IC Playground Deployment
+### 🎮 IC Playground Deployment
 ```bash
 # Deploy to the IC playground network for testing
 ./deploy-playground.sh
 ```
 
-### IC Mainnet Deployment
-```bash
-# Create and fund a mainnet identity
-dfx identity new mainnet
-dfx identity use mainnet
-dfx wallet balance --network ic
+### 🌐 Frontend Update Only (For Mainnet)
 
-# Deploy to mainnet with proper funding
-dfx deploy --network ic dao_backend
-dfx deploy --network ic governance --argument "(principal \"$(dfx canister id dao_backend --network ic)\", principal \"$(dfx canister id staking --network ic)\")"
-dfx deploy --network ic treasury
-dfx deploy --network ic staking
-dfx deploy --network ic proposals
-dfx deploy --network ic assets
-dfx deploy --network ic dao_frontend
+If you need to update only the frontend on an existing mainnet deployment:
+
+```bash
+# Use the frontend update script
+./update-frontend.sh
 ```
+
+This script will:
+- ✅ Read existing canister IDs from deployment
+- ✅ Update environment variables 
+- ✅ Rebuild frontend with production settings
+- ✅ Deploy updated frontend to mainnet
 
 ### Environment Management
 ```bash
@@ -416,14 +531,43 @@ npm run build
 
 **Deployment Issues:**
 ```bash
-# Check canister status
+# Check canister status (local)
 dfx canister status dao_backend
+
+# Check canister status (mainnet)
+dfx canister status dao_backend --network ic
 
 # Verify canister IDs
 dfx canister id --all
+dfx canister id --all --network ic
 
 # Update environment variables
 ./update-env.sh
+
+# Redeploy frontend only (mainnet)
+./update-frontend.sh
+
+# Full mainnet redeployment
+./deploy-mainnet.sh
+```
+
+**Mainnet-Specific Issues:**
+```bash
+# Check cycles balance
+dfx cycles balance --network ic
+
+# Check identity
+dfx identity whoami
+dfx identity list
+
+# Verify canister controllers
+dfx canister info dao_frontend --network ic
+
+# Update frontend with correct environment
+cd src/dao_frontend
+NODE_ENV=production npm run build -- --mode production
+cd ../..
+dfx deploy dao_frontend --network ic
 ```
 
 ### Getting Help
@@ -446,3 +590,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **DAOVerse** - Democratizing DAO creation on the Internet Computer
+
+🌐 **Live on IC Mainnet**: [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/)
+
+*Built with ❤️ on the Internet Computer blockchain*

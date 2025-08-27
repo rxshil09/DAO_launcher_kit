@@ -50,12 +50,6 @@
     "internet_identity": {
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
       "frontend": {},
-      "remote": {
-        "id": {
-          "ic": "rdmx6-jaaaa-aaaah-qdrqq-cai",
-          "playground": "rdmx6-jaaaa-aaaah-qdrqq-cai"
-        }
-      },
       "type": "custom",
       "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz"
     }
@@ -66,7 +60,7 @@
       "type": "ephemeral"
     },
     "playground": {
-      "providers": ["https://playground.ic0.app"],
+      "providers": ["https://ic0.app"],
       "type": "persistent"
     },
     "ic": {
