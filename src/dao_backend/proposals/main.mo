@@ -219,9 +219,9 @@ persistent actor ProposalsCanister {
             votesInFavor = 0;
             votesAgainst = 0;
             totalVotingPower = 0;
-            createdAt = Time.now();
-            votingDeadline = Time.now() + period;
-            executionDeadline = ?(Time.now() + period + (24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
+            createdAt = Time.now() / 1_000_000;
+            votingDeadline = (Time.now() + period) / 1_000_000;
+            executionDeadline = ?((Time.now() + period + (24 * 60 * 60 * 1_000_000_000)) / 1_000_000); // 1 day after voting
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
         };
@@ -306,7 +306,7 @@ persistent actor ProposalsCanister {
             return #err("Proposal is not active");
         };
 
-        if (Time.now() > proposal.votingDeadline) {
+        if (Time.now() / 1_000_000 > proposal.votingDeadline) {
             return #err("Voting period has ended");
         };
 
@@ -327,7 +327,7 @@ persistent actor ProposalsCanister {
             proposalId = proposalId;
             choice = choice;
             votingPower = votingPower;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             reason = reason;
         };
 

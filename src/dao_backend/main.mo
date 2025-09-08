@@ -178,7 +178,7 @@ persistent actor DAOMain {
             id = caller;
             displayName = displayName;
             bio = bio;
-            joinedAt = Time.now();
+            joinedAt = Time.now() / 1_000_000;
             reputation = 0;
             totalStaked = 0;
             votingPower = 0;
@@ -205,7 +205,7 @@ persistent actor DAOMain {
             id = newUser;
             displayName = displayName;
             bio = bio;
-            joinedAt = Time.now();
+            joinedAt = Time.now() / 1_000_000;
             reputation = 0;
             totalStaked = 0;
             votingPower = 0;
@@ -394,7 +394,7 @@ persistent actor DAOMain {
     public query func health() : async { status: Text; timestamp: Int } {
         {
             status = "healthy";
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
         }
     };
 
