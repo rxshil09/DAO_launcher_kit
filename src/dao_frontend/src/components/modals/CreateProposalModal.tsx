@@ -79,6 +79,20 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
     e.preventDefault();
     
     if (!validateForm()) {
+      // Find and scroll to the first error field
+      const errorOrder = ['title', 'description', 'category']; // Define priority order
+      const firstErrorField = errorOrder.find(field => errors[field]);
+      
+      if (firstErrorField) {
+        // Small delay to ensure errors are rendered
+        setTimeout(() => {
+          const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.focus();
+          }
+        }, 100);
+      }
       return;
     }
 
@@ -134,13 +148,14 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
         {/* Title Input */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-            PROPOSAL TITLE 
+            PROPOSAL TITLE (MUST BE 5 CHARACTERS LONG)
           </label>
           <input
             type="text"
+            name="title"
             value={formData.title}
             onChange={(e) => handleInputChange('title', e.target.value)}
-            placeholder="Enter a clear, descriptive title"
+            placeholder="Enter a clear, descriptive title "
             maxLength={100}
             className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono ${
               errors.title ? 'border-red-500' : 'border-gray-600'
@@ -160,9 +175,10 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
         {/* Description Input */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">
-            DESCRIPTION 
+            DESCRIPTION  (MUST BE 20 CHARACTERS LONG)
           </label>
           <textarea
+            name="description"
             value={formData.description}
             onChange={(e) => handleInputChange('description', e.target.value)}
             placeholder="Provide detailed information about your proposal, including rationale and expected outcomes"
@@ -184,7 +200,7 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
         </div>
 
         {/* Category Selection */}
-        <div>
+        <div name="category">
           <label className="block text-sm font-semibold text-gray-300 mb-3 font-mono">
             CATEGORY *
           </label>
@@ -271,6 +287,30 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
             <AlertTriangle className="w-5 h-5 text-red-400 mr-3" />
             <span className="text-red-400 font-mono text-sm">{errors.submit}</span>
           </div>
+        )}
+
+        {/* Validation Errors Summary */}
+        {Object.keys(errors).filter(key => key !== 'submit').length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/20 border border-red-500/30 rounded-lg p-4"
+          >
+            <div className="flex items-center space-x-2 mb-2">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+              <span className="text-red-400 font-semibold font-mono">VALIDATION ERRORS</span>
+            </div>
+            <div className="space-y-1">
+              {Object.entries(errors).filter(([key]) => key !== 'submit').map(([field, error]) => (
+                <div key={field} className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                  <span className="text-red-400 text-sm font-mono">
+                    {field.charAt(0).toUpperCase() + field.slice(1)}: {error}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         )}
 
         {/* Action Buttons */}
