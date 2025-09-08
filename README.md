@@ -21,12 +21,12 @@ A comprehensive DAO (Decentralized Autonomous Organization) creation and managem
 - **🔐 Internet Identity**: https://7wzyf-fiaaa-aaaao-a4pca-cai.icp0.io/
 
 #### **Backend Candid Interfaces**
-- **🏛️ DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7k5cu-siaaa-aaaao-a4paa-cai
-- **🗳️ Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7d6ji-eaaaa-aaaao-a4pbq-cai
-- **💰 Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6suxx-4iaaa-aaaao-a4pea-cai
-- **🏦 Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6vvrd-rqaaa-aaaao-a4peq-cai
-- **📋 Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=772tz-taaaa-aaaao-a4pdq-cai
-- **🗃️ Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
+- ** DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7k5cu-siaaa-aaaao-a4paa-cai
+- ** Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7d6ji-eaaaa-aaaao-a4pbq-cai
+- ** Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6suxx-4iaaa-aaaao-a4pea-cai
+- ** Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6vvrd-rqaaa-aaaao-a4peq-cai
+- ** Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=772tz-taaaa-aaaao-a4pdq-cai
+- ** Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
 
 ### Mainnet Canister IDs
 ```
@@ -246,56 +246,6 @@ npm test                         # Run tests
 ./update-frontend.sh             # Update frontend only (mainnet)
 ./update-env.sh                  # Update environment variables
 ```
-
-### Deployment Scripts
-
-**`./deploy-mainnet.sh`** - Complete mainnet deployment:
-- Checks identity and cycles balance
-- Deploys all backend canisters in correct order
-- Updates environment variables automatically
-- Builds and deploys production frontend
-- Provides comprehensive deployment summary
-
-**`./update-frontend.sh`** - Frontend-only update:
-- Updates frontend with existing canister IDs
-- Rebuilds with production configuration
-- Deploys updated frontend to mainnet
-
-**`./deploy.sh`** - Local development setup:
-- Full local deployment for development
-- Sets up all canisters for testing
-
-### Development Workflow
-
-1. **Start local development:**
-   ```bash
-   dfx start --clean --background
-   ./deploy.sh
-   cd src/dao_frontend && npm run dev
-   ```
-
-2. **Make backend changes:**
-   ```bash
-   # Edit Motoko files in src/dao_backend/
-   dfx deploy dao_backend
-   dfx generate
-   # Frontend will hot-reload with new types
-   ```
-
-3. **Make frontend changes:**
-   ```bash
-   # Edit React components in src/dao_frontend/src/
-   # Development server auto-reloads
-   ```
-
-4. **Testing:**
-   ```bash
-   # Run frontend tests
-   cd src/dao_frontend && npm test
-   
-   # Test backend canisters via Candid UI
-   # Visit: http://localhost:4943/?canisterId={canister_id}
-   ```
 
 ### Configuration Files
 
@@ -585,3 +535,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 🌐 **Live on IC Mainnet**: [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/)
 
 *Built with ❤️ on the Internet Computer blockchain*
+

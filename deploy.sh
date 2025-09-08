@@ -81,7 +81,7 @@ dfx generate
 
 # Generate environment variables for frontend
 echo "⚙️ Updating frontend environment variables..."
-./update-env.sh > /dev/null
+./scripts/update-env.sh > /dev/null
 
 echo "✨ Deployment complete!"
 echo ""
