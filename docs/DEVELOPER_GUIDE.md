@@ -15,7 +15,7 @@
 ### Prerequisites
 ```bash
 # Install Node.js (v16+)
-node --version
+node --version  # Should be >= 16.0.0
 
 # Install DFX (Internet Computer SDK)
 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
@@ -28,23 +28,38 @@ cd src/dao_frontend && npm install
 
 ### Local Development Setup
 ```bash
-# 1. Start local Internet Computer replica
+# 1. Clean start local Internet Computer replica
+dfx stop  # Stop any running instance
 dfx start --clean --background
 
-# 2. Deploy backend canisters
+# 2. Deploy all canisters using the automated script
+./deploy.sh
+
+# 3. Start frontend development server
+cd src/dao_frontend
+npm run dev
+```
+
+### Alternative Manual Deployment
+```bash
+# Deploy backend canisters in dependency order
 dfx deploy dao_backend
 dfx deploy staking
-dfx deploy governance --argument "(principal \"$(dfx canister id dao_backend)\", principal \"$(dfx canister id staking)\")"
 dfx deploy treasury
 dfx deploy proposals
 dfx deploy assets
 
-# 3. Deploy frontend
-dfx deploy dao_frontend
+# Deploy governance with proper initialization
+dfx deploy governance --argument "(principal \"$(dfx canister id dao_backend)\", principal \"$(dfx canister id staking)\")"
 
-# 4. Start development server
-cd src/dao_frontend
-npm run dev
+# Deploy Internet Identity for authentication
+dfx deploy internet_identity
+
+# Generate type declarations
+dfx generate
+
+# Deploy frontend
+dfx deploy dao_frontend
 ```
 
 ### First DAO Creation
@@ -63,28 +78,31 @@ open http://localhost:5173
 ### System Design Principles
 
 #### 1. Microservices Architecture
-The system uses a modular approach with specialized canisters:
+The system uses a modular approach with six specialized canisters:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Frontend      │────│   Main DAO       │────│   Governance    │
 │   (React App)   │    │   Backend        │    │   Canister      │
+│   + Vite        │    │   (Coordinator)  │    │   (Voting)      │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │
-                       ┌────────┼────────┐
-                       │        │        │
-                ┌──────▼──┐ ┌───▼───┐ ┌──▼────┐
-                │ Staking │ │Treasury│ │Assets │
-                │Canister │ │Canister│ │Canist.│
-                └─────────┘ └────────┘ └───────┘
+                       ┌────────┼─────────┼────────┐
+                       │        │         │        │
+                ┌──────▼──┐ ┌───▼───┐ ┌──▼────┐ ┌─▼─────┐
+                │ Staking │ │Treasury│ │Proposals│ │Assets │
+                │Canister │ │Canister│ │Canister │ │Canist.│
+                │(Rewards)│ │(Finance)│ │(Mgmt)   │ │(Files)│
+                └─────────┘ └────────┘ └─────────┘ └───────┘
 ```
 
 #### 2. Separation of Concerns
-- **Main Backend**: Coordination and user management
-- **Governance**: Voting and proposal management
-- **Staking**: Token locking and rewards
-- **Treasury**: Financial operations
-- **Frontend**: User interface and interaction
+- **Main Backend (dao_backend)**: User management, coordination, and admin operations
+- **Governance**: Voting mechanisms, proposal lifecycle, and decision execution
+- **Staking**: Token locking, reward distribution, and voting power calculation
+- **Treasury**: Financial operations, multi-sig wallets, and fund management
+- **Proposals**: Proposal templates, categorization, and execution logic
+- **Assets**: File storage, metadata management, and content distribution
 
 #### 3. Upgrade Safety
 All canisters implement upgrade-safe patterns:
@@ -190,68 +208,163 @@ dfx canister call governance createProposal '("Test", "Description")'
 
 #### 1. Component Development Pattern
 ```jsx
-// Component structure
+// Modern component structure with hooks
 const MyComponent = () => {
-    // 1. Hooks and state
+    // 1. Context and custom hooks
     const { isAuthenticated } = useAuth();
-    const [loading, setLoading] = useState(false);
+    const { launchDAO, loading } = useDAOOperations();
+    const { principal } = useAuth();
     
-    // 2. Effects and lifecycle
+    // 2. Local state management
+    const [formData, setFormData] = useState({});
+    const [errors, setErrors] = useState({});
+    
+    // 3. Effects and lifecycle
     useEffect(() => {
-        // Component initialization
+        // Component initialization and cleanup
+        return () => {
+            // Cleanup logic
+        };
     }, []);
     
-    // 3. Event handlers
-    const handleSubmit = async () => {
-        // Business logic
+    // 4. Event handlers with error handling
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        try {
+            setErrors({});
+            await launchDAO(formData);
+        } catch (error) {
+            setErrors({ submit: error.message });
+        }
     };
     
-    // 4. Render
+    // 5. Conditional rendering with loading states
+    if (loading) {
+        return <div className="flex items-center justify-center">
+            <Loader2 className="animate-spin" />
+        </div>;
+    }
+    
+    // 6. Main render with proper accessibility
     return (
-        <div>
-            {/* Component JSX */}
-        </div>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+        >
+            {/* Component JSX with proper error boundaries */}
+        </motion.div>
     );
 };
+
+export default MyComponent;
 ```
 
-#### 2. State Management
+#### 2. State Management Pattern
 ```jsx
-// Context for global state
+// Context providers with proper error handling
 const DAOContext = createContext();
 
-// Custom hooks for business logic
-const useDAO = () => {
+export const DAOProvider = ({ children }) => {
     const [daos, setDaos] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     
     const createDAO = async (config) => {
-        // API integration logic
+        setLoading(true);
+        setError(null);
+        try {
+            // API integration with proper error handling
+            const result = await daoAPI.createDAO(config);
+            setDaos(prev => [...prev, result]);
+            return result;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
     };
     
-    return { daos, createDAO };
+    return (
+        <DAOContext.Provider value={{ daos, createDAO, loading, error }}>
+            {children}
+        </DAOContext.Provider>
+    );
+};
+
+// Custom hooks for business logic
+export const useDAO = () => {
+    const context = useContext(DAOContext);
+    if (!context) {
+        throw new Error('useDAO must be used within DAOProvider');
+    }
+    return context;
 };
 ```
 
-#### 3. API Integration
+#### 3. API Integration with Custom Hooks
 ```jsx
-// Actor creation
-const createActor = (canisterId, idlFactory) => {
-    const agent = new HttpAgent({ host: 'http://localhost:4943' });
-    return Actor.createActor(idlFactory, { agent, canisterId });
-};
+// Custom hook for DAO operations
+import { useDAOAPI } from '../utils/daoAPI';
+import { useAuth } from '../context/AuthContext';
+import { Principal } from '@dfinity/principal';
 
-// API calls with error handling
-const callAPI = async (method, ...args) => {
-    try {
-        const result = await actors.daoBackend[method](...args);
-        if ('err' in result) {
-            throw new Error(result.err);
+export const useDAOOperations = () => {
+    const daoAPI = useDAOAPI();
+    const { principal } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const launchDAO = async (daoConfig) => {
+        if (!daoAPI) {
+            throw new Error('DAO API not initialized');
         }
-        return result.ok;
-    } catch (error) {
-        console.error(`API call failed:`, error);
-        throw error;
-    }
+
+        setLoading(true);
+        setError(null);
+        
+        try {
+            // Convert team member wallets to Principal objects
+            const initialAdmins = daoConfig.teamMembers
+                .map(member => member.wallet)
+                .filter(wallet => wallet)
+                .map(wallet => Principal.fromText(wallet));
+            
+            // Add creator as admin if not already included
+            if (principal) {
+                const creatorPrincipal = Principal.fromText(principal);
+                const exists = initialAdmins.some(
+                    admin => admin.toText() === creatorPrincipal.toText()
+                );
+                if (!exists) {
+                    initialAdmins.push(creatorPrincipal);
+                }
+            }
+
+            // Initialize DAO with proper error handling
+            await daoAPI.initializeDAO(
+                daoConfig.daoName,
+                daoConfig.description,
+                initialAdmins
+            );
+
+            // Set canister references for inter-canister communication
+            await daoAPI.setCanisterReferences();
+
+            // Configure DAO with full settings
+            await daoAPI.setDAOConfig(daoConfig);
+
+            return { success: true, daoId: daoConfig.daoName };
+        } catch (error) {
+            setError(error.message);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return { launchDAO, loading, error };
 };
 ```
 
@@ -511,41 +624,60 @@ test.describe('DAO Creation Flow', () => {
 
 ### Local Deployment
 ```bash
-# Complete local setup
-./scripts/deploy-local.sh
+# Automated deployment with error handling
+./deploy.sh
+
+# Manual step-by-step deployment
+dfx stop && dfx start --clean --background
+dfx deploy dao_backend
+dfx deploy staking
+dfx deploy governance --argument "(principal \"$(dfx canister id dao_backend)\", principal \"$(dfx canister id staking)\")"
+dfx deploy treasury
+dfx deploy proposals  
+dfx deploy assets
+dfx deploy internet_identity
+dfx generate
+dfx deploy dao_frontend
 ```
 
 ### IC Mainnet Deployment
 ```bash
-# 1. Create identity for mainnet
-dfx identity new mainnet
-dfx identity use mainnet
+# Automated mainnet deployment with cycle management
+./scripts/deploy-mainnet.sh
 
-# 2. Add cycles for deployment
-dfx wallet balance
-dfx wallet send $(dfx identity get-principal) 10000000000000
-
-# 3. Deploy to mainnet
-dfx deploy --network ic dao_backend
-dfx deploy --network ic governance --argument "(principal \"$(dfx canister id dao_backend --network ic)\", principal \"$(dfx canister id staking --network ic)\")"
-dfx deploy --network ic treasury
-dfx deploy --network ic staking
-dfx deploy --network ic proposals
-dfx deploy --network ic assets
-dfx deploy --network ic dao_frontend
-
-# 4. Verify deployment
-dfx canister status dao_backend --network ic
+# This script handles:
+# - Identity verification and cycle balance checking
+# - Sequential canister deployment with proper dependencies
+# - Environment variable generation for production
+# - Frontend build optimization for mainnet
+# - Verification of deployment success
 ```
 
 ### Environment Configuration
 ```javascript
-// src/dao_frontend/.env.production
-VITE_CANISTER_ID_DAO_BACKEND=rdmx6-jaaaa-aaaaa-aaadq-cai
-VITE_CANISTER_ID_GOVERNANCE=rrkah-fqaaa-aaaaa-aaaaq-cai
-VITE_CANISTER_ID_STAKING=rno2w-sqaaa-aaaaa-aaacq-cai
-VITE_CANISTER_ID_TREASURY=rkp4c-7iaaa-aaaaa-aaaca-cai
-VITE_IC_HOST=https://ic0.app
+// Local development (.env)
+VITE_CANISTER_ID_DAO_BACKEND=rrkah-fqaaa-aaaaa-aaaaq-cai
+VITE_CANISTER_ID_GOVERNANCE=rno2w-sqaaa-aaaaa-aaacq-cai
+VITE_CANISTER_ID_STAKING=rkp4c-7iaaa-aaaaa-aaaca-cai
+VITE_CANISTER_ID_TREASURY=rdmx6-jaaaa-aaaaa-aaadq-cai
+VITE_CANISTER_ID_PROPOSALS=rrkah-fqaaa-aaaaa-aaaaq-cai
+VITE_CANISTER_ID_ASSETS=rno2w-sqaaa-aaaaa-aaacq-cai
+VITE_CANISTER_ID_INTERNET_IDENTITY=rdmx6-jaaaa-aaaaa-aaadq-cai
+VITE_DFX_NETWORK=local
+VITE_HOST=http://localhost:4943
+
+// Production (.env.production) - Generated automatically by deploy script
+VITE_CANISTER_ID_DAO_BACKEND=<mainnet-id>
+VITE_CANISTER_ID_GOVERNANCE=<mainnet-id>
+VITE_CANISTER_ID_STAKING=<mainnet-id>
+VITE_CANISTER_ID_TREASURY=<mainnet-id>
+VITE_CANISTER_ID_PROPOSALS=<mainnet-id>
+VITE_CANISTER_ID_ASSETS=<mainnet-id>
+VITE_CANISTER_ID_INTERNET_IDENTITY=rdmx6-jaaaa-aaaah-qdrqq-cai
+VITE_DFX_NETWORK=ic
+VITE_HOST=https://icp0.io
+VITE_IC_HOST=https://icp0.io
+VITE_NODE_ENV=production
 ```
 
 ### CI/CD Pipeline

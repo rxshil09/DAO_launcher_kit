@@ -23,12 +23,13 @@ IC Mainnet: https://{canister_id}.ic0.app
 ```
 
 ### Canister IDs
-- **dao_backend**: Main coordinator canister
+- **dao_backend**: Main coordinator canister (user management, admin operations)
 - **governance**: Voting and proposal management
-- **staking**: Token staking mechanisms
-- **treasury**: Financial operations
-- **proposals**: Proposal lifecycle
-- **assets**: Asset management
+- **staking**: Token staking mechanisms and reward distribution
+- **treasury**: Financial operations and multi-signature wallets
+- **proposals**: Proposal lifecycle management and templates
+- **assets**: File storage and metadata management
+- **internet_identity**: Authentication service (provided by DFINITY)
 
 ## Authentication
 
@@ -36,17 +37,34 @@ All authenticated endpoints require Internet Identity authentication. The system
 
 ### Authentication Flow
 ```javascript
-// Initialize auth client
+// Initialize Internet Identity auth client
+import { AuthClient } from '@dfinity/auth-client';
+
 const authClient = await AuthClient.create();
 
-// Login
+// Login with Internet Identity
 await authClient.login({
-  identityProvider: "https://identity.ic0.app",
+  identityProvider: process.env.NODE_ENV === 'development' 
+    ? `http://localhost:4943/?canisterId=${process.env.VITE_CANISTER_ID_INTERNET_IDENTITY}`
+    : "https://identity.ic0.app",
   onSuccess: () => {
     const identity = authClient.getIdentity();
     const principal = identity.getPrincipal().toString();
+    
+    // Update application state with authenticated principal
+    console.log('Authenticated as:', principal);
+  },
+  onError: (error) => {
+    console.error('Authentication failed:', error);
   }
 });
+
+// Check authentication status
+const isAuthenticated = await authClient.isAuthenticated();
+
+// Get current identity
+const identity = authClient.getIdentity();
+const principal = identity.getPrincipal();
 ```
 
 ## Main DAO Backend API
@@ -126,6 +144,31 @@ getUserProfile(user: Principal) : async ?UserProfile
 }
 ```
 
+### Set Canister References
+Configures inter-canister communication references.
+
+**Endpoint:** `dao_backend.setCanisterReferences`
+
+**Parameters:**
+```motoko
+setCanisterReferences() : async Result<(), Text>
+```
+
+**Description:** This method sets up the canister references for inter-canister communication. It automatically detects and configures references to governance, staking, treasury, proposals, and assets canisters.
+
+**Example:**
+```javascript
+const result = await actors.daoBackend.setCanisterReferences();
+```
+
+**Response:**
+```javascript
+// Success
+{ ok: null }
+
+// Error
+{ err: "Failed to set canister references: Invalid canister ID" }
+```
 ### Set DAO Configuration
 Configures DAO parameters and modules.
 
@@ -152,11 +195,11 @@ const config = {
   tokenSymbol: "MDT",
   totalSupply: 1000000,
   initialPrice: 100,
-  votingPeriod: 604800,
+  votingPeriod: 604800, // 7 days in seconds
   quorumThreshold: 10,
   proposalThreshold: 1,
   fundingGoal: 100000,
-  fundingDuration: 2592000,
+  fundingDuration: 2592000, // 30 days in seconds
   minInvestment: 100,
   termsAccepted: true,
   kycRequired: false
@@ -627,84 +670,190 @@ The system supports webhooks for real-time notifications:
 
 Configure webhooks through the DAO settings interface.
 
-## SDK Usage Examples
+## React Hooks and Utilities
 
-### JavaScript/TypeScript
+The frontend provides several custom hooks for easy integration with the DAO system:
+
+### useDAOOperations Hook
 ```javascript
-import { Actor, HttpAgent } from '@dfinity/agent';
-import { idlFactory } from './declarations/dao_backend';
+import { useDAOOperations } from '../hooks/useDAOOperations';
 
-// Create agent
-const agent = new HttpAgent({ host: 'http://localhost:4943' });
-await agent.fetchRootKey(); // Only for local development
-
-// Create actor
-const daoBackend = Actor.createActor(idlFactory, {
-  agent,
-  canisterId: 'your-canister-id'
-});
-
-// Use the API
-const result = await daoBackend.getUserProfile(principal);
-```
-
-### React Hook Example
-```javascript
-const useDAO = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+const MyComponent = () => {
+  const { launchDAO, loading, error } = useDAOOperations();
   
-  const createProposal = async (title, description) => {
-    setLoading(true);
+  const handleLaunch = async (config) => {
     try {
-      const result = await actors.governance.createProposal(
-        title, 
-        description, 
-        { textProposal: null }, 
-        null
-      );
-      return result;
+      const result = await launchDAO(config);
+      console.log('DAO launched:', result);
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      console.error('Launch failed:', err);
     }
   };
   
-  return { createProposal, loading, error };
+  return (
+    <div>
+      {loading && <p>Launching DAO...</p>}
+      {error && <p>Error: {error}</p>}
+      <button onClick={handleLaunch}>Launch DAO</button>
+    </div>
+  );
 };
 ```
 
-  This API documentation provides comprehensive coverage of all endpoints and their usage patterns. For more detailed examples and integration guides, refer to the user guides documentation.
+### useAssets Hook
+```javascript
+import { useAssets } from '../hooks/useAssets';
 
-## Frontend Hook Summary
+const AssetManager = () => {
+  const {
+    uploadAsset,
+    getAsset,
+    getPublicAssets,
+    searchAssetsByTag,
+    deleteAsset,
+    updateAssetMetadata,
+    getStorageStats
+  } = useAssets();
+  
+  const handleUpload = async (file, isPublic = false, tags = []) => {
+    try {
+      const result = await uploadAsset(file, isPublic, tags);
+      console.log('Asset uploaded:', result);
+    } catch (error) {
+      console.error('Upload failed:', error);
+    }
+  };
+  
+  return (
+    <input 
+      type="file" 
+      onChange={(e) => handleUpload(e.target.files[0])} 
+    />
+  );
+};
+```
 
-### Assets
-- `uploadAsset`
-- `getAsset`
-- `getPublicAssets`
-- `searchAssetsByTag`
-- `deleteAsset`
-- `updateAssetMetadata`
-- `getStorageStats`
+### useGovernance Hook
+```javascript
+import { useGovernance } from '../hooks/useGovernance';
 
-### Proposals
-- `createProposal`
-- `vote`
-- `getAllProposals`
-- `getProposalsByCategory`
-- `getProposalTemplates`
+const GovernancePanel = () => {
+  const {
+    createProposal,
+    vote,
+    getAllProposals,
+    getProposalsByCategory,
+    getProposalTemplates
+  } = useGovernance();
+  
+  const handleCreateProposal = async (title, description, category) => {
+    try {
+      const proposalId = await createProposal(title, description, category);
+      console.log('Proposal created:', proposalId);
+    } catch (error) {
+      console.error('Proposal creation failed:', error);
+    }
+  };
+  
+  return (
+    <div>
+      {/* Governance interface */}
+    </div>
+  );
+};
+```
 
-### Treasury
-- `deposit`
-- `withdraw`
-- `lockTokens`
-- `unlockTokens`
-- `reserveTokens`
-- `releaseReservedTokens`
-- `getBalance`
-- `getTransactionsByType`
-- `getRecentTransactions`
-- `getTreasuryStats`
+### useStaking Hook
+```javascript
+import { useStaking } from '../hooks/useStaking';
 
-> Unused methods such as `getUserAssets`, `getAssetMetadata`, `addTemplate`, `getTrendingProposals`, and `getAllTransactions` have been removed to keep the hooks aligned with the current UI.
+const StakingInterface = () => {
+  const {
+    stake,
+    unstake,
+    getUserStakes,
+    getStakingRewards,
+    claimRewards
+  } = useStaking();
+  
+  const handleStake = async (amount, duration) => {
+    try {
+      const stakeId = await stake(amount, duration);
+      console.log('Tokens staked:', stakeId);
+    } catch (error) {
+      console.error('Staking failed:', error);
+    }
+  };
+  
+  return (
+    <div>
+      {/* Staking interface */}
+    </div>
+  );
+};
+```
+
+### useTreasury Hook
+```javascript
+import { useTreasury } from '../hooks/useTreasury';
+
+const TreasuryPanel = () => {
+  const {
+    deposit,
+    withdraw,
+    lockTokens,
+    unlockTokens,
+    reserveTokens,
+    releaseReservedTokens,
+    getBalance,
+    getTransactionsByType,
+    getRecentTransactions,
+    getTreasuryStats
+  } = useTreasury();
+  
+  const handleDeposit = async (amount, description) => {
+    try {
+      const txId = await deposit(amount, description);
+      console.log('Deposited:', txId);
+    } catch (error) {
+      console.error('Deposit failed:', error);
+    }
+  };
+  
+  return (
+    <div>
+      {/* Treasury interface */}
+    </div>
+  );
+};
+```
+
+### useProposals Hook
+```javascript
+import { useProposals } from '../hooks/useProposals';
+
+const ProposalManager = () => {
+  const {
+    createProposal,
+    vote,
+    getAllProposals,
+    getProposalsByCategory,
+    getProposalTemplates
+  } = useProposals();
+  
+  const handleVote = async (proposalId, choice, reason) => {
+    try {
+      await vote(proposalId, choice, reason);
+      console.log('Vote cast successfully');
+    } catch (error) {
+      console.error('Voting failed:', error);
+    }
+  };
+  
+  return (
+    <div>
+      {/* Proposal management interface */}
+    </div>
+  );
+};
+```

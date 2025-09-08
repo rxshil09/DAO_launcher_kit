@@ -5,35 +5,85 @@ import { useOutletContext } from 'react-router-dom';
 import { Upload, Download, File } from 'lucide-react';
 import { useAssets } from '../../hooks/useAssets';
 import { DAO } from '../../types/dao';
+// @ts-ignore - AuthContext is a .jsx file, ignore TypeScript error
+import { useAuth } from '../../context/AuthContext';
 
 const ManagementAssets: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const { identity } = useAuth();
 
-  const { getUserAssets, getPublicAssets, uploadAsset, getAsset } = useAssets();
+  const { getUserAssets, getPublicAssets, uploadAsset, getAsset, addAuthorizedUploader, getAuthorizedUploaders } = useAssets();
   const [assets, setAssets] = useState<any[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [authorizedUploaders, setAuthorizedUploaders] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const checkAndSetupAuthorization = async () => {
+    try {
+      console.log('🔐 Checking authorization...');
+      const uploaders = await getAuthorizedUploaders();
+      console.log('👥 Current authorized uploaders:', uploaders);
+      setAuthorizedUploaders(uploaders);
+      
+      if (uploaders.length === 0) {
+        console.log('⚡ No authorized uploaders found, attempting to authorize current user...');
+        
+        if (!identity) {
+          console.error('❌ No identity available for authorization');
+          return;
+        }
+        
+        try {
+          // Get the user's principal and add them as authorized uploader
+          const userPrincipal = identity.getPrincipal().toText();
+          console.log('� Adding user principal as authorized uploader:', userPrincipal);
+          
+          await addAuthorizedUploader(userPrincipal);
+          const newUploaders = await getAuthorizedUploaders();
+          console.log('✅ Authorization successful, new uploaders:', newUploaders);
+          setAuthorizedUploaders(newUploaders);
+        } catch (authError) {
+          console.error('❌ Failed to authorize user:', authError);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Authorization check failed:', err);
+    }
+  };
 
   const fetchAssets = async () => {
     try {
+      console.log('🔍 Fetching assets...');
       const [userAssets, publicAssets] = await Promise.all([
         getUserAssets(),
         getPublicAssets(),
       ]);
-      const userIds = new Set(userAssets.map((a: any) => Number(a.id)));
+      console.log('📁 User assets:', userAssets);
+      console.log('🌐 Public assets:', publicAssets);
+      
+      // Handle potential null responses from mock actors
+      const safeUserAssets = userAssets || [];
+      const safePublicAssets = publicAssets || [];
+      
+      const userIds = new Set(safeUserAssets.map((a: any) => Number(a.id)));
       const combined = [
-        ...userAssets,
-        ...publicAssets.filter((a: any) => !userIds.has(Number(a.id))),
+        ...safeUserAssets,
+        ...safePublicAssets.filter((a: any) => !userIds.has(Number(a.id))),
       ];
+      console.log('📋 Combined assets:', combined);
       setAssets(combined);
 
     } catch (err) {
-      console.error(err);
+      console.error('❌ Error fetching assets:', err);
+      // Set empty array on error to prevent UI issues
+      setAssets([]);
     }
   };
 
   useEffect(() => {
-
+    console.log('🚀 ManagementAssets component mounted');
+    console.log('🔧 Assets hook available:', { getUserAssets, getPublicAssets, uploadAsset, getAsset });
+    checkAndSetupAuthorization();
     fetchAssets();
   }, []);
 
@@ -42,16 +92,26 @@ const ManagementAssets: React.FC = () => {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    console.log('📁 Starting upload for file:', file.name, 'Type:', file.type, 'Size:', file.size);
+    
+    // Ensure user is authorized before upload
+    await checkAndSetupAuthorization();
+    
     setUploadProgress(0);
     const interval = setInterval(() => {
       setUploadProgress((p) => (p < 90 ? p + 10 : p));
     }, 200);
     try {
-      await uploadAsset(file, true, []);
+      console.log('⬆️ Calling uploadAsset...');
+      const result = await uploadAsset(file, true, []);
+      console.log('✅ Upload result:', result);
+      
       setUploadProgress(100);
+      console.log('🔄 Refreshing assets after upload...');
       await fetchAssets();
     } catch (err) {
-      console.error(err);
+      console.error('❌ Upload error:', err);
     } finally {
       clearInterval(interval);
       setTimeout(() => setUploadProgress(0), 500);

@@ -1,6 +1,6 @@
 # DAO Launcher Kit - Documentation Index
 
-Welcome to the comprehensive documentation for the DAO Launcher Kit! This collection of guides provides everything you need to understand, use, develop, and extend this powerful DAO creation platform.
+Welcome to the comprehensive documentation for the DAO Launcher Kit! This collection of guides provides everything you need to understand, use, develop, and extend this powerful DAO creation platform built on the Internet Computer Protocol.
 
 ## 📚 Documentation Overview
 
@@ -26,13 +26,7 @@ Welcome to the comprehensive documentation for the DAO Launcher Kit! This collec
   - Request/response formats
   - Authentication and security
   - Error handling patterns
-  - SDK usage examples
-
-- **[Inline Code Documentation](./INLINE_CODE_DOCUMENTATION.md)** - Detailed business logic explanation
-  - Complex algorithms and calculations
-  - State management patterns
-  - Security mechanisms
-  - Integration patterns
+  - React hooks and utilities
 
 ## 🚀 Quick Navigation
 
@@ -151,19 +145,24 @@ Welcome to the comprehensive documentation for the DAO Launcher Kit! This collec
 ## 🔧 Technical Reference
 
 ### Architecture Components
-- **Frontend**: React 18 + Vite + TailwindCSS
-- **Backend**: Motoko canisters on Internet Computer
-- **Authentication**: Internet Identity integration
-- **State Management**: React Context + Custom Hooks
-- **Testing**: Jest + React Testing Library + Playwright
+- **Frontend**: React 18 + Vite + TailwindCSS + Framer Motion
+- **Backend**: Six specialized Motoko canisters on Internet Computer
+- **Authentication**: Internet Identity integration with Principal-based auth
+- **State Management**: React Context API + Custom Hooks Pattern
+- **Routing**: React Router DOM with nested routes for DAO management
+- **Testing**: Vitest + Testing Library + E2E with Playwright
+- **Build System**: Vite with environment-specific configurations
 
 ### Key Technologies
-- **Internet Computer Protocol** - Blockchain platform
-- **Motoko** - Smart contract language
-- **React** - Frontend framework
-- **Framer Motion** - Animations
-- **TailwindCSS** - Styling
-- **Vite** - Build tool
+- **Internet Computer Protocol** - Decentralized blockchain platform
+- **Motoko** - Smart contract language for IC
+- **React 18** - Modern frontend framework with hooks
+- **Vite** - Fast build tool and dev server
+- **Framer Motion** - Animation library for smooth transitions
+- **TailwindCSS** - Utility-first CSS framework
+- **Lucide React** - Modern icon library
+- **React Router DOM** - Client-side routing
+- **Internet Identity** - Secure authentication system
 
 ## 📋 Documentation Maintenance
 

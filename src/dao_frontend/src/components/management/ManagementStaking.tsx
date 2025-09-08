@@ -37,6 +37,11 @@ const ManagementStaking: React.FC = () => {
   const [selectedStakeRewards, setSelectedStakeRewards] = useState<any>(null);
   const [userBalance] = useState('10000'); // Mock user balance
 
+  // Function to handle stake tokens with auto-scroll
+  const handleStakeTokens = () => {
+    setShowStakeModal(true);
+  };
+
   const poolConfig: Record<string, { name: string; duration: string; apr: string; multiplier: string }> = {
     instant: { name: 'Flexible Staking', duration: 'No lock', apr: '5.2%', multiplier: '1.0x' },
     locked30: { name: '30-Day Lock', duration: '30 days', apr: '8.5%', multiplier: '1.1x' },
@@ -130,7 +135,7 @@ const ManagementStaking: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className=" space-y-8">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -143,7 +148,7 @@ const ManagementStaking: React.FC = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-lg transition-all font-semibold"
-          onClick={() => setShowStakeModal(true)}
+          onClick={handleStakeTokens}
         >
           <Plus className="w-4 h-4" />
           <span>Stake Tokens</span>
@@ -245,7 +250,7 @@ const ManagementStaking: React.FC = () => {
 
               <button
                 className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors font-semibold"
-                onClick={() => setShowStakeModal(true)}
+                onClick={handleStakeTokens}
               >
                 {pool.userStaked === '0' ? 'Stake Now' : 'Add More'}
               </button>

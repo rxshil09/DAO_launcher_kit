@@ -11,8 +11,13 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('🎯 useAssets: Starting upload for', file.name);
+      console.log('🔧 Assets actor available:', !!actors?.assets);
+      
       const arrayBuffer = await file.arrayBuffer();
       const data = Array.from(new Uint8Array(arrayBuffer));
+      console.log('📊 File data prepared, size:', data.length);
+      
       const result = await actors.assets.uploadAsset(
         file.name,
         file.type,
@@ -20,11 +25,14 @@ export const useAssets = () => {
         isPublic,
         tags
       );
+      console.log('📤 Upload call result:', result);
+      
       if (result.err) {
         throw new Error(result.err);
       }
       return result.ok;
     } catch (err) {
+      console.error('❌ useAssets upload error:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -66,8 +74,12 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getPublicAssets();
+      console.log('🌐 useAssets: Getting public assets...');
+      const result = await actors.assets.getPublicAssets();
+      console.log('🌐 Public assets result:', result);
+      return result;
     } catch (err) {
+      console.error('❌ getPublicAssets error:', err);
       setError(err.message);
       throw err;
     } finally {
@@ -79,8 +91,12 @@ export const useAssets = () => {
     setLoading(true);
     setError(null);
     try {
-      return await actors.assets.getUserAssets();
+      console.log('👤 useAssets: Getting user assets...');
+      const result = await actors.assets.getUserAssets();
+      console.log('👤 User assets result:', result);
+      return result;
     } catch (err) {
+      console.error('❌ getUserAssets error:', err);
       setError(err.message);
       throw err;
     } finally {

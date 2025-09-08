@@ -19,13 +19,22 @@
 - Internet Computer wallet (Internet Identity)
 - Basic understanding of DAO concepts
 - Web browser with JavaScript enabled
+- Email address for updates (optional)
 
 ### Quick Start
 1. Visit the DAO Launcher Kit platform
 2. Connect your Internet Identity wallet
-3. Choose "Launch DAO" from the main menu
-4. Follow the 7-step creation wizard
-5. Launch your DAO and invite members
+3. Click "Launch DAO" from the navigation menu
+4. Follow the 7-step creation wizard:
+   - **Step 1**: Basic Information (Name, Description, Category)
+   - **Step 2**: Select Modules (Governance, Staking, Treasury, Assets)
+   - **Step 3**: Configure Features (Voting mechanisms, token settings)
+   - **Step 4**: Set Parameters (Voting periods, thresholds, economics)
+   - **Step 5**: Add Team Members (Admin roles and permissions)
+   - **Step 6**: Review Configuration (Final verification)
+   - **Step 7**: Launch (Deploy your DAO to the Internet Computer)
+5. Access your DAO management dashboard
+6. Invite members and start governance
 
 ---
 
@@ -425,54 +434,133 @@ Social DAOs focus on building networks, facilitating connections, and governing 
 ### Tutorial 1: Creating Your First DeFi DAO
 
 #### Step 1: Planning Phase
-1. Define your DeFi protocol's purpose
-2. Research similar protocols and their governance models
-3. Outline your tokenomics and reward mechanisms
+1. **Define your DeFi protocol's purpose**
+   - Automated yield optimization
+   - Decentralized exchange (DEX)
+   - Lending and borrowing platform
+   - Stablecoin protocol
+   - Derivatives platform
+
+2. **Research similar protocols and governance models**
+   - Analyze successful DeFi DAOs (Compound, Aave, Uniswap)
+   - Study tokenomics and incentive mechanisms
+   - Review governance participation rates
+
+3. **Outline tokenomics and reward mechanisms**
+   - Token distribution strategy
+   - Staking rewards and yield sources
+   - Governance incentive alignment
 
 #### Step 2: Basic Information Setup
-1. Navigate to "Launch DAO"
-2. Enter DAO name: "YieldMax Protocol"
-3. Category: Select "DeFi"
-4. Description: "Automated yield optimization protocol"
-5. Website: Your protocol's website URL
+1. Navigate to "Launch DAO" from the main navigation
+2. Click "START BUILDING" to begin the wizard
+3. **Fill Step 1: Basic Information**
+   - DAO name: "YieldMax Protocol"
+   - Category: Select "DeFi" from dropdown
+   - Description: "Automated yield optimization protocol for maximizing returns on stablecoin deposits"
+   - Website: "https://yieldmax.protocol" (optional)
 
 #### Step 3: Module Configuration
-1. **Governance Module**:
-   - Enable "Token Weighted Voting"
-   - Enable "Delegated Voting"
-   - Configure proposal templates for protocol parameters
+**Select and configure the following modules:**
 
-2. **Treasury Module**:
-   - Enable "Multi-Signature Wallet"
-   - Set up automated distributions
-   - Configure spending limits
+1. **Governance Module** (Required):
+   - ✅ Enable "Token Weighted Voting"
+   - ✅ Enable "Delegated Voting" for protocol parameters
+   - ✅ Enable "Emergency Governance" for critical issues
+   - Features: Select "Proposal Templates" and "Time-locked Execution"
 
-3. **Staking Module**:
-   - Set minimum stake: 1000 tokens
-   - Configure lock periods: 30, 90, 180, 365 days
-   - Set up reward multipliers
+2. **Treasury Module** (Required):
+   - ✅ Enable "Multi-Signature Wallet" (3-of-5 setup recommended)
+   - ✅ Enable "Automated Distributions" for yield sharing
+   - ✅ Enable "Risk Management Tools"
+   - Features: Select "Treasury Analytics" and "Spending Limits"
 
-#### Step 4: Tokenomics Design
-1. Token Name: "YieldMax Token"
-2. Symbol: "YMAX"
-3. Total Supply: 100,000,000
-4. Initial Price: $0.50
+3. **Staking Module** (Required):
+   - ✅ Enable "Long-term Staking" for governance participation
+   - ✅ Enable "Yield Optimization" strategies
+   - ✅ Enable "Liquid Staking" for flexibility
+   - Lock periods: 30, 90, 180, 365 days with increasing multipliers
 
-#### Step 5: Governance Parameters
-1. Voting Period: 7 days (604800 seconds)
-2. Quorum Threshold: 5%
-3. Proposal Threshold: 0.5%
+4. **Assets Module** (Recommended):
+   - ✅ Enable for protocol documentation and whitepapers
+   - ✅ Enable "Public Asset Sharing" for transparency
 
-#### Step 6: Team Setup
-1. Add core team members with their roles
-2. Include wallet addresses for initial admin rights
-3. Define responsibilities for each team member
+#### Step 4: Feature Configuration
+Configure specific features for each module:
 
-#### Step 7: Review and Launch
-1. Review all configurations
-2. Accept terms and conditions
-3. Launch your DAO
-4. Share with initial community members
+**Governance Features:**
+- Proposal types: Parameter changes, treasury operations, emergency actions
+- Voting mechanisms: Token-weighted with quorum requirements
+- Execution delays: 24-48 hours for security
+
+**Treasury Features:**
+- Multi-sig threshold: 60% of signatories
+- Daily spending limits based on treasury size
+- Automated yield distribution to stakers
+
+**Staking Features:**
+- Minimum stake: 1000 tokens
+- Reward rates: Base 5% APY + governance bonuses
+- Slashing conditions: None (unless governance decides)
+
+#### Step 5: Tokenomics Design
+1. **Token Configuration**:
+   - Token Name: "YieldMax Token"
+   - Symbol: "YMAX"
+   - Total Supply: 100,000,000 YMAX
+   - Initial Price: $0.50
+
+2. **Distribution Strategy**:
+   - Community: 40%
+   - Team and Advisors: 20% (vested over 4 years)
+   - Treasury: 25%
+   - Liquidity Mining: 15%
+
+#### Step 6: Governance Parameters
+1. **Voting Settings**:
+   - Voting Period: 7 days (604,800 seconds)
+   - Quorum Threshold: 5% of total supply
+   - Proposal Threshold: 0.5% of total supply (500,000 YMAX)
+   - Approval Threshold: Simple majority (51%)
+
+2. **Economic Parameters**:
+   - Funding Goal: $2,000,000 (initial treasury target)
+   - Funding Duration: 60 days
+   - Minimum Investment: $1,000
+
+#### Step 7: Team Setup
+1. **Add Core Team Members**:
+   ```
+   - CEO: alice.principal, Role: Strategic Leadership
+   - CTO: bob.principal, Role: Technical Development  
+   - CFO: charlie.principal, Role: Treasury Management
+   - Community Manager: diana.principal, Role: Governance Coordination
+   - Security Auditor: eve.principal, Role: Risk Management
+   ```
+
+2. **Define Multi-sig Setup**:
+   - Treasury operations require 3 of 5 signatures
+   - Emergency actions require 4 of 5 signatures
+   - Regular proposals follow standard governance
+
+#### Step 8: Review and Launch
+1. **Configuration Review**:
+   - Verify all module settings
+   - Confirm tokenomics parameters
+   - Check team member permissions
+   - Review governance thresholds
+
+2. **Final Checks**:
+   - ✅ Terms and conditions accepted
+   - ✅ KYC requirements configured (if needed)
+   - ✅ All required fields completed
+   - ✅ Governance parameters validated
+
+3. **Launch Process**:
+   - Click "Launch DAO"
+   - Wait for canister deployment (1-3 minutes)
+   - Receive confirmation and DAO management link
+   - Access your DAO dashboard
 
 ### Tutorial 2: Setting Up Investment Committee Governance
 
@@ -554,37 +642,109 @@ Social DAOs focus on building networks, facilitating connections, and governing 
 
 ### Common Issues and Solutions
 
-#### "Transaction Failed" Errors
-**Symptoms**: Transactions failing during DAO creation or operation
+#### "DAO Not Loading" Issues
+**Symptoms**: DAO dashboard shows loading indefinitely or displays errors
 **Solutions**:
-1. Check Internet Identity connection
-2. Verify sufficient account balance for gas fees
-3. Try refreshing the page and reconnecting wallet
-4. Check network status and try again later
+1. **Check Authentication Status**:
+   - Verify Internet Identity connection is active
+   - Try logging out and logging back in
+   - Clear browser cache and cookies
 
-#### Voting Not Working
-**Symptoms**: Unable to cast votes on proposals
-**Solutions**:
-1. Verify you hold the required tokens for voting
-2. Check if the voting period is still active
-3. Ensure you haven't already voted on this proposal
-4. Confirm your staking status if required for voting power
+2. **Verify DAO Deployment**:
+   - Check if DAO launch completed successfully
+   - Look for confirmation message or email
+   - Try accessing DAO directly via URL: `/dao/{daoId}/manage`
 
-#### Treasury Access Issues
-**Symptoms**: Cannot access treasury functions
-**Solutions**:
-1. Verify you have the required permissions
-2. Check if multi-signature approval is pending
-3. Confirm your principal is in the authorized list
-4. Review proposal execution requirements
+3. **Browser Compatibility**:
+   - Use supported browsers (Chrome, Firefox, Safari, Edge)
+   - Disable ad blockers and privacy extensions temporarily
+   - Enable JavaScript and allow third-party cookies
 
-#### Module Not Loading
-**Symptoms**: Specific DAO modules not displaying correctly
+4. **Network Issues**:
+   - Check internet connection stability
+   - Try switching to a different network
+   - Clear DNS cache or try different DNS servers
+
+#### "Canister Communication Errors"
+**Symptoms**: Error messages mentioning "canister not found" or "call failed"
 **Solutions**:
-1. Clear browser cache and refresh
-2. Disable browser extensions temporarily
-3. Try a different browser or incognito mode
-4. Check if the module was properly configured during setup
+1. **Check Canister Status**:
+   - Verify all backend canisters are deployed
+   - Check canister cycle balance (may need topping up)
+   - Confirm canister IDs in environment variables
+
+2. **Authentication Problems**:
+   - Ensure Internet Identity session is valid
+   - Principal must be registered with the DAO
+   - Try reconnecting Internet Identity
+
+3. **Development Environment Issues**:
+   - Restart local IC replica: `dfx stop && dfx start --clean`
+   - Redeploy canisters: `./deploy.sh`
+   - Check dfx version compatibility
+
+#### "Proposal Creation Failed"
+**Symptoms**: Unable to create new proposals, form submission fails
+**Solutions**:
+1. **Permission Verification**:
+   - Ensure account has proposal creation rights
+   - Check if minimum token threshold is met
+   - Verify account is not suspended or restricted
+
+2. **Input Validation**:
+   - Check all required fields are filled correctly
+   - Verify proposal title length (max 100 characters)
+   - Ensure description is within limits (max 5000 characters)
+   - Category must be selected from available options
+
+3. **Technical Issues**:
+   - Try refreshing the page and resubmitting
+   - Check browser console for detailed error messages
+   - Verify network connectivity to IC
+
+#### "Staking Operations Failing"
+**Symptoms**: Cannot stake tokens, unstaking blocked, rewards not visible
+**Solutions**:
+1. **Balance and Allowance**:
+   - Verify sufficient token balance for staking
+   - Check if tokens are already staked elsewhere
+   - Ensure staking module is enabled for the DAO
+
+2. **Lock Period Issues**:
+   - Cannot unstake before lock period expires
+   - Check remaining lock time in dashboard
+   - Early unstaking may have penalties
+
+3. **Reward Calculation**:
+   - Rewards update periodically (may take up to 1 hour)
+   - Check if reward distribution is active
+   - Verify staking pool has sufficient reward tokens
+
+#### "Treasury Access Denied"
+**Symptoms**: Cannot view treasury balance, transactions fail
+**Solutions**:
+1. **Permission Levels**:
+   - Treasury access requires admin or treasurer role
+   - Multi-sig operations need multiple approvals
+   - Check role assignments in DAO settings
+
+2. **Multi-Signature Requirements**:
+   - Large transactions require multiple signatures
+   - Check pending approvals from other signatories
+   - Verify signatory wallets are properly configured
+
+#### "Module Not Available"
+**Symptoms**: Expected DAO modules not visible or functional
+**Solutions**:
+1. **Module Configuration**:
+   - Verify modules were enabled during DAO creation
+   - Check module deployment status
+   - Some modules may require additional setup
+
+2. **Feature Availability**:
+   - Not all features available in all module configurations
+   - Check DAO type and selected feature set
+   - Some features may be in development
 
 ### Performance Issues
 

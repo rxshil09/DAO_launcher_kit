@@ -14,6 +14,7 @@ export default defineConfig(({ command, mode }) => {
       environment('all', { prefix: 'VITE_' }),
     ],
     optimizeDeps: {
+      force: mode === 'development', // Force optimization in dev mode
       esbuildOptions: {
         define: {
           global: 'globalThis'
@@ -31,11 +32,20 @@ export default defineConfig(({ command, mode }) => {
         ]
       }
     },
+    cacheDir: process.platform === 'win32' && process.env.WSL_DISTRO_NAME 
+      ? path.resolve(__dirname, '.vite-cache')  // Use custom cache dir for WSL
+      : 'node_modules/.vite',
     define: {
       global: 'window',
       'process.env': process.env
     },
     server: {
+      port: 5173,
+      host: '0.0.0.0', // Allow external connections
+      watch: {
+        usePolling: true, // Enable polling for WSL file watching
+        interval: 1000,
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:4943',

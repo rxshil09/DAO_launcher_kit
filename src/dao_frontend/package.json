@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
+    "dev:clean": "npm run clean:cache && npm run dev",
+    "clean:cache": "rimraf node_modules/.vite .vite-cache",
     "setup": "npm i && dfx canister create dao_backend && dfx canister create staking && dfx generate dao_backend && npm run deploy:local",
     "start": "vite",
     "prebuild": "dfx generate && cp -r ../../src/declarations/* src/declarations/ 2>/dev/null || true",
@@ -41,6 +43,7 @@
     "globals": "^15.9.0",
     "jsdom": "^22.1.0",
     "postcss": "^8.4.32",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.8.3",
     "vite": "^5.4.2",

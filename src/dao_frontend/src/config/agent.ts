@@ -159,6 +159,16 @@ export const initializeAgents = async (identity?: Identity) => {
           if (typeof prop === 'string') {
             return async (...args: any[]) => {
               console.warn(`Mock actor method called: ${prop}`, args);
+              // Return appropriate mock data based on method name
+              if (prop.includes('getUserAssets') || prop.includes('getPublicAssets')) {
+                return []; // Return empty array for asset list methods
+              }
+              if (prop.includes('getStorageStats')) {
+                return { totalAssets: 0, storageUsed: 0, storageLimit: 1000000000, storageAvailable: 1000000000, averageFileSize: 0 };
+              }
+              if (prop.includes('uploadAsset')) {
+                return { ok: Math.floor(Math.random() * 1000) }; // Return mock asset ID
+              }
               if (prop.includes('get') || prop.includes('fetch') || prop.includes('list')) {
                 return null;
               }

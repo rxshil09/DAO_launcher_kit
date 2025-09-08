@@ -76,6 +76,15 @@ const ManagementTreasury: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
+  // Functions to handle modal opening with auto-scroll
+  const handleDeposit = () => {
+    setShowDepositModal(true);
+  };
+
+  const handleWithdraw = () => {
+    setShowWithdrawModal(true);
+  };
+
   const fetchData = async () => {
     try {
       const bal = await getBalance();
@@ -177,7 +186,7 @@ const ManagementTreasury: React.FC = () => {
   );
 
   return (
-    <div className="space-y-8">
+    <div className=" space-y-8">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -190,7 +199,7 @@ const ManagementTreasury: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowDepositModal(true)}
+            onClick={handleDeposit}
             className="flex items-center space-x-2 px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors font-mono"
           >
             <ArrowUpRight className="w-4 h-4" />
@@ -199,7 +208,7 @@ const ManagementTreasury: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowWithdrawModal(true)}
+            onClick={handleWithdraw}
             className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors font-mono"
           >
             <ArrowDownLeft className="w-4 h-4" />

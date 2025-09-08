@@ -19,7 +19,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
   maxWidth = 'md',
   showCloseButton = true
 }) => {
-  // Handle escape key
+  // Handle escape key and ensure proper display
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -30,6 +30,9 @@ const BaseModal: React.FC<BaseModalProps> = ({
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
+      
+      // Force scroll to top to ensure modal is visible
+      window.scrollTo({ top: 320, behavior: 'smooth' });
     }
 
     return () => {
@@ -52,7 +55,7 @@ const BaseModal: React.FC<BaseModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-8 pb-8 px-4 overflow-y-auto">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -64,12 +67,12 @@ const BaseModal: React.FC<BaseModalProps> = ({
           
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: "spring", duration: 0.5 }}
             onClick={(e) => e.stopPropagation()}
-            className={`relative w-full ${getMaxWidthClass()} bg-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 overflow-hidden my-8 flex flex-col min-h-0`}
+            className={`relative w-full ${getMaxWidthClass()} bg-gray-900 border border-cyan-500/30 rounded-xl shadow-2xl shadow-cyan-500/20 overflow-hidden flex flex-col max-h-[85vh]`}
           >
             {/* Animated border */}
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-xl"></div>

@@ -12,6 +12,11 @@ const ManagementProposals: React.FC = () => {
   const [proposals, setProposals] = useState<any[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
+  // Function to handle create proposal with auto-scroll
+  const handleCreateProposal = () => {
+    setShowCreateModal(true);
+  };
+
   const loadProposals = async () => {
     try {
       const res = await getAllProposals();
@@ -41,7 +46,7 @@ const ManagementProposals: React.FC = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setShowCreateModal(true)}
+          onClick={handleCreateProposal}
           className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all font-semibold"
         >
           <Plus className="w-4 h-4" />
