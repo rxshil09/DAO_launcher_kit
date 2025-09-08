@@ -167,7 +167,7 @@ persistent actor AssetCanister {
             size = dataSize;
             data = data;
             uploadedBy = caller;
-            uploadedAt = Time.now();
+            uploadedAt = Time.now() / 1_000_000;
             isPublic = isPublic;
             tags = tags;
         };
@@ -455,10 +455,10 @@ persistent actor AssetCanister {
     };
 
     // Health check
-    public query func health() : async { status: Text; timestamp: Time; storageUsed: Nat } {
+    public query func health() : async { status: Text; timestamp: Int; storageUsed: Nat } {
         {
             status = "healthy";
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             storageUsed = currentStorageUsed;
         }
     };

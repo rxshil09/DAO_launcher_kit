@@ -246,8 +246,8 @@ module {
     };
 
     // Utility functions
-    public func isExpired(deadline: Time) : Bool {
-        Time.now() > deadline
+    public func isExpired(deadline: Int) : Bool {
+        Time.now() / 1_000_000 > deadline
     };
 
     public func calculateVotingPower(stakedAmount: TokenAmount, stakingPeriod: StakingPeriod) : Nat {

@@ -193,9 +193,9 @@ persistent actor GovernanceCanister {
             votesInFavor = 0;
             votesAgainst = 0;
             totalVotingPower = 0;
-            createdAt = Time.now();
-            votingDeadline = Time.now() + period;
-            executionDeadline = ?(Time.now() + period + (24 * 60 * 60 * 1_000_000_000)); // 1 day after voting
+            createdAt = Time.now() / 1_000_000;
+            votingDeadline = (Time.now() + period) / 1_000_000;
+            executionDeadline = ?((Time.now() + period + (24 * 60 * 60 * 1_000_000_000)) / 1_000_000); // 1 day after voting
             quorumThreshold = currentConfig.quorumThreshold;
             approvalThreshold = currentConfig.approvalThreshold;
         };
@@ -230,7 +230,7 @@ persistent actor GovernanceCanister {
             return #err("Proposal is not active");
         };
 
-        if (Time.now() > proposal.votingDeadline) {
+        if (Time.now() / 1_000_000 > proposal.votingDeadline) {
             return #err("Voting period has ended");
         };
 
@@ -254,7 +254,7 @@ persistent actor GovernanceCanister {
             proposalId = proposalId;
             choice = choice;
             votingPower = votingPower;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             reason = reason;
         };
 
@@ -334,7 +334,7 @@ persistent actor GovernanceCanister {
             return #err("Proposal is not active");
         };
 
-        if (Time.now() <= proposal.votingDeadline) {
+        if (Time.now() / 1_000_000 <= proposal.votingDeadline) {
             return #err("Voting period has not ended");
         };
 
@@ -430,7 +430,7 @@ persistent actor GovernanceCanister {
     public query func getActiveProposals() : async [Proposal] {
         let activeProposals = Buffer.Buffer<Proposal>(0);
         for (proposal in proposals.vals()) {
-            if (proposal.status == #active and Time.now() <= proposal.votingDeadline) {
+            if (proposal.status == #active and Time.now() / 1_000_000 <= proposal.votingDeadline) {
                 activeProposals.add(proposal);
             };
         };

@@ -101,7 +101,7 @@ persistent actor TreasuryCanister {
             amount = amount;
             from = ?msg.caller;
             to = null;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             proposalId = null;
             description = description;
             status = #completed;
@@ -144,7 +144,7 @@ persistent actor TreasuryCanister {
             amount = amount;
             from = null;
             to = ?recipient;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             proposalId = proposalId;
             description = description;
             status = #pending;
@@ -214,7 +214,7 @@ persistent actor TreasuryCanister {
             amount = amount;
             from = null;
             to = null;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             proposalId = null;
             description = "Locked tokens: " # reason;
             status = #completed;
@@ -246,7 +246,7 @@ persistent actor TreasuryCanister {
             amount = amount;
             from = null;
             to = null;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             proposalId = null;
             description = "Unlocked tokens: " # reason;
             status = #completed;
@@ -278,7 +278,7 @@ persistent actor TreasuryCanister {
             amount = amount;
             from = null;
             to = null;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             proposalId = null;
             description = "Reserved tokens: " # reason;
             status = #completed;
@@ -310,7 +310,7 @@ persistent actor TreasuryCanister {
             amount = amount;
             from = null;
             to = null;
-            timestamp = Time.now();
+            timestamp = Time.now() / 1_000_000;
             proposalId = null;
             description = "Released reserved tokens: " # reason;
             status = #completed;

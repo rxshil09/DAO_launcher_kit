@@ -107,7 +107,7 @@ persistent actor StakingCanister {
         let stakeId = nextStakeId;
         nextStakeId += 1;
 
-        let now = Time.now();
+        let now = Time.now() / 1_000_000;
         let unlockTime = calculateUnlockTime(now, period);
 
         let newStake : Stake = {
@@ -157,7 +157,7 @@ persistent actor StakingCanister {
         // Check if stake is unlocked
         switch (stake.unlocksAt) {
             case (?unlockTime) {
-                if (Time.now() < unlockTime) {
+                if (Time.now() / 1_000_000 < unlockTime) {
                     return #err("Stake is still locked");
                 };
             };
@@ -260,7 +260,7 @@ persistent actor StakingCanister {
             return #err("New period must be longer than current period");
         };
 
-        let newUnlockTime = calculateUnlockTime(Time.now(), newPeriod);
+        let newUnlockTime = calculateUnlockTime(Time.now() / 1_000_000, newPeriod);
         let updatedStake = {
             id = stake.id;
             staker = stake.staker;
@@ -451,7 +451,7 @@ persistent actor StakingCanister {
     };
 
     private func calculateRewards(stake: Stake) : TokenAmount {
-        let stakingDuration = Time.now() - stake.stakedAt;
+        let stakingDuration = Time.now() / 1_000_000 - stake.stakedAt;
         Types.calculateStakingRewards(stake.amount, stake.stakingPeriod, Int.abs(stakingDuration))
     };
 
