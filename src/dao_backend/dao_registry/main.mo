@@ -292,85 +292,92 @@ persistent actor DAORegistry {
      * Search DAOs with filters and sorting
      */
     public query func searchDAOs(
-        query: Text,
+        searchQuery: Text,
         filters: ?SearchFilters,
         sort: ?SortOption,
         page: Nat,
         page_size: Nat
     ) : async PaginationResult<DAOMetadata> {
         let matchingDAOs = Buffer.Buffer<DAOMetadata>(0);
-        let queryLower = Text.toLowercase(query);
+        let queryLower = Text.toLowercase(searchQuery);
 
         for (metadata in daoMetadata.vals()) {
             // Only include public DAOs in search results
-            if (not metadata.is_public) {
-                continue;
-            };
+            if (metadata.is_public) {
+                // Text search
+                let nameMatch = Text.contains(Text.toLowercase(metadata.name), #text queryLower);
+                let descMatch = Text.contains(Text.toLowercase(metadata.description), #text queryLower);
+                let textMatch = searchQuery == "" or nameMatch or descMatch;
 
-            // Text search
-            let nameMatch = Text.contains(Text.toLowercase(metadata.name), #text queryLower);
-            let descMatch = Text.contains(Text.toLowercase(metadata.description), #text queryLower);
-            let textMatch = query == "" or nameMatch or descMatch;
+                if (textMatch) {
+                    // Apply filters
+                    var passesFilters = true;
+                    switch (filters) {
+                        case (?f) {
+                            // Category filter
+                            switch (f.category) {
+                                case (?cat) {
+                                    if (metadata.category != cat) {
+                                        passesFilters := false;
+                                    };
+                                };
+                                case null {};
+                            };
 
-            if (not textMatch) {
-                continue;
-            };
+                            // Member count filters
+                            if (passesFilters) {
+                                switch (f.min_members) {
+                                    case (?min) {
+                                        if (metadata.member_count < min) {
+                                            passesFilters := false;
+                                        };
+                                    };
+                                    case null {};
+                                };
+                            };
 
-            // Apply filters
-            switch (filters) {
-                case (?f) {
-                    // Category filter
-                    switch (f.category) {
-                        case (?cat) {
-                            if (metadata.category != cat) {
-                                continue;
+                            if (passesFilters) {
+                                switch (f.max_members) {
+                                    case (?max) {
+                                        if (metadata.member_count > max) {
+                                            passesFilters := false;
+                                        };
+                                    };
+                                    case null {};
+                                };
+                            };
+
+                            // Date filters
+                            if (passesFilters) {
+                                switch (f.created_after) {
+                                    case (?after) {
+                                        if (metadata.creation_date < after) {
+                                            passesFilters := false;
+                                        };
+                                    };
+                                    case null {};
+                                };
+                            };
+
+                            if (passesFilters) {
+                                switch (f.created_before) {
+                                    case (?before) {
+                                        if (metadata.creation_date > before) {
+                                            passesFilters := false;
+                                        };
+                                    };
+                                    case null {};
+                                };
                             };
                         };
                         case null {};
                     };
 
-                    // Member count filters
-                    switch (f.min_members) {
-                        case (?min) {
-                            if (metadata.member_count < min) {
-                                continue;
-                            };
-                        };
-                        case null {};
-                    };
-
-                    switch (f.max_members) {
-                        case (?max) {
-                            if (metadata.member_count > max) {
-                                continue;
-                            };
-                        };
-                        case null {};
-                    };
-
-                    // Date filters
-                    switch (f.created_after) {
-                        case (?after) {
-                            if (metadata.creation_date < after) {
-                                continue;
-                            };
-                        };
-                        case null {};
-                    };
-
-                    switch (f.created_before) {
-                        case (?before) {
-                            if (metadata.creation_date > before) {
-                                continue;
-                            };
-                        };
-                        case null {};
+                    if (passesFilters) {
+                        matchingDAOs.add(metadata);
                     };
                 };
-                case null {};
             };
-
-            matchingDAOs.add(metadata);
         };
 
         // Sort results

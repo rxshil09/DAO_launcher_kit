@@ -37,6 +37,12 @@ persistent actor DAOMain {
     type DAOConfig = Types.DAOConfig;
     type Activity = Types.Activity;
 
+    // Typed interface for the Registry canister
+    type RegistryService = actor {
+        registerDAO: shared (Text, Text, Text, Bool, Principal, ?Text, ?Text, ?Text) -> async Result<Text, Text>;
+        updateDAOStats: shared (Text, ?Nat, ?Nat, ?Nat, ?Nat, ?Nat, ?Float) -> async Result<(), Text>;
+    };
+
     // Stable storage for upgrades - persists across canister upgrades
     // These variables maintain their state when the canister is upgraded
     private var initialized : Bool = false;
@@ -64,10 +70,7 @@ persistent actor DAOMain {
     private transient var proposalsCanister : ?Principal = null;
 
     // Registry canister reference
-    private transient var registryCanister : ?actor {
-        registerDAO: shared (Text, Text, Text, Bool, Principal, ?Text, ?Text, ?Text) -> async Result<Text, Text>;
-        updateDAOStats: shared (Text, ?Nat, ?Nat, ?Nat, ?Nat, ?Nat, ?Float) -> async Result<(), Text>;
-    } = null;
+    private transient var registryCanister : ?RegistryService = null;
 
     // System functions for upgrades
     /**
@@ -99,7 +102,7 @@ persistent actor DAOMain {
         // Restore registry canister reference if available
         switch (registryCanisterId) {
             case (?id) {
-                registryCanister := ?actor(Principal.toText(id));
+                registryCanister := ?(actor (Principal.toText(id)) : RegistryService);
             };
             case null {};
         };
@@ -143,7 +146,7 @@ persistent actor DAOMain {
         switch (registry_id) {
             case (?id) {
                 registryCanisterId := ?id;
-                registryCanister := ?actor(Principal.toText(id));
+                registryCanister := ?(actor (Principal.toText(id)) : RegistryService);
             };
             case null {};
         };
@@ -270,7 +273,7 @@ persistent actor DAOMain {
         token_symbol: ?Text;
         website: ?Text;
         is_public: Bool;
-        creation_date: Time;
+        creation_date: Int;
     } {
         let category = switch (daoConfig) {
             case (?config) ?config.category;
