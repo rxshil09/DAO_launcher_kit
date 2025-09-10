@@ -180,6 +180,28 @@ export class DAOAPIWrapper {
         );
     }
 
+    // Registry integration
+    async registerWithRegistry() {
+        return this.callAPI(
+            () => this.actors.daoBackend.registerWithRegistry(),
+            'Register with Registry'
+        );
+    }
+
+    async updateRegistryStats() {
+        return this.callAPI(
+            () => this.actors.daoBackend.updateRegistryStats(),
+            'Update Registry Stats'
+        );
+    }
+
+    async getPublicDAOInfo() {
+        return this.callAPI(
+            () => this.actors.daoBackend.getPublicDAOInfo(),
+            'Get Public DAO Info'
+        );
+    }
+
     // Utility method for batch operations
     async batchCall(operations) {
         const results = [];

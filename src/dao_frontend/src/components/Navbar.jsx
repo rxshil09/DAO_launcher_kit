@@ -39,8 +39,8 @@ const Navbar = () => {
   // Base navigation items (always visible)
   const baseNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Activity },
-    { name: 'Launch DAO', href: '/launch', icon: Rocket },
     { name: 'Explore', href: '/explore', icon: Globe },
+    { name: 'Launch DAO', href: '/launch', icon: Rocket },
   ];
 
   // Use only base navigation - DAO management is handled through dashboard

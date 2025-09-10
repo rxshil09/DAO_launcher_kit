@@ -4,6 +4,7 @@ import LandingPage from './components/LandingPage';
 import DAODashboard from './components/DAODashboard';
 import DAOManagement from './components/DAOManagement';
 import SignIn from './components/SignIn';
+import ExplorePage from './components/ExplorePage';
 import LaunchDAO from './components/LaunchDAO';
 import Settings from './components/Settings';
 import DAOStatus from './components/DAOStatus';
@@ -33,6 +34,7 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/dashboard" element={<DAODashboard />} />
+              <Route path="/explore" element={<ExplorePage />} />
               <Route path="/status" element={<DAOStatus />} />
               <Route path="/admin/diagnostics" element={<Diagnostics />} />
               <Route path="/signin" element={<SignIn />} />

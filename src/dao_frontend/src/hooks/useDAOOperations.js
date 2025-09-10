@@ -170,6 +170,15 @@ export const useDAOOperations = () => {
                 await fetchDAOs();
             }
             
+            // Register with global registry if available
+            try {
+                await daoAPI.registerWithRegistry();
+                console.log('✅ DAO registered with global registry');
+            } catch (registryError) {
+                console.warn('Failed to register with global registry:', registryError);
+                // Don't fail the entire operation if registry registration fails
+            }
+            
             // Emit event for other components to listen
             eventBus.emit(EVENTS.DAO_CREATED, {
                 daoInfo,

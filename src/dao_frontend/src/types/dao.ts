@@ -23,6 +23,55 @@ export interface DAO {
   };
 }
 
+export interface DAOMetadata {
+  dao_id: string;
+  name: string;
+  description: string;
+  creator_principal: string;
+  creation_date: number;
+  member_count: number;
+  category: string;
+  is_public: boolean;
+  dao_canister_id: string;
+  website?: string;
+  logo_url?: string;
+  token_symbol?: string;
+  total_value_locked: number;
+  active_proposals: number;
+  last_activity: number;
+}
+
+export interface DAOStats {
+  dao_id: string;
+  member_count: number;
+  total_proposals: number;
+  active_proposals: number;
+  total_staked: number;
+  treasury_balance: number;
+  governance_participation: number;
+  last_updated: number;
+}
+
+export interface SearchFilters {
+  category?: string;
+  min_members?: number;
+  max_members?: number;
+  created_after?: number;
+  created_before?: number;
+  is_public?: boolean;
+}
+
+export type SortOption = 'newest' | 'oldest' | 'most_members' | 'most_active' | 'highest_tvl';
+
+export interface PaginationResult<T> {
+  items: T[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
+
 export interface DAOContextType {
   daos: DAO[];
   selectedDAO: DAO | null;
