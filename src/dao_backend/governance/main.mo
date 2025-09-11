@@ -9,22 +9,10 @@ import Buffer "mo:base/Buffer";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
+import Float "mo:base/Float";
 import Error "mo:base/Error";
 
 import Types "../shared/types";
-
-/**
- * Analytics Integration
- */
-type AnalyticsService = actor {
-    recordEvent: shared (
-        event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
-        dao_id: ?Text,
-        user_id: ?Principal,
-        metadata: [(Text, Text)],
-        value: ?Float
-    ) -> async Result<Nat, Text>;
-};
 
 /**
  * Governance Canister
@@ -46,6 +34,16 @@ type AnalyticsService = actor {
  * - Quorum requirements for legitimacy
  */
 persistent actor GovernanceCanister {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for improved code readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;

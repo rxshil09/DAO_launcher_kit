@@ -1,18 +1,21 @@
 import React, { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { TrendingUp, TrendingDown } from 'lucide-react';
 
 interface TrendChartProps {
   data: Array<{ timestamp: number; value: number }>;
   color: 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'cyan';
   height?: number;
   format?: 'number' | 'currency';
+  delay?: number;
 }
 
 const TrendChart: React.FC<TrendChartProps> = ({
   data,
   color,
   height = 200,
-  format = 'number'
+  format = 'number',
+  delay = 0
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
 

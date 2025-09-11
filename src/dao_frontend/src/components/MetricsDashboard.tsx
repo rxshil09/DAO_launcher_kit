@@ -25,7 +25,8 @@ import {
   ArrowUpRight,
   Sparkles,
   Shield,
-  Coins
+  Coins,
+  Rocket
 } from 'lucide-react';
 
 const MetricsDashboard: React.FC = () => {

@@ -33,6 +33,9 @@ persistent actor AnalyticsCanister {
     type Result<T, E> = Result.Result<T, E>;
     type Time = Time.Time;
 
+    // Time constants
+    private let MILLIS_PER_DAY : Int = 86_400_000;
+
     // Analytics Event Types
     public type EventType = {
         #DAO_CREATED;
@@ -247,14 +250,22 @@ persistent actor AnalyticsCanister {
      * Get time series data for charts
      */
     public query func getTimeSeriesData(metric: Text, timeframe: Text, days: Nat) : async [TimeSeriesData] {
+        if (days == 0) { return [] };
         let result = Buffer.Buffer<TimeSeriesData>(0);
         let now = Time.now() / 1_000_000;
-        
-        for (i in Iter.range(0, Int.abs(days) - 1)) {
-            let dayOffset = Int.abs(days) - 1 - i;
-            let timestamp = now - (dayOffset * 24 * 60 * 60 * 1_000);
+
+        let upper: Nat = days - 1;
+        for (i in Iter.range(0, upper)) {
+            let dayOffsetNat : Nat = upper - i;
+            var timestamp : Int = now;
+            var k : Nat = dayOffsetNat;
+            // Subtract one day 'k' times to avoid Nat->Int conversions
+            while (k > 0) {
+                timestamp -= MILLIS_PER_DAY;
+                k -= 1;
+            };
             let dateKey = formatDateKey(timestamp);
-            
+
             let value = switch (dailyMetrics.get(dateKey)) {
                 case (?summary) {
                     switch (metric) {
@@ -307,8 +318,14 @@ persistent actor AnalyticsCanister {
      */
     public query func getGrowthMetrics(days: Nat) : async GrowthMetrics {
         let now = Time.now() / 1_000_000;
-        let periodStart = now - (days * 24 * 60 * 60 * 1_000);
-        let previousPeriodStart = periodStart - (days * 24 * 60 * 60 * 1_000);
+        // Compute periodStart by subtracting one day 'days' times
+        var periodStart = now;
+        var k1 : Nat = days;
+        while (k1 > 0) { periodStart -= MILLIS_PER_DAY; k1 -= 1; };
+        // Compute previousPeriodStart from periodStart similarly
+        var previousPeriodStart = periodStart;
+        var k2 : Nat = days;
+        while (k2 > 0) { previousPeriodStart -= MILLIS_PER_DAY; k2 -= 1; };
 
         let currentPeriodEvents = getEventsInPeriod(periodStart, now);
         let previousPeriodEvents = getEventsInPeriod(previousPeriodStart, periodStart);
@@ -404,7 +421,7 @@ persistent actor AnalyticsCanister {
         var netFlow24h = 0.0;
         let daoTreasuryActivity = HashMap.HashMap<Text, Float>(10, Text.equal, Text.hash);
         let now = Time.now() / 1_000_000;
-        let yesterday = now - (24 * 60 * 60 * 1_000);
+        let yesterday = now - MILLIS_PER_DAY;
 
         for (event in events.vals()) {
             switch (event.event_type) {
@@ -564,7 +581,7 @@ persistent actor AnalyticsCanister {
         var totalTVL = 0.0;
         
         let now = Time.now() / 1_000_000;
-        let yesterday = now - (24 * 60 * 60 * 1_000);
+        let yesterday = now - MILLIS_PER_DAY;
         
         var activeDAOs24h = 0;
         var activeUsers24h = 0;
@@ -650,17 +667,19 @@ persistent actor AnalyticsCanister {
         let currentSummary = switch (dailyMetrics.get(dateKey)) {
             case (?summary) summary;
             case null {
-                period = "daily";
-                start_time = event.timestamp;
-                end_time = event.timestamp;
-                dao_creations = 0;
-                user_registrations = 0;
-                proposals_created = 0;
-                votes_cast = 0;
-                treasury_volume = 0.0;
-                staking_volume = 0.0;
-                unique_active_users = 0;
-                unique_active_daos = 0;
+                {
+                    period = "daily";
+                    start_time = event.timestamp;
+                    end_time = event.timestamp;
+                    dao_creations = 0;
+                    user_registrations = 0;
+                    proposals_created = 0;
+                    votes_cast = 0;
+                    treasury_volume = 0.0;
+                    staking_volume = 0.0;
+                    unique_active_users = 0;
+                    unique_active_daos = 0;
+                }
             };
         };
 
@@ -801,17 +820,17 @@ persistent actor AnalyticsCanister {
 
     private func formatDateKey(timestamp: Time) : Text {
         // Simple date formatting - in production you'd want proper date handling
-        let days = timestamp / (24 * 60 * 60 * 1_000);
+        let days = timestamp / MILLIS_PER_DAY;
         Nat.toText(Int.abs(days))
     };
 
     private func formatWeekKey(timestamp: Time) : Text {
-        let weeks = timestamp / (7 * 24 * 60 * 60 * 1_000);
+        let weeks = timestamp / (7 * MILLIS_PER_DAY);
         Nat.toText(Int.abs(weeks))
     };
 
     private func formatMonthKey(timestamp: Time) : Text {
-        let months = timestamp / (30 * 24 * 60 * 60 * 1_000);
+        let months = timestamp / (30 * MILLIS_PER_DAY);
         Nat.toText(Int.abs(months))
     };
 

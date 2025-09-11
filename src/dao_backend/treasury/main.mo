@@ -17,15 +17,7 @@ import Types "../shared/types";
 /**
  * Analytics Integration
  */
-type AnalyticsService = actor {
-    recordEvent: shared (
-        event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
-        dao_id: ?Text,
-        user_id: ?Principal,
-        metadata: [(Text, Text)],
-        value: ?Float
-    ) -> async Result<Nat, Text>;
-};
+// (moved inside actor to satisfy Motoko's top-level rule)
 
 /**
  * Treasury Canister
@@ -49,6 +41,16 @@ type AnalyticsService = actor {
  * - Emergency pause functionality for security incidents
  */
 persistent actor TreasuryCanister {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for improved code readability
     type Result<T, E> = Result.Result<T, E>;
     type TreasuryBalance = Types.TreasuryBalance;

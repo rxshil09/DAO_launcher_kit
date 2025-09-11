@@ -146,10 +146,15 @@ Welcome to the comprehensive documentation for the DAO Launcher Kit! This collec
 
 ### Architecture Components
 - **Frontend**: React 18 + Vite + TailwindCSS + Framer Motion
-- **Backend**: Six specialized Motoko canisters on Internet Computer
+- **Backend**: Eight specialized Motoko canisters on Internet Computer
+  - Core: DAO Backend, Governance, Staking, Treasury, Proposals, Assets
+  - Discovery: DAO Registry for cross-DAO exploration
+  - Analytics: Comprehensive metrics and platform insights
 - **Authentication**: Internet Identity integration with Principal-based auth
+- **Discovery System**: Global DAO registry with search, filtering, and categorization
+- **Analytics Platform**: Real-time metrics dashboard with historical data tracking
 - **State Management**: React Context API + Custom Hooks Pattern
-- **Routing**: React Router DOM with nested routes for DAO management
+- **Routing**: React Router DOM with nested routes and public metrics dashboard
 - **Testing**: Vitest + Testing Library + E2E with Playwright
 - **Build System**: Vite with environment-specific configurations
 

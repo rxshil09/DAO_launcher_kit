@@ -11,16 +11,11 @@ import Types "shared/types";
 
 /**
  * Analytics Integration
+ *
+ * Note: In Motoko, the main file must only contain a single
+ * actor/actor class at the top-level (besides imports). We
+ * therefore keep this interface type inside the actor below.
  */
-type AnalyticsService = actor {
-    recordEvent: shared (
-        event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
-        dao_id: ?Text,
-        user_id: ?Principal,
-        metadata: [(Text, Text)],
-        value: ?Float
-    ) -> async Result<Nat, Text>;
-};
 
 /**
  * Main DAO Backend Canister
@@ -37,6 +32,16 @@ type AnalyticsService = actor {
  * and proper state management for Internet Computer upgrades.
  */
 persistent actor DAOMain {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for cleaner code and better readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;

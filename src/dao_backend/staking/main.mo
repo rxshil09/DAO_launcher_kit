@@ -15,19 +15,6 @@ import Nat32 "mo:base/Nat32";
 import Types "../shared/types";
 
 /**
- * Analytics Integration
- */
-type AnalyticsService = actor {
-    recordEvent: shared (
-        event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
-        dao_id: ?Text,
-        user_id: ?Principal,
-        metadata: [(Text, Text)],
-        value: ?Float
-    ) -> async Result<Nat, Text>;
-};
-
-/**
  * Staking Canister
  * 
  * This canister manages the token staking system that provides:
@@ -49,6 +36,16 @@ type AnalyticsService = actor {
  * - Anti-gaming mechanisms for reward distribution
  */
 persistent actor StakingCanister {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for better code readability
     type Result<T, E> = Result.Result<T, E>;
     type Stake = Types.Stake;
@@ -114,7 +111,7 @@ persistent actor StakingCanister {
     // Set analytics canister reference
     public shared(msg) func setAnalyticsCanister(analytics_id: Principal) : async Result<(), Text> {
         analyticsCanisterId := ?analytics_id;
-        analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+        analyticsCanister := ?(actor (Principal.toText(analytics_id)) : AnalyticsService);
         #ok()
     };
 
