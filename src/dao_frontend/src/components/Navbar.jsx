@@ -40,6 +40,7 @@ const Navbar = () => {
   const baseNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Activity },
     { name: 'Explore', href: '/explore', icon: Globe },
+    { name: 'Metrics', href: '/metrics', icon: BarChart3 },
     { name: 'Launch DAO', href: '/launch', icon: Rocket },
   ];
 

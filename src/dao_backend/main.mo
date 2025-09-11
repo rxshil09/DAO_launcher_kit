@@ -10,6 +10,14 @@ import Text "mo:base/Text";
 import Types "shared/types";
 
 /**
+ * Analytics Integration
+ *
+ * Note: In Motoko, the main file must only contain a single
+ * actor/actor class at the top-level (besides imports). We
+ * therefore keep this interface type inside the actor below.
+ */
+
+/**
  * Main DAO Backend Canister
  * 
  * This is the central coordinator canister for the DAO system. It manages:
@@ -24,6 +32,16 @@ import Types "shared/types";
  * and proper state management for Internet Computer upgrades.
  */
 persistent actor DAOMain {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for cleaner code and better readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
@@ -72,6 +90,10 @@ persistent actor DAOMain {
     // Registry canister reference
     private transient var registryCanister : ?RegistryService = null;
 
+    // Analytics canister reference
+    private var analyticsCanisterId : ?Principal = null;
+    private transient var analyticsCanister : ?AnalyticsService = null;
+
     // System functions for upgrades
     /**
      * Pre-upgrade hook - Serializes runtime state to stable storage
@@ -106,6 +128,14 @@ persistent actor DAOMain {
             };
             case null {};
         };
+
+        // Restore analytics canister reference if available
+        switch (analyticsCanisterId) {
+            case (?id) {
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
     };
 
     /**
@@ -124,7 +154,8 @@ persistent actor DAOMain {
         name: Text,
         description: Text,
         initialAdmins: [Principal],
-        registry_id: ?Principal
+        registry_id: ?Principal,
+        analytics_id: ?Principal
     ) : async Result<(), Text> {
         // Prevent double initialization
         if (initialized) {
@@ -151,7 +182,31 @@ persistent actor DAOMain {
             case null {};
         };
 
+        // Set analytics canister reference
+        switch (analytics_id) {
+            case (?id) {
+                analyticsCanisterId := ?id;
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
+
         initialized := true;
+        
+        // Record DAO creation event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #DAO_CREATED,
+                    ?name,
+                    ?msg.caller,
+                    [("category", ""), ("description", description)],
+                    null
+                );
+            };
+            case null {};
+        };
+        
         Debug.print("DAO initialized: " # name);
         #ok()
     };
@@ -347,6 +402,20 @@ persistent actor DAOMain {
         userProfiles.put(caller, userProfile);
         totalMembers += 1;
 
+        // Record user registration event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #USER_JOINED,
+                    null,
+                    ?caller,
+                    [("displayName", displayName), ("bio", bio)],
+                    null
+                );
+            };
+            case null {};
+        };
+
         Debug.print("User registered: " # displayName);
         #ok()
     };
@@ -373,6 +442,20 @@ persistent actor DAOMain {
 
         userProfiles.put(newUser, userProfile);
         totalMembers += 1;
+
+        // Record user registration event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #USER_JOINED,
+                    null,
+                    ?newUser,
+                    [("displayName", displayName), ("bio", bio), ("registeredBy", "admin")],
+                    null
+                );
+            };
+            case null {};
+        };
 
         Debug.print("User registered by admin: " # displayName);
         #ok()

@@ -19,6 +19,7 @@ sleep 5
 echo "🏗️ Deploying base canisters..."
 dfx deploy dao_backend
 dfx deploy dao_registry
+dfx deploy dao_analytics
 dfx deploy staking
 
 # Get and verify canister IDs
@@ -53,6 +54,7 @@ dfx deploy internet_identity
 # Generate type declarations for backend canisters only (before frontend)
 echo "📋 Generating backend type declarations..."
 dfx generate dao_backend
+dfx generate dao_analytics
 dfx generate governance  
 dfx generate staking
 dfx generate treasury

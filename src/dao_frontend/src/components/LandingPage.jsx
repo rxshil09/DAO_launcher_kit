@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import BackgroundParticles from './BackgroundParticles';
-import { ArrowRight, Shield, Zap, Users, TrendingUp, Star, CheckCircle, Gamepad2, Coins, Rocket, Globe, Lock, Sparkles } from 'lucide-react';
+import { ArrowRight, Shield, Zap, Users, TrendingUp, Star, CheckCircle, Gamepad2, Coins, Rocket, Globe, Lock, Sparkles, BarChart3 } from 'lucide-react';
 
 const LandingPage = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -174,8 +174,19 @@ const LandingPage = () => {
               </Link>
               
               <Link
+                to="/metrics"
+                className="group px-8 py-4 border-2 border-purple-400 text-purple-400 rounded-lg font-bold text-lg transition-all duration-300 hover:bg-purple-400 hover:text-black hover:scale-105 relative overflow-hidden"
+              >
+                <span className="relative z-10 flex items-center">
+                  <BarChart3 className="mr-2 w-5 h-5" />
+                  PLATFORM METRICS
+                </span>
+                <div className="absolute inset-0 bg-purple-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+              </Link>
+              
+              <Link
                 to="/signin"
-                className="group px-8 py-4 border-2 border-cyan-400 text-cyan-400 rounded-lg font-bold text-lg transition-all duration-300 hover:bg-cyan-400 hover:text-black hover:scale-105 relative overflow-hidden"
+                className="group px-8 py-4 border-2 border-cyan-400 text-cyan-400 rounded-lg font-bold text-lg transition-all duration-300 hover:bg-cyan-400 hover:text-black hover:scale-105 relative overflow-hidden sm:hidden lg:flex"
               >
                 <span className="relative z-10 flex items-center">
                   <Shield className="mr-2 w-5 h-5" />

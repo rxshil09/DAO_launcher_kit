@@ -187,6 +187,15 @@ const ExplorePage: React.FC = () => {
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
             <p className="text-cyan-400 font-mono">Loading explore page...</p>
+            
+            {/* Analytics Button */}
+            <a
+              href="/metrics"
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white rounded-lg transition-all font-mono"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>View Analytics</span>
+            </a>
           </div>
         </div>
       </div>

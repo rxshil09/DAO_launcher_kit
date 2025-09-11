@@ -7,6 +7,7 @@ echo "🔧 Updating frontend environment variables..."
 # Get current canister IDs
 DAO_BACKEND_ID=$(dfx canister id dao_backend)
 DAO_REGISTRY_ID=$(dfx canister id dao_registry)
+DAO_ANALYTICS_ID=$(dfx canister id dao_analytics)
 GOVERNANCE_ID=$(dfx canister id governance)
 STAKING_ID=$(dfx canister id staking)
 TREASURY_ID=$(dfx canister id treasury)
@@ -20,6 +21,7 @@ cat > src/dao_frontend/.env.local << EOF
 # Frontend environment variables for local development
 VITE_CANISTER_ID_DAO_BACKEND=${DAO_BACKEND_ID}
 VITE_CANISTER_ID_DAO_REGISTRY=${DAO_REGISTRY_ID}
+VITE_CANISTER_ID_DAO_ANALYTICS=${DAO_ANALYTICS_ID}
 VITE_CANISTER_ID_GOVERNANCE=${GOVERNANCE_ID}
 VITE_CANISTER_ID_STAKING=${STAKING_ID}
 VITE_CANISTER_ID_TREASURY=${TREASURY_ID}
@@ -37,6 +39,7 @@ EOF
 echo "✅ Environment variables updated:"
 echo "DAO Backend: ${DAO_BACKEND_ID}"
 echo "DAO Registry: ${DAO_REGISTRY_ID}"
+echo "DAO Analytics: ${DAO_ANALYTICS_ID}"
 echo "Governance: ${GOVERNANCE_ID}"
 echo "Staking: ${STAKING_ID}"
 echo "Treasury: ${TREASURY_ID}"

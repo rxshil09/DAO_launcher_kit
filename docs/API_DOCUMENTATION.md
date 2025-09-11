@@ -4,6 +4,8 @@
 - [Overview](#overview)
 - [Authentication](#authentication)
 - [Main DAO Backend API](#main-dao-backend-api)
+- [DAO Registry API](#dao-registry-api)
+- [Analytics API](#analytics-api)
 - [Governance API](#governance-api)
 - [Staking API](#staking-api)
 - [Treasury API](#treasury-api)
@@ -24,6 +26,8 @@ IC Mainnet: https://{canister_id}.ic0.app
 
 ### Canister IDs
 - **dao_backend**: Main coordinator canister (user management, admin operations)
+- **dao_registry**: Global DAO discovery and registry system
+- **dao_analytics**: Platform metrics and analytics tracking
 - **governance**: Voting and proposal management
 - **staking**: Token staking mechanisms and reward distribution
 - **treasury**: Financial operations and multi-signature wallets
@@ -222,6 +226,249 @@ Retrieves comprehensive DAO statistics.
   totalStaked: 50000,
   treasuryBalance: 75000,
   governanceParticipation: 85.5
+}
+```
+
+## DAO Registry API
+
+The DAO Registry provides global discovery and exploration of DAOs across the platform.
+
+### Register DAO
+Registers a new DAO in the global registry for discovery.
+
+**Endpoint:** `dao_registry.registerDAO`
+
+**Parameters:**
+```motoko
+registerDAO(
+  name: Text,
+  description: Text,
+  category: Text,
+  is_public: Bool,
+  dao_canister_id: Principal,
+  website: ?Text,
+  logo_url: ?Text,
+  token_symbol: ?Text
+) : async Result<Text, Text>
+```
+
+**Example:**
+```javascript
+const result = await dao_registry.registerDAO(
+  "DeFi Collective",
+  "A decentralized finance DAO for yield farming strategies",
+  "DeFi",
+  true,
+  Principal.fromText("rdmx6-jaaaa-aaaah-qcaiq-cai"),
+  ["https://deficollective.org"],
+  ["https://deficollective.org/logo.png"],
+  ["DEFI"]
+);
+```
+
+### Get All Public DAOs
+Retrieves paginated list of all public DAOs.
+
+**Endpoint:** `dao_registry.getAllPublicDAOs`
+
+**Parameters:**
+```motoko
+getAllPublicDAOs(page: Nat, page_size: Nat) : async PaginationResult<DAOMetadata>
+```
+
+**Example:**
+```javascript
+const result = await dao_registry.getAllPublicDAOs(0, 12);
+// Returns paginated DAO list with metadata
+```
+
+### Search DAOs
+Search DAOs with filters and sorting options.
+
+**Endpoint:** `dao_registry.searchDAOs`
+
+**Parameters:**
+```motoko
+searchDAOs(
+  query: Text,
+  filters: ?SearchFilters,
+  sort: ?SortOption,
+  page: Nat,
+  page_size: Nat
+) : async PaginationResult<DAOMetadata>
+```
+
+**Example:**
+```javascript
+const filters = {
+  category: ["DeFi"],
+  min_members: [10],
+  max_members: [],
+  created_after: [],
+  created_before: [],
+  is_public: [true]
+};
+
+const result = await dao_registry.searchDAOs(
+  "yield farming",
+  [filters],
+  [{ newest: null }],
+  0,
+  10
+);
+```
+
+### Get DAOs by Creator
+Retrieves all DAOs created by a specific user.
+
+**Endpoint:** `dao_registry.getDAOsByCreator`
+
+**Parameters:**
+```motoko
+getDAOsByCreator(creator: Principal) : async [DAOMetadata]
+```
+
+### Get Trending DAOs
+Retrieves the most active DAOs based on recent activity.
+
+**Endpoint:** `dao_registry.getTrendingDAOs`
+
+**Parameters:**
+```motoko
+getTrendingDAOs(limit: Nat) : async [DAOMetadata]
+```
+
+### Get Registry Statistics
+Retrieves platform-wide statistics.
+
+**Endpoint:** `dao_registry.getRegistryStats`
+
+**Response:**
+```javascript
+{
+  total_daos: 245,
+  public_daos: 189,
+  categories: [
+    ["DeFi", 45],
+    ["Gaming", 32],
+    ["Social", 28]
+  ],
+  total_members: 15420,
+  total_tvl: 12500000
+}
+```
+
+## Analytics API
+
+The Analytics canister provides comprehensive platform metrics and historical data tracking.
+
+### Record Event
+Records an analytics event (typically called by other canisters).
+
+**Endpoint:** `dao_analytics.recordEvent`
+
+**Parameters:**
+```motoko
+recordEvent(
+  event_type: EventType,
+  dao_id: ?Text,
+  user_id: ?Principal,
+  metadata: [(Text, Text)]
+) : async Result<(), Text>
+```
+
+### Get Platform Metrics
+Retrieves current platform-wide metrics.
+
+**Endpoint:** `dao_analytics.getPlatformMetrics`
+
+**Response:**
+```javascript
+{
+  total_daos: 245,
+  total_users: 15420,
+  total_proposals: 1847,
+  total_votes: 8924,
+  total_tvl: 12500000,
+  active_daos_24h: 45,
+  active_users_24h: 892,
+  proposals_created_24h: 12,
+  votes_cast_24h: 156,
+  treasury_volume_24h: 285000,
+  last_updated: 1694608800000
+}
+```
+
+### Get Time Series Data
+Retrieves historical data for charting and trend analysis.
+
+**Endpoint:** `dao_analytics.getTimeSeriesData`
+
+**Parameters:**
+```motoko
+getTimeSeriesData(metric: Text, timeframe: Text) : async [TimeSeriesPoint]
+```
+
+**Example:**
+```javascript
+const daoGrowthData = await dao_analytics.getTimeSeriesData("dao_count", "30d");
+const userGrowthData = await dao_analytics.getTimeSeriesData("user_count", "7d");
+```
+
+### Get Growth Metrics
+Retrieves growth rates and trending data.
+
+**Endpoint:** `dao_analytics.getGrowthMetrics`
+
+**Response:**
+```javascript
+{
+  dao_growth_rate_7d: 12.5,
+  user_growth_rate_7d: 8.3,
+  tvl_growth_rate_7d: 15.2,
+  proposal_activity_trend: "increasing",
+  voting_participation_trend: "stable"
+}
+```
+
+### Get Governance Statistics
+Retrieves governance-specific analytics.
+
+**Endpoint:** `dao_analytics.getGovernanceStats`
+
+**Response:**
+```javascript
+{
+  total_proposals: 1847,
+  passed_proposals: 1234,
+  failed_proposals: 456,
+  pending_proposals: 157,
+  average_voting_participation: 67.8,
+  average_proposal_duration: 168, // hours
+  most_active_voters: [
+    { principal: "abc123...", vote_count: 89 },
+    { principal: "def456...", vote_count: 76 }
+  ]
+}
+```
+
+### Get Treasury Analytics
+Retrieves financial and treasury analytics.
+
+**Endpoint:** `dao_analytics.getTreasuryAnalytics`
+
+**Response:**
+```javascript
+{
+  total_tvl: 12500000,
+  tvl_change_24h: 2.5,
+  treasury_inflows_24h: 185000,
+  treasury_outflows_24h: 92000,
+  average_dao_treasury: 51020,
+  largest_treasuries: [
+    { dao_id: "dao_123", balance: 850000 },
+    { dao_id: "dao_456", balance: 720000 }
+  ]
 }
 ```
 
