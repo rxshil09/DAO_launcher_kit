@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown, LucideIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, DivideIcon as LucideIcon } from 'lucide-react';
 
 interface MetricsCounterProps {
   label: string;
