@@ -15,6 +15,19 @@ import Nat32 "mo:base/Nat32";
 import Types "../shared/types";
 
 /**
+ * Analytics Integration
+ */
+type AnalyticsService = actor {
+    recordEvent: shared (
+        event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+        dao_id: ?Text,
+        user_id: ?Principal,
+        metadata: [(Text, Text)],
+        value: ?Float
+    ) -> async Result<Nat, Text>;
+};
+
+/**
  * Treasury Canister
  * 
  * This canister manages the DAO's financial operations and fund management:
@@ -62,6 +75,10 @@ persistent actor TreasuryCanister {
     // Authorization system for treasury operations
     // In production, this would be managed by governance proposals
     private var authorizedPrincipals : [Principal] = [];
+    
+    // Analytics integration
+    private var analyticsCanisterId : ?Principal = null;
+    private transient var analyticsCanister : ?AnalyticsService = null;
 
     // System functions for upgrades
     system func preupgrade() {
@@ -82,6 +99,21 @@ persistent actor TreasuryCanister {
             Principal.equal, 
             Principal.hash
         );
+        
+        // Restore analytics canister reference if available
+        switch (analyticsCanisterId) {
+            case (?id) {
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
+    };
+
+    // Set analytics canister reference
+    public shared(msg) func setAnalyticsCanister(analytics_id: Principal) : async Result<(), Text> {
+        analyticsCanisterId := ?analytics_id;
+        analyticsCanister := ?(actor (Principal.toText(analytics_id)) : AnalyticsService);
+        #ok()
     };
 
     // Public functions
@@ -112,6 +144,20 @@ persistent actor TreasuryCanister {
         // Update balances
         totalBalance += amount;
         availableBalance += amount;
+
+        // Record deposit event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #TREASURY_DEPOSIT,
+                    null, // DAO ID would need to be passed or stored
+                    ?msg.caller,
+                    [("description", description)],
+                    ?Float.fromInt(amount)
+                );
+            };
+            case null {};
+        };
 
         #ok(transactionId)
     };
@@ -171,6 +217,20 @@ persistent actor TreasuryCanister {
                     status = #completed;
                 };
                 transactions.put(transactionId, completedTransaction);
+                
+                // Record withdrawal event
+                switch (analyticsCanister) {
+                    case (?analytics) {
+                        let _ = await analytics.recordEvent(
+                            #TREASURY_WITHDRAWAL,
+                            null, // DAO ID would need to be passed or stored
+                            null,
+                            [("description", description), ("recipient", Principal.toText(recipient))],
+                            ?Float.fromInt(amount)
+                        );
+                    };
+                    case null {};
+                };
                 
                 #ok(transactionId)
             };

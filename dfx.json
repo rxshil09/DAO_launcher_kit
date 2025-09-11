@@ -34,6 +34,10 @@
       "type": "motoko",
       "init": { "args": "(null, false)" }
     },
+    "dao_analytics": {
+      "main": "src/dao_backend/analytics/main.mo",
+      "type": "motoko"
+    },
     "dao_frontend": {
       "dependencies": [
         "dao_backend",
@@ -42,7 +46,8 @@
         "staking",
         "treasury",
         "proposals",
-        "assets"
+        "assets",
+        "dao_analytics"
       ],
       "source": [
         "src/dao_frontend/dist"

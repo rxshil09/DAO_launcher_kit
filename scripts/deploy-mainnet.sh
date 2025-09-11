@@ -54,6 +54,7 @@ echo -e "${BLUE}🚀 Deploying backend canisters first...${NC}"
 
 # Deploy backend canisters in order
 dfx deploy dao_backend --network ic
+dfx deploy dao_analytics --network ic
 dfx deploy staking --network ic
 dfx deploy treasury --network ic
 dfx deploy proposals --network ic

@@ -19,6 +19,7 @@ sleep 5
 echo "🏗️ Deploying base canisters..."
 dfx deploy dao_backend
 dfx deploy dao_registry
+dfx deploy dao_analytics
 dfx deploy staking
 
 # Get and verify canister IDs

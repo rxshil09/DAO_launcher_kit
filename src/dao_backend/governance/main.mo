@@ -14,6 +14,19 @@ import Error "mo:base/Error";
 import Types "../shared/types";
 
 /**
+ * Analytics Integration
+ */
+type AnalyticsService = actor {
+    recordEvent: shared (
+        event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+        dao_id: ?Text,
+        user_id: ?Principal,
+        metadata: [(Text, Text)],
+        value: ?Float
+    ) -> async Result<Nat, Text>;
+};
+
+/**
  * Governance Canister
  * 
  * This canister manages the democratic decision-making process of the DAO:
@@ -67,12 +80,16 @@ persistent actor GovernanceCanister {
     private var daoId : Principal = Principal.fromText("aaaaa-aa");
     private var stakingId : Principal = Principal.fromText("aaaaa-aa");
     private var initialized : Bool = false;
+    private var analyticsId : ?Principal = null;
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide O(1) lookup performance for governance operations
     private transient var proposals = HashMap.HashMap<ProposalId, Proposal>(10, Nat.equal, func(n: Nat) : Nat32 { Nat32.fromNat(n) });
     private transient var votes = HashMap.HashMap<Text, Vote>(100, Text.equal, Text.hash);
     private transient var config = HashMap.HashMap<Text, GovernanceConfig>(1, Text.equal, Text.hash);
+
+    // Analytics canister reference
+    private transient var analyticsCanister : ?AnalyticsService = null;
 
     public shared(msg) func init(newDaoId: Principal, newStakingId: Principal) : async () {
         if (initialized) {
@@ -98,7 +115,23 @@ persistent actor GovernanceCanister {
         dao := daoTemp;
         staking := actor(Principal.toText(newStakingId));
         initialized := true;
+        
+        // Try to set analytics canister reference
+        switch (analyticsId) {
+            case (?id) {
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
+        
         Debug.print("Initialization complete");
+    };
+
+    // Set analytics canister reference
+    public shared(msg) func setAnalyticsCanister(analytics_id: Principal) : async Result<(), Text> {
+        analyticsId := ?analytics_id;
+        analyticsCanister := ?(actor (Principal.toText(analytics_id)) : AnalyticsService);
+        #ok()
     };
 
     // Initialize default configuration
@@ -142,6 +175,14 @@ persistent actor GovernanceCanister {
 
         dao := actor(Principal.toText(daoId));
         staking := actor(Principal.toText(stakingId));
+
+        // Restore analytics canister reference if available
+        switch (analyticsId) {
+            case (?id) {
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
 
         if (config.size() == 0) {
             initializeConfig();
@@ -201,6 +242,21 @@ persistent actor GovernanceCanister {
         };
 
         proposals.put(proposalId, proposal);
+        
+        // Record proposal creation event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #PROPOSAL_CREATED,
+                    null, // DAO ID would need to be passed or stored
+                    ?caller,
+                    [("title", title), ("type", debug_show(proposalType))],
+                    null
+                );
+            };
+            case null {};
+        };
+        
         #ok(proposalId)
     };
 
@@ -319,6 +375,21 @@ persistent actor GovernanceCanister {
         };
 
         proposals.put(proposalId, updatedProposal);
+        
+        // Record vote event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #VOTE_CAST,
+                    null, // DAO ID would need to be passed or stored
+                    ?caller,
+                    [("proposalId", Nat.toText(proposalId)), ("choice", debug_show(choice)), ("votingPower", Nat.toText(votingPower))],
+                    ?Float.fromInt(votingPower)
+                );
+            };
+            case null {};
+        };
+        
         #ok()
     };
 
