@@ -21,12 +21,14 @@ A comprehensive DAO (Decentralized Autonomous Organization) creation and managem
 - **🔐 Internet Identity**: https://7wzyf-fiaaa-aaaao-a4pca-cai.icp0.io/
 
 #### **Backend Candid Interfaces**
-- ** DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7k5cu-siaaa-aaaao-a4paa-cai
-- ** Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7d6ji-eaaaa-aaaao-a4pbq-cai
-- ** Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6suxx-4iaaa-aaaao-a4pea-cai
-- ** Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6vvrd-rqaaa-aaaao-a4peq-cai
-- ** Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=772tz-taaaa-aaaao-a4pdq-cai
-- ** Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
+- **🏛️ DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7k5cu-siaaa-aaaao-a4paa-cai
+- **🗳️ Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7d6ji-eaaaa-aaaao-a4pbq-cai
+- **📈 Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6suxx-4iaaa-aaaao-a4pea-cai
+- **💰 Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6vvrd-rqaaa-aaaao-a4peq-cai
+- **📋 Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=772tz-taaaa-aaaao-a4pdq-cai
+- **📁 Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
+- **🔍 DAO Registry**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=5mfqz-3yaaa-aaaao-a4pna-cai
+- **📊 DAO Analytics**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=5fg3f-nqaaa-aaaao-a4pmq-cai
 
 ### Mainnet Canister IDs
 ```
@@ -37,6 +39,8 @@ Staking:         6suxx-4iaaa-aaaao-a4pea-cai
 Treasury:        6vvrd-rqaaa-aaaao-a4peq-cai
 Proposals:       772tz-taaaa-aaaao-a4pdq-cai
 Assets:          uulqk-jaaaa-aaaao-a4o7q-cai
+DAO Registry:    5mfqz-3yaaa-aaaao-a4pna-cai
+DAO Analytics:   5fg3f-nqaaa-aaaao-a4pmq-cai
 Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
 ```
 
@@ -229,7 +233,9 @@ VITE_CANISTER_ID_STAKING=6suxx-4iaaa-aaaao-a4pea-cai
 VITE_CANISTER_ID_TREASURY=6vvrd-rqaaa-aaaao-a4peq-cai
 VITE_CANISTER_ID_PROPOSALS=772tz-taaaa-aaaao-a4pdq-cai
 VITE_CANISTER_ID_ASSETS=uulqk-jaaaa-aaaao-a4o7q-cai
-VITE_CANISTER_ID_INTERNET_IDENTITY=rdmx6-jaaaa-aaaah-qdrqq-cai
+VITE_CANISTER_ID_DAO_REGISTRY=5mfqz-3yaaa-aaaao-a4pna-cai
+VITE_CANISTER_ID_DAO_ANALYTICS=5fg3f-nqaaa-aaaao-a4pmq-cai
+VITE_CANISTER_ID_INTERNET_IDENTITY=7wzyf-fiaaa-aaaao-a4pca-cai
 VITE_HOST=https://icp0.io
 VITE_DFX_NETWORK=ic
 VITE_IC_HOST=https://icp0.io
