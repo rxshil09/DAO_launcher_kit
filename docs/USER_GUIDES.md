@@ -2,6 +2,8 @@
 
 ## Table of Contents
 - [Getting Started](#getting-started)
+- [Exploring DAOs](#exploring-daos)
+- [Platform Metrics](#platform-metrics)
 - [DAO Type Guides](#dao-type-guides)
   - [DeFi DAO](#defi-dao-guide)
   - [Investment DAO](#investment-dao-guide)
@@ -35,6 +37,109 @@
    - **Step 7**: Launch (Deploy your DAO to the Internet Computer)
 5. Access your DAO management dashboard
 6. Invite members and start governance
+
+---
+
+## Exploring DAOs
+
+### DAO Discovery
+The platform includes a comprehensive DAO discovery system that allows you to explore and join DAOs created by other users.
+
+#### Accessing the Explore Page
+1. **From Navigation**: Click "Explore" in the main navigation menu
+2. **From Landing Page**: Click "Explore DAOs" on the homepage
+3. **Direct URL**: Navigate to `/explore`
+
+#### Search and Filter Features
+- **Search Bar**: Find DAOs by name, description, or keywords
+- **Category Filters**: Filter by DAO type (DeFi, Gaming, Social, NFT, etc.)
+- **Sorting Options**:
+  - Newest First
+  - Most Members
+  - Most Active
+  - Highest TVL (Total Value Locked)
+- **Advanced Filters**:
+  - Member count range
+  - Creation date range
+  - Public/Private status
+
+#### DAO Information Cards
+Each DAO displays:
+- **Basic Info**: Name, description, category
+- **Statistics**: Member count, creation date, activity level
+- **Creator**: Who launched the DAO
+- **Join Button**: One-click joining (requires authentication)
+
+#### Trending DAOs
+- Displays the most active DAOs based on recent activity
+- Updated in real-time based on governance participation
+- Highlighted with trending indicators
+
+### Joining Existing DAOs
+1. **Browse or Search**: Find DAOs that match your interests
+2. **Review Details**: Check DAO description, governance rules, and activity
+3. **Click Join**: Authenticate with Internet Identity if not already logged in
+4. **Access Management**: Navigate to the DAO's management dashboard
+5. **Participate**: Start voting on proposals and engaging with the community
+
+---
+
+## Platform Metrics
+
+### Public Analytics Dashboard
+The platform provides a comprehensive metrics dashboard showing ecosystem health and growth.
+
+#### Accessing Platform Metrics
+1. **From Landing Page**: Click "Show Platform Metrics" button
+2. **From Explore Page**: Click "View Detailed Analytics" 
+3. **From Navigation**: Click "Metrics" in the navigation menu
+4. **Direct URL**: Navigate to `/metrics`
+5. **No Authentication Required**: Public access for transparency
+
+#### Dashboard Sections
+
+##### Platform Overview
+- **Total DAOs**: Current count of all DAOs on the platform
+- **Total Members**: Combined membership across all DAOs
+- **Total TVL**: Combined treasury value locked across ecosystem
+- **Active Proposals**: Current governance activity
+- **24-Hour Activity**: Recent platform engagement metrics
+
+##### Growth Analytics
+- **DAO Creation Trends**: Charts showing DAO growth over time
+- **User Adoption**: Member growth and engagement patterns
+- **TVL Growth**: Financial metrics and treasury expansion
+- **Activity Patterns**: Proposal creation and voting trends
+
+##### DAO Ecosystem
+- **Category Distribution**: Breakdown of DAO types (pie charts)
+- **Most Active DAOs**: Leaderboard of highest-engagement DAOs
+- **Success Metrics**: Proposal pass rates and participation
+- **Geographic Distribution**: Global adoption patterns (if available)
+
+##### Governance Analytics
+- **Voting Participation**: Platform-wide engagement rates
+- **Proposal Outcomes**: Success/failure rates across all DAOs
+- **Average Voting Time**: Decision-making efficiency metrics
+- **Top Contributors**: Most active governance participants
+
+##### Financial Metrics
+- **Treasury Analytics**: Inflow/outflow patterns across all DAOs
+- **Token Distribution**: Economic health indicators
+- **Staking Metrics**: Platform-wide staking participation
+- **Economic Activity**: Financial transaction volumes
+
+#### Real-Time Updates
+- **Live Counters**: Real-time statistics with smooth animations
+- **Refresh Button**: Manual refresh for latest data
+- **Auto-Update**: Periodic background updates
+- **Last Updated**: Timestamp showing data freshness
+
+#### Data Visualization
+- **Interactive Charts**: Hover for detailed information
+- **Time Range Selection**: View different historical periods
+- **Export Options**: Download charts and data (future feature)
+- **Mobile Responsive**: Full functionality on all devices
 
 ---
 

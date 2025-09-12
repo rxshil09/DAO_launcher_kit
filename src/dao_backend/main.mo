@@ -10,6 +10,14 @@ import Text "mo:base/Text";
 import Types "shared/types";
 
 /**
+ * Analytics Integration
+ *
+ * Note: In Motoko, the main file must only contain a single
+ * actor/actor class at the top-level (besides imports). We
+ * therefore keep this interface type inside the actor below.
+ */
+
+/**
  * Main DAO Backend Canister
  * 
  * This is the central coordinator canister for the DAO system. It manages:
@@ -18,11 +26,22 @@ import Types "shared/types";
  * - Admin permissions and access control
  * - Canister reference management for the modular architecture
  * - Cross-canister communication coordination
+ * - Integration with the global DAO registry
  * 
  * The canister follows the upgrade-safe pattern with stable variables
  * and proper state management for Internet Computer upgrades.
  */
 persistent actor DAOMain {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for cleaner code and better readability
     type Result<T, E> = Result.Result<T, E>;
     type Proposal = Types.Proposal;
@@ -36,6 +55,12 @@ persistent actor DAOMain {
     type DAOConfig = Types.DAOConfig;
     type Activity = Types.Activity;
 
+    // Typed interface for the Registry canister
+    type RegistryService = actor {
+        registerDAO: shared (Text, Text, Text, Bool, Principal, ?Text, ?Text, ?Text) -> async Result<Text, Text>;
+        updateDAOStats: shared (Text, ?Nat, ?Nat, ?Nat, ?Nat, ?Nat, ?Float) -> async Result<(), Text>;
+    };
+
     // Stable storage for upgrades - persists across canister upgrades
     // These variables maintain their state when the canister is upgraded
     private var initialized : Bool = false;
@@ -45,6 +70,10 @@ persistent actor DAOMain {
     private var userProfilesEntries : [(Principal, UserProfile)] = [];
     private var adminPrincipalsEntries : [Principal] = [];
     private var daoConfig : ?DAOConfig = null;
+
+    // Registry integration
+    private var registryCanisterId : ?Principal = null;
+    private var registeredInRegistry : Bool = false;
 
     // Runtime storage - recreated after upgrades from stable storage
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
@@ -57,6 +86,13 @@ persistent actor DAOMain {
     private transient var stakingCanister : ?Principal = null;
     private transient var treasuryCanister : ?Principal = null;
     private transient var proposalsCanister : ?Principal = null;
+
+    // Registry canister reference
+    private transient var registryCanister : ?RegistryService = null;
+
+    // Analytics canister reference
+    private var analyticsCanisterId : ?Principal = null;
+    private transient var analyticsCanister : ?AnalyticsService = null;
 
     // System functions for upgrades
     /**
@@ -84,6 +120,22 @@ persistent actor DAOMain {
         for (admin in adminPrincipalsEntries.vals()) {
             adminPrincipals.put(admin, true);
         };
+
+        // Restore registry canister reference if available
+        switch (registryCanisterId) {
+            case (?id) {
+                registryCanister := ?(actor (Principal.toText(id)) : RegistryService);
+            };
+            case null {};
+        };
+
+        // Restore analytics canister reference if available
+        switch (analyticsCanisterId) {
+            case (?id) {
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
     };
 
     /**
@@ -95,12 +147,15 @@ persistent actor DAOMain {
      * @param name - Human-readable name for the DAO
      * @param description - Brief description of the DAO's purpose
      * @param initialAdmins - Array of Principal IDs who will have admin privileges
+     * @param registry_id - Optional Principal ID of the global DAO registry
      * @returns Result indicating success or failure with error message
      */
     public shared(msg) func initialize(
         name: Text,
         description: Text,
-        initialAdmins: [Principal]
+        initialAdmins: [Principal],
+        registry_id: ?Principal,
+        analytics_id: ?Principal
     ) : async Result<(), Text> {
         // Prevent double initialization
         if (initialized) {
@@ -118,7 +173,40 @@ persistent actor DAOMain {
         // Always add the deployer as an admin for initial setup
         adminPrincipals.put(msg.caller, true);
 
+        // Set registry canister reference
+        switch (registry_id) {
+            case (?id) {
+                registryCanisterId := ?id;
+                registryCanister := ?(actor (Principal.toText(id)) : RegistryService);
+            };
+            case null {};
+        };
+
+        // Set analytics canister reference
+        switch (analytics_id) {
+            case (?id) {
+                analyticsCanisterId := ?id;
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
+
         initialized := true;
+        
+        // Record DAO creation event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #DAO_CREATED,
+                    ?name,
+                    ?msg.caller,
+                    [("category", ""), ("description", description)],
+                    null
+                );
+            };
+            case null {};
+        };
+        
         Debug.print("DAO initialized: " # name);
         #ok()
     };
@@ -155,6 +243,120 @@ persistent actor DAOMain {
         #ok()
     };
 
+    /**
+     * Register this DAO with the global registry
+     */
+    public shared(msg) func registerWithRegistry() : async Result<Text, Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can register with registry");
+        };
+
+        switch (registryCanister) {
+            case (?registry) {
+                switch (daoConfig) {
+                    case (?config) {
+                        let result = await registry.registerDAO(
+                            daoName,
+                            daoDescription,
+                            config.category,
+                            true, // is_public - could be configurable
+                            Principal.fromActor(DAOMain),
+                            ?config.website,
+                            null, // logo_url - could be added to config
+                            ?config.tokenSymbol
+                        );
+                        
+                        switch (result) {
+                            case (#ok(dao_id)) {
+                                registeredInRegistry := true;
+                                Debug.print("DAO registered with registry: " # dao_id);
+                                #ok(dao_id)
+                            };
+                            case (#err(error)) #err(error);
+                        }
+                    };
+                    case null #err("DAO configuration not set");
+                }
+            };
+            case null #err("Registry canister not configured");
+        }
+    };
+
+    /**
+     * Update DAO statistics in the registry
+     */
+    public shared(msg) func updateRegistryStats() : async Result<(), Text> {
+        if (not registeredInRegistry) {
+            return #err("DAO not registered with registry");
+        };
+
+        switch (registryCanister) {
+            case (?registry) {
+                // Get current DAO stats
+                let stats = await getDAOStats();
+                
+                let result = await registry.updateDAOStats(
+                    "dao_" # Nat.toText(1), // This would need to be stored from registration
+                    ?stats.totalMembers,
+                    ?stats.totalProposals,
+                    ?stats.activeProposals,
+                    ?stats.totalStaked,
+                    ?stats.treasuryBalance,
+                    null // governance_participation - could be calculated
+                );
+                
+                switch (result) {
+                    case (#ok()) {
+                        Debug.print("Registry stats updated successfully");
+                        #ok()
+                    };
+                    case (#err(error)) #err(error);
+                }
+            };
+            case null #err("Registry canister not configured");
+        }
+    };
+
+    /**
+     * Get public DAO information for discovery
+     */
+    public query func getPublicDAOInfo() : async {
+        name: Text;
+        description: Text;
+        category: ?Text;
+        member_count: Nat;
+        token_symbol: ?Text;
+        website: ?Text;
+        is_public: Bool;
+        creation_date: Int;
+    } {
+        let category = switch (daoConfig) {
+            case (?config) ?config.category;
+            case null null;
+        };
+        
+        let token_symbol = switch (daoConfig) {
+            case (?config) ?config.tokenSymbol;
+            case null null;
+        };
+        
+        let website = switch (daoConfig) {
+            case (?config) ?config.website;
+            case null null;
+        };
+
+        {
+            name = daoName;
+            description = daoDescription;
+            category = category;
+            member_count = totalMembers;
+            token_symbol = token_symbol;
+            website = website;
+            is_public = true; // Could be configurable
+            creation_date = Time.now() / 1_000_000; // This should be stored during initialization
+        }
+    };
+
     // DAO configuration
     public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
         if (not isAdmin(msg.caller)) {
@@ -162,6 +364,19 @@ persistent actor DAOMain {
         };
         daoConfig := ?config;
         Debug.print("DAO configuration saved");
+        
+        // Auto-register with registry if configured and not already registered
+        if (not registeredInRegistry) {
+            switch (await registerWithRegistry()) {
+                case (#ok(dao_id)) {
+                    Debug.print("Auto-registered with registry: " # dao_id);
+                };
+                case (#err(error)) {
+                    Debug.print("Failed to auto-register with registry: " # error);
+                };
+            };
+        };
+        
         #ok()
     };
 
@@ -186,6 +401,20 @@ persistent actor DAOMain {
 
         userProfiles.put(caller, userProfile);
         totalMembers += 1;
+
+        // Record user registration event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #USER_JOINED,
+                    null,
+                    ?caller,
+                    [("displayName", displayName), ("bio", bio)],
+                    null
+                );
+            };
+            case null {};
+        };
 
         Debug.print("User registered: " # displayName);
         #ok()
@@ -213,6 +442,20 @@ persistent actor DAOMain {
 
         userProfiles.put(newUser, userProfile);
         totalMembers += 1;
+
+        // Record user registration event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #USER_JOINED,
+                    null,
+                    ?newUser,
+                    [("displayName", displayName), ("bio", bio), ("registeredBy", "admin")],
+                    null
+                );
+            };
+            case null {};
+        };
 
         Debug.print("User registered by admin: " # displayName);
         #ok()

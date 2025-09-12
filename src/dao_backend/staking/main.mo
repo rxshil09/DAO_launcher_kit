@@ -36,6 +36,16 @@ import Types "../shared/types";
  * - Anti-gaming mechanisms for reward distribution
  */
 persistent actor StakingCanister {
+    // Analytics canister interface type (moved inside actor)
+    type AnalyticsService = actor {
+        recordEvent: shared (
+            event_type: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+            dao_id: ?Text,
+            user_id: ?Principal,
+            metadata: [(Text, Text)],
+            value: ?Float
+        ) -> async Result<Nat, Text>;
+    };
     // Type aliases for better code readability
     type Result<T, E> = Result.Result<T, E>;
     type Stake = Types.Stake;
@@ -64,6 +74,10 @@ persistent actor StakingCanister {
     private var stakingEnabled : Bool = true;
     private var minimumStakeAmount : TokenAmount = 10; // Minimum 10 tokens to prevent dust attacks
     private var maximumStakeAmount : TokenAmount = 1000000; // Maximum 1M tokens to prevent centralization
+    
+    // Analytics integration
+    private var analyticsCanisterId : ?Principal = null;
+    private transient var analyticsCanister : ?AnalyticsService = null;
 
     // System functions for upgrades
     system func preupgrade() {
@@ -84,6 +98,21 @@ persistent actor StakingCanister {
             Principal.equal, 
             Principal.hash
         );
+        
+        // Restore analytics canister reference if available
+        switch (analyticsCanisterId) {
+            case (?id) {
+                analyticsCanister := ?(actor (Principal.toText(id)) : AnalyticsService);
+            };
+            case null {};
+        };
+    };
+
+    // Set analytics canister reference
+    public shared(msg) func setAnalyticsCanister(analytics_id: Principal) : async Result<(), Text> {
+        analyticsCanisterId := ?analytics_id;
+        analyticsCanister := ?(actor (Principal.toText(analytics_id)) : AnalyticsService);
+        #ok()
     };
 
     // Public functions
@@ -133,6 +162,20 @@ persistent actor StakingCanister {
 
         // Update total staked amount
         totalStakedAmount += amount;
+
+        // Record staking event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #TOKENS_STAKED,
+                    null, // DAO ID would need to be passed or stored
+                    ?caller,
+                    [("period", debug_show(period)), ("stakeId", Nat.toText(stakeId))],
+                    ?Float.fromInt(amount)
+                );
+            };
+            case null {};
+        };
 
         #ok(stakeId)
     };
@@ -185,6 +228,20 @@ persistent actor StakingCanister {
         totalStakedAmount -= stake.amount;
         totalRewardsDistributed += finalRewards;
 
+        // Record unstaking event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #TOKENS_UNSTAKED,
+                    null, // DAO ID would need to be passed or stored
+                    ?caller,
+                    [("stakeId", Nat.toText(stakeId)), ("rewards", Nat.toText(finalRewards))],
+                    ?Float.fromInt(stake.amount)
+                );
+            };
+            case null {};
+        };
+
         #ok(totalAmount)
     };
 
@@ -234,6 +291,20 @@ persistent actor StakingCanister {
         stakes.put(stakeId, updatedStake);
 
         totalRewardsDistributed += claimableRewards;
+
+        // Record rewards claim event
+        switch (analyticsCanister) {
+            case (?analytics) {
+                let _ = await analytics.recordEvent(
+                    #REWARDS_CLAIMED,
+                    null, // DAO ID would need to be passed or stored
+                    ?caller,
+                    [("stakeId", Nat.toText(stakeId))],
+                    ?Float.fromInt(claimableRewards)
+                );
+            };
+            case null {};
+        };
 
         #ok(claimableRewards)
     };

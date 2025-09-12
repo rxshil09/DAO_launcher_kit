@@ -4,11 +4,13 @@ import LandingPage from './components/LandingPage';
 import DAODashboard from './components/DAODashboard';
 import DAOManagement from './components/DAOManagement';
 import SignIn from './components/SignIn';
+import ExplorePage from './components/ExplorePage';
 import LaunchDAO from './components/LaunchDAO';
 import Settings from './components/Settings';
 import DAOStatus from './components/DAOStatus';
 import Diagnostics from './components/Diagnostics';
 import Navbar from './components/Navbar';
+import MetricsDashboard from './components/MetricsDashboard';
 import UserRegistrationHandler from './components/UserRegistrationHandler';
 import ErrorBoundary from './components/ErrorBoundary';
 import { DAOManagementProvider } from './context/DAOManagementContext';
@@ -33,6 +35,8 @@ function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/dashboard" element={<DAODashboard />} />
+              <Route path="/explore" element={<ExplorePage />} />
+              <Route path="/metrics" element={<MetricsDashboard />} />
               <Route path="/status" element={<DAOStatus />} />
               <Route path="/admin/diagnostics" element={<Diagnostics />} />
               <Route path="/signin" element={<SignIn />} />

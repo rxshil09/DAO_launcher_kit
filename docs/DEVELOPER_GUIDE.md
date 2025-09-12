@@ -44,6 +44,8 @@ npm run dev
 ```bash
 # Deploy backend canisters in dependency order
 dfx deploy dao_backend
+dfx deploy dao_registry
+dfx deploy dao_analytics
 dfx deploy staking
 dfx deploy treasury
 dfx deploy proposals
@@ -78,7 +80,7 @@ open http://localhost:5173
 ### System Design Principles
 
 #### 1. Microservices Architecture
-The system uses a modular approach with six specialized canisters:
+The system uses a modular approach with eight specialized canisters:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -94,10 +96,18 @@ The system uses a modular approach with six specialized canisters:
                 │Canister │ │Canister│ │Canister │ │Canist.│
                 │(Rewards)│ │(Finance)│ │(Mgmt)   │ │(Files)│
                 └─────────┘ └────────┘ └─────────┘ └───────┘
+                       │                           │
+                ┌──────▼──┐                 ┌──────▼──────┐
+                │   DAO   │                 │ Analytics   │
+                │Registry │                 │ Canister    │
+                │(Discovery)               │ (Metrics)   │
+                └─────────┘                 └─────────────┘
 ```
 
 #### 2. Separation of Concerns
 - **Main Backend (dao_backend)**: User management, coordination, and admin operations
+- **DAO Registry (dao_registry)**: Global DAO discovery, search, and categorization
+- **Analytics (dao_analytics)**: Platform metrics, event tracking, and historical data
 - **Governance**: Voting mechanisms, proposal lifecycle, and decision execution
 - **Staking**: Token locking, reward distribution, and voting power calculation
 - **Treasury**: Financial operations, multi-sig wallets, and fund management

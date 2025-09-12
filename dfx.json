@@ -4,12 +4,17 @@
       "main": "src/dao_backend/main.mo",
       "type": "motoko"
     },
+    "dao_registry": {
+      "main": "src/dao_backend/dao_registry/main.mo",
+      "type": "motoko"
+    },
     "governance": {
       "main": "src/dao_backend/governance/main.mo",
       "type": "motoko",
       "dependencies": [
         "dao_backend",
-        "staking"
+        "staking",
+        "dao_registry"
       ]
     },
     "staking": {
@@ -29,14 +34,20 @@
       "type": "motoko",
       "init": { "args": "(null, false)" }
     },
+    "dao_analytics": {
+      "main": "src/dao_backend/analytics/main.mo",
+      "type": "motoko"
+    },
     "dao_frontend": {
       "dependencies": [
         "dao_backend",
+        "dao_registry",
         "governance",
         "staking",
         "treasury",
         "proposals",
-        "assets"
+        "assets",
+        "dao_analytics"
       ],
       "source": [
         "src/dao_frontend/dist"
