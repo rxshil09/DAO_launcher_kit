@@ -11,6 +11,8 @@ import Float "mo:base/Float";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
+import Blob "mo:base/Blob";
+import Nat64 "mo:base/Nat64";
 
 import Types "../shared/types";
 
@@ -59,6 +61,41 @@ persistent actor TreasuryCanister {
     type TreasuryError = Types.TreasuryError;
     type CommonError = Types.CommonError;
 
+    // ICRC-1/2 Ledger interface (minimal subset)
+    type Account = { owner : Principal; subaccount : ?Blob };
+    type TransferError = {
+        #BadFee : { expected_fee : Nat };
+        #BadBurn : { min_burn_amount : Nat };
+        #InsufficientFunds : { balance : Nat };
+        #TooOld;
+        #CreatedInFuture : { ledger_time : Nat64 };
+        #TemporarilyUnavailable;
+        #Duplicate : { duplicate_of : Nat };
+        #GenericError : { error_code : Nat; message : Text };
+    };
+    type TransferResult = { #ok : Nat; #err : TransferError };
+    type TransferArg = {
+        from_subaccount : ?Blob;
+        to : Account;
+        amount : Nat;
+        fee : ?Nat;
+        memo : ?Blob;
+        created_at_time : ?Nat64;
+    };
+    type TransferFromArgs = {
+        from : Account;
+        to : Account;
+        amount : Nat;
+        fee : ?Nat;
+        memo : ?Blob;
+        created_at_time : ?Nat64;
+        spender_subaccount : ?Blob;
+    };
+    type Ledger = actor {
+        icrc1_transfer : shared TransferArg -> async TransferResult;
+        icrc2_transfer_from : shared TransferFromArgs -> async TransferResult;
+    };
+
     // Stable storage for upgrade persistence
     // Core financial data that must survive canister upgrades
     private var totalBalance : TokenAmount = 0;
@@ -81,6 +118,9 @@ persistent actor TreasuryCanister {
     // Analytics integration
     private var analyticsCanisterId : ?Principal = null;
     private transient var analyticsCanister : ?AnalyticsService = null;
+    // Ledger integration
+    private var ledgerCanisterId : ?Principal = null;
+    private transient var ledger : ?Ledger = null;
 
     // System functions for upgrades
     system func preupgrade() {
@@ -109,6 +149,11 @@ persistent actor TreasuryCanister {
             };
             case null {};
         };
+        // Restore ledger canister reference if available
+        switch (ledgerCanisterId) {
+            case (?id) { ledger := ?(actor (Principal.toText(id)) : Ledger) };
+            case null {};
+        };
     };
 
     // Set analytics canister reference
@@ -118,12 +163,41 @@ persistent actor TreasuryCanister {
         #ok()
     };
 
+    // Set ledger canister reference
+    public shared(_msg) func setLedgerCanister(ledger_id: Principal) : async Result<(), Text> {
+        ledgerCanisterId := ?ledger_id;
+        ledger := ?(actor (Principal.toText(ledger_id)) : Ledger);
+        #ok()
+    };
+
     // Public functions
 
     // Deposit tokens to treasury
     public shared(msg) func deposit(amount: TokenAmount, description: Text) : async Result<Nat, Text> {
         if (amount == 0) {
             return #err("Amount must be greater than 0");
+        };
+
+        // Pull funds from the caller into the treasury account via ICRC-2
+        switch (ledger) {
+            case (?l) {
+                let from : Account = { owner = msg.caller; subaccount = null };
+                let to : Account = { owner = Principal.fromActor(TreasuryCanister); subaccount = null };
+                let tf = await l.icrc2_transfer_from({
+                    from = from;
+                    to = to;
+                    amount = amount;
+                    fee = null;
+                    memo = null;
+                    created_at_time = null;
+                    spender_subaccount = null;
+                });
+                switch (tf) {
+                    case (#ok _) {};
+                    case (#err e) { return #err("Ledger transfer_from failed: " # debug_show(e)) };
+                };
+            };
+            case null { return #err("Ledger not configured for treasury") };
         };
 
         let transactionId = nextTransactionId;
@@ -200,9 +274,20 @@ persistent actor TreasuryCanister {
 
         transactions.put(transactionId, transaction);
 
-        // Execute withdrawal
-        switch (await executeWithdrawal(transactionId)) {
-            case (#ok(_)) {
+        // Execute withdrawal on ledger first
+        switch (ledger) {
+            case (?l) {
+                let toAcct : Account = { owner = recipient; subaccount = null };
+                let tr = await l.icrc1_transfer({
+                    from_subaccount = null;
+                    to = toAcct;
+                    amount = amount;
+                    fee = null;
+                    memo = null;
+                    created_at_time = null;
+                });
+                switch (tr) {
+                    case (#ok _) {
                 // Update balances
                 totalBalance -= amount;
                 availableBalance -= amount;
@@ -233,10 +318,10 @@ persistent actor TreasuryCanister {
                     };
                     case null {};
                 };
-                
-                #ok(transactionId)
-            };
-            case (#err(error)) {
+                    
+                    #ok(transactionId)
+                };
+                    case (#err e) {
                 let failedTransaction = {
                     id = transaction.id;
                     transactionType = transaction.transactionType;
@@ -249,9 +334,12 @@ persistent actor TreasuryCanister {
                     status = #failed;
                 };
                 transactions.put(transactionId, failedTransaction);
-                #err(error)
+                        #err("Ledger transfer failed: " # debug_show(e))
+                    };
+                };
             };
-        }
+            case null { return #err("Ledger not configured for treasury") };
+        };
     };
 
     // Lock tokens for specific purposes (e.g., staking rewards)

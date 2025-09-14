@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDAOManagement } from '../context/DAOManagementContext';
+import { useActors } from '../context/ActorContext';
+import { Principal } from '@dfinity/principal';
 import BackgroundParticles from './BackgroundParticles';
 import DAOCard from './DAOCard';
 import Toast from './Toast';
@@ -23,11 +25,19 @@ import {
 const DAODashboard: React.FC = () => {
   const { isAuthenticated, principal, loading: authLoading } = useAuth();
   const { daos, loading, error, fetchDAOs } = useDAOManagement();
+  const actors = useActors();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [toast, setToast] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Ledger balances + approvals
+  const [decimals, setDecimals] = useState<number>(8);
+  const [balances, setBalances] = useState<{ user: bigint; treasury: bigint; staking: bigint }>({ user: 0n, treasury: 0n, staking: 0n });
+  const [approvals, setApprovals] = useState<{ treasuryAmount: string; stakingAmount: string }>({ treasuryAmount: '', stakingAmount: '' });
+  const [approving, setApproving] = useState<{ treasury: boolean; staking: boolean }>({ treasury: false, staking: false });
+  const [ledgerError, setLedgerError] = useState<string>('');
 
   const categories = ['All', 'DeFi', 'Gaming', 'Social', 'NFT', 'Infrastructure'];
 
@@ -72,6 +82,84 @@ const DAODashboard: React.FC = () => {
       fetchDAOs();
     }
   }, [isAuthenticated, principal]);
+
+  // Helpers for ledger ops
+  const toAccount = (ownerText: string) => ({ owner: Principal.fromText(ownerText), subaccount: [] as [] });
+  const fmt = (amt: bigint) => {
+    try {
+      const d = typeof decimals === 'number' ? decimals : 8;
+      const s = amt.toString();
+      const pad = s.padStart(d + 1, '0');
+      const intPart = pad.slice(0, -d);
+      const frac = pad.slice(-d).replace(/0+$/, '');
+      return frac ? `${intPart}.${frac}` : intPart;
+    } catch {
+      return '0';
+    }
+  };
+  const parseAmount = (s: string) => {
+    if (!s) return 0n;
+    const d = typeof decimals === 'number' ? decimals : 8;
+    const [i, f = ''] = String(s).split('.');
+    const frac = (f + '0'.repeat(d)).slice(0, d);
+    return BigInt(i || '0') * (10n ** BigInt(d)) + BigInt(frac || '0');
+  };
+
+  const refreshBalances = async () => {
+    if (!actors || !actors.ledger || !principal) return;
+    setLedgerError('');
+    try {
+      try {
+        const d = await (actors.ledger as any).icrc1_decimals();
+        if (typeof d === 'number') setDecimals(d);
+      } catch (_) {}
+
+      const userOwner = toAccount(principal);
+      const TREAS = (import.meta as any).env.VITE_CANISTER_ID_TREASURY as string | undefined;
+      const STAKE = (import.meta as any).env.VITE_CANISTER_ID_STAKING as string | undefined;
+      const [u, t, s] = await Promise.all([
+        (actors.ledger as any).icrc1_balance_of(userOwner),
+        TREAS ? (actors.ledger as any).icrc1_balance_of(toAccount(TREAS)) : Promise.resolve(0n),
+        STAKE ? (actors.ledger as any).icrc1_balance_of(toAccount(STAKE)) : Promise.resolve(0n),
+      ]);
+      setBalances({ user: BigInt(u), treasury: BigInt(t), staking: BigInt(s) });
+    } catch (e: any) {
+      console.error('Failed to fetch balances', e);
+      setLedgerError('Failed to load token balances');
+    }
+  };
+
+  const approveSpender = async (spenderKey: 'treasury' | 'staking') => {
+    if (!actors || !actors.ledger) return;
+    const amountStr = approvals[spenderKey + 'Amount' as keyof typeof approvals] as string;
+    if (!amountStr) return;
+    const amount = parseAmount(amountStr);
+    const spenderId = (import.meta as any).env[`VITE_CANISTER_ID_${spenderKey.toUpperCase()}`] as string | undefined;
+    if (!spenderId) { setLedgerError(`Missing canister id for ${spenderKey}`); return; }
+    setApproving((s) => ({ ...s, [spenderKey]: true }));
+    setLedgerError('');
+    try {
+      const res = await (actors.ledger as any).icrc2_approve({
+        spender: { owner: Principal.fromText(spenderId), subaccount: [] },
+        amount,
+        expires_at: [],
+        expected_allowance: [],
+        fee: [],
+        memo: [],
+        from_subaccount: [],
+        created_at_time: [],
+      });
+      if ('Err' in res || 'err' in res) throw new Error(JSON.stringify(res));
+      await refreshBalances();
+    } catch (e: any) {
+      console.error('Approve failed', e);
+      setLedgerError(`Approve failed: ${e.message || e}`);
+    } finally {
+      setApproving((s) => ({ ...s, [spenderKey]: false }));
+    }
+  };
+
+  useEffect(() => { refreshBalances(); }, [actors, principal]);
 
   // Listen for storage changes to update DAOs when created in other tabs
   React.useEffect(() => {
@@ -162,6 +250,80 @@ const DAODashboard: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Token Balances */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+        >
+          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-xl">
+            <div className="text-sm text-gray-400 font-mono mb-1">MY TOKEN BALANCE</div>
+            <div className="text-2xl font-bold">{fmt(balances.user)}</div>
+          </div>
+          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-xl">
+            <div className="text-sm text-gray-400 font-mono mb-1">TREASURY BALANCE</div>
+            <div className="text-2xl font-bold">{fmt(balances.treasury)}</div>
+          </div>
+          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-xl">
+            <div className="text-sm text-gray-400 font-mono mb-1">STAKING BALANCE</div>
+            <div className="text-2xl font-bold">{fmt(balances.staking)}</div>
+          </div>
+        </motion.div>
+
+        {/* Ledger Approvals */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+        >
+          <div className="bg-gray-900/50 border border-blue-500/30 p-6 rounded-xl">
+            <h3 className="text-white font-bold mb-3 font-mono">Approve Treasury</h3>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                placeholder="Amount"
+                value={approvals.treasuryAmount}
+                onChange={(e) => setApprovals({ ...approvals, treasuryAmount: e.target.value })}
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono"
+              />
+              <button
+                onClick={() => approveSpender('treasury')}
+                disabled={approving.treasury}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono"
+              >
+                {approving.treasury ? 'Approving...' : 'Approve'}
+              </button>
+            </div>
+          </div>
+          <div className="bg-gray-900/50 border border-blue-500/30 p-6 rounded-xl">
+            <h3 className="text-white font-bold mb-3 font-mono">Approve Staking</h3>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                placeholder="Amount"
+                value={approvals.stakingAmount}
+                onChange={(e) => setApprovals({ ...approvals, stakingAmount: e.target.value })}
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono"
+              />
+              <button
+                onClick={() => approveSpender('staking')}
+                disabled={approving.staking}
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono"
+              >
+                {approving.staking ? 'Approving...' : 'Approve'}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+        {ledgerError && (
+          <div className="mb-8 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-mono">{ledgerError}</div>
+        )}
+
 
         {/* Portfolio Stats */}
         <motion.div

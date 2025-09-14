@@ -38,6 +38,11 @@
       "main": "src/dao_backend/analytics/main.mo",
       "type": "motoko"
     },
+    "icrc1_ledger": {
+      "type": "custom",
+      "wasm": "third_party/icrc1/ic-icrc1-ledger.wasm.gz",
+      "candid": "third_party/icrc1/ledger.did"
+    },
     "dao_frontend": {
       "dependencies": [
         "dao_backend",

@@ -94,7 +94,8 @@ export interface DAOFormData {
   tokenName: string;
   tokenSymbol: string;
   totalSupply: string;
-  initialPrice: string;
+  treasuryAllocation: string;
+  communityAllocation: string;
   votingPeriod: string;
   quorumThreshold: string;
   proposalThreshold: string;
