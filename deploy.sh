@@ -47,6 +47,52 @@ dfx deploy treasury
 dfx deploy proposals
 dfx deploy assets
 
+## Deploy ICRC-1 Ledger (token) with initial supply to Treasury
+echo "🪙 Deploying ICRC-1 ledger..."
+TREASURY_ID=$(dfx canister id treasury)
+DEPLOYER_PRINCIPAL=$(dfx identity get-principal)
+
+# Ensure local ledger artifacts exist
+if [ ! -f third_party/icrc1/ic-icrc1-ledger.wasm.gz ] || [ ! -f third_party/icrc1/ledger.did ]; then
+  echo "❌ Missing local ledger artifacts (third_party/icrc1)."
+  echo "   Please run: ./scripts/fetch-ledger.sh <TAG>"
+  echo "   Example:   ./scripts/fetch-ledger.sh release-2024-08-21"
+  exit 1
+fi
+
+LEDGER_INIT='(variant { Init = record {
+  token_name = "DAO Token";
+  token_symbol = "DAO";
+  decimals = opt (8 : nat8);
+  minting_account = record { owner = principal "'"${TREASURY_ID}"'"; subaccount = null };
+  transfer_fee = 10000;
+  metadata = vec {};
+  initial_balances = vec {
+    record { record { owner = principal "'"${TREASURY_ID}"'"; subaccount = null }; 1000000000000 : nat }
+  };
+  archive_options = record {
+    num_blocks_to_archive = 1000 : nat64;
+    max_transactions_per_response = null;
+    trigger_threshold = 2000 : nat64;
+    max_message_size_bytes = opt (2097152 : nat64);
+    cycles_for_archive_creation = opt (0 : nat64);
+    node_max_memory_size_bytes = null;
+    controller_id = principal "'"${DEPLOYER_PRINCIPAL}"'";
+    more_controller_ids = null
+  };
+  feature_flags = opt record { icrc2 = true };
+  index_principal = null
+} })'
+
+dfx deploy icrc1_ledger --argument "$LEDGER_INIT"
+
+LEDGER_ID=$(dfx canister id icrc1_ledger)
+echo "Ledger ID: ${LEDGER_ID}"
+
+# Wire ledger to staking and treasury
+dfx canister call staking setLedgerCanister "(principal \"${LEDGER_ID}\")"
+dfx canister call treasury setLedgerCanister "(principal \"${LEDGER_ID}\")"
+
 # Deploy Internet Identity canister
 echo "🔐 Deploying Internet Identity..."
 dfx deploy internet_identity
@@ -61,6 +107,7 @@ dfx generate treasury
 dfx generate proposals
 dfx generate assets
 dfx generate internet_identity
+dfx generate icrc1_ledger
 
 # Copy declarations to frontend location for build
 echo "📋 Copying declarations to frontend location..."

@@ -15,6 +15,7 @@ PROPOSALS_ID=$(dfx canister id proposals)
 ASSETS_ID=$(dfx canister id assets)
 DAO_FRONTEND_ID=$(dfx canister id dao_frontend)
 INTERNET_IDENTITY_ID=$(dfx canister id internet_identity)
+LEDGER_ID=$(dfx canister id icrc1_ledger 2>/dev/null || echo "")
 
 # Update .env.local file
 cat > src/dao_frontend/.env.local << EOF
@@ -29,6 +30,7 @@ VITE_CANISTER_ID_PROPOSALS=${PROPOSALS_ID}
 VITE_CANISTER_ID_ASSETS=${ASSETS_ID}
 VITE_CANISTER_ID_DAO_FRONTEND=${DAO_FRONTEND_ID}
 VITE_CANISTER_ID_INTERNET_IDENTITY=${INTERNET_IDENTITY_ID}
+VITE_CANISTER_ID_LEDGER=${LEDGER_ID}
 
 # Network configuration
 VITE_HOST=http://127.0.0.1:4943
@@ -47,5 +49,6 @@ echo "Proposals: ${PROPOSALS_ID}"
 echo "Assets: ${ASSETS_ID}"
 echo "Frontend: ${DAO_FRONTEND_ID}"
 echo "Internet Identity: ${INTERNET_IDENTITY_ID}"
+echo "Ledger: ${LEDGER_ID}"
 echo ""
 echo "🔄 Rebuild frontend with: cd src/dao_frontend && npm run build"

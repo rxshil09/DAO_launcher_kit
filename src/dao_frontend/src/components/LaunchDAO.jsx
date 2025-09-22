@@ -75,7 +75,8 @@ const LaunchDAO = () => {
     tokenName: '',
     tokenSymbol: '',
     totalSupply: '',
-    initialPrice: '',
+    treasuryAllocation: '40',
+    communityAllocation: '60',
     
     // Step 4: Governance
     votingPeriod: '604800', // 7 days in seconds
@@ -255,8 +256,11 @@ const LaunchDAO = () => {
           newErrors.totalSupply = "Total supply must be greater than 0";
         }
         
-        if (!formData.initialPrice || parseFloat(formData.initialPrice) <= 0) {
-          newErrors.initialPrice = "Initial price must be greater than 0";
+        // Validate distribution percentages
+        const treasuryPct = parseInt(formData.treasuryAllocation) || 0;
+        const communityPct = parseInt(formData.communityAllocation) || 0;
+        if (treasuryPct + communityPct !== 100) {
+          newErrors.distributionError = "Treasury and Community allocations must total 100%";
         }
         break;
         
@@ -576,18 +580,40 @@ const LaunchDAO = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Initial Price (USD) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.initialPrice}
-                  onChange={(e) => handleInputChange('initialPrice', e.target.value)}
-                  placeholder="1.00"
-                  className={`w-full px-4 py-3 bg-gray-800 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono ${
-                    errors.initialPrice ? 'border-red-500' : 'border-gray-600'
-                  }`}
-                />
-                {errors.initialPrice && <p className="text-red-400 text-sm mt-1 font-mono">{errors.initialPrice}</p>}
+                <label className="block text-sm font-semibold text-gray-300 mb-2 font-mono">Initial Distribution Strategy *</label>
+                <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
+                  <div className="text-sm text-gray-300 mb-3 font-mono">
+                    Token pricing will be determined by market dynamics. Configure how tokens are initially distributed:
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400 font-mono">Treasury (%)</label>
+                      <input
+                        type="number"
+                        max="100"
+                        min="0"
+                        value={formData.treasuryAllocation || 40}
+                        onChange={(e) => handleInputChange('treasuryAllocation', e.target.value)}
+                        className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 font-mono">Community (%)</label>
+                      <input
+                        type="number"
+                        max="100"
+                        min="0"
+                        value={formData.communityAllocation || 60}
+                        onChange={(e) => handleInputChange('communityAllocation', e.target.value)}
+                        className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-xs text-cyan-400 mt-2 font-mono">
+                    💡 Price discovery happens through trading. Focus on utility and community value.
+                  </div>
+                  {errors.distributionError && <p className="text-red-400 text-sm mt-1 font-mono">{errors.distributionError}</p>}
+                </div>
               </div>
             </div>
           </div>
@@ -780,7 +806,7 @@ const LaunchDAO = () => {
                   <div className="space-y-1">
                     <p><span className="text-gray-400">Token:</span> <span className="text-white">{formData.tokenName} ({formData.tokenSymbol})</span></p>
                     <p><span className="text-gray-400">Supply:</span> <span className="text-white">{parseInt(formData.totalSupply || 0).toLocaleString()}</span></p>
-                    <p><span className="text-gray-400">Price:</span> <span className="text-white">${formData.initialPrice}</span></p>
+                    <p><span className="text-gray-400">Distribution:</span> <span className="text-white">Treasury {formData.treasuryAllocation}% / Community {formData.communityAllocation}%</span></p>
                   </div>
                 </div>
 

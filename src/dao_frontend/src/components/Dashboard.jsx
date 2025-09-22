@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useActors } from '../context/ActorContext';
+import { Principal } from '@dfinity/principal';
 import BackgroundParticles from './BackgroundParticles';
 import { 
   TrendingUp, 
@@ -29,16 +31,113 @@ import {
 
 const Dashboard = () => {
   const { isAuthenticated, principal, loading } = useAuth();
+  const actors = useActors();
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [walletConnected, setWalletConnected] = useState(false);
+  const [decimals, setDecimals] = useState(8);
+  const [balances, setBalances] = useState({ user: 0n, treasury: 0n, staking: 0n });
+  const [approvals, setApprovals] = useState({ treasuryAmount: '', stakingAmount: '' });
+  const [ledgerError, setLedgerError] = useState('');
+  const [approving, setApproving] = useState({ treasury: false, staking: false });
+
+  const toAccount = (ownerText) => ({ owner: Principal.fromText(ownerText), subaccount: [] });
+  const fmt = (amt) => {
+    try {
+      const d = typeof decimals === 'number' ? decimals : 8;
+      const s = amt.toString();
+      const pad = s.padStart(d + 1, '0');
+      const intPart = pad.slice(0, -d);
+      const frac = pad.slice(-d).replace(/0+$/, '');
+      return frac ? `${intPart}.${frac}` : intPart;
+    } catch {
+      return '0';
+    }
+  };
+
+  const refreshBalances = async () => {
+    if (!actors || !actors.ledger) return;
+    setLedgerError('');
+    try {
+      // decimals
+      try {
+        const d = await actors.ledger.icrc1_decimals();
+        if (typeof d === 'number') setDecimals(d);
+      } catch (_) {
+        // fallback via metadata (optional)
+        try {
+          const md = await actors.ledger.icrc1_metadata();
+          const dec = md.find(([k]) => k === 'icrc1:decimals');
+          if (dec && Array.isArray(dec[1].Nat)) setDecimals(Number(dec[1].Nat));
+        } catch (_) {}
+      }
+
+      const userOwner = toAccount(principal);
+      const treasuryId = import.meta.env.VITE_CANISTER_ID_TREASURY;
+      const stakingId = import.meta.env.VITE_CANISTER_ID_STAKING;
+      const [u, t, s] = await Promise.all([
+        actors.ledger.icrc1_balance_of(userOwner),
+        treasuryId ? actors.ledger.icrc1_balance_of(toAccount(treasuryId)) : Promise.resolve(0n),
+        stakingId ? actors.ledger.icrc1_balance_of(toAccount(stakingId)) : Promise.resolve(0n)
+      ]);
+      setBalances({ user: BigInt(u), treasury: BigInt(t), staking: BigInt(s) });
+    } catch (e) {
+      console.error('Failed to fetch balances', e);
+      setLedgerError('Failed to load token balances');
+    }
+  };
+
+  const parseAmount = (s) => {
+    if (!s) return 0n;
+    const d = typeof decimals === 'number' ? decimals : 8;
+    const [i, f = ''] = String(s).split('.');
+    const frac = (f + '0'.repeat(d)).slice(0, d);
+    return BigInt(i || '0') * BigInt(10) ** BigInt(d) + BigInt(frac || '0');
+  };
+
+  const approveSpender = async (spenderKey) => {
+    if (!actors || !actors.ledger) return;
+    const amountStr = approvals[spenderKey + 'Amount'];
+    if (!amountStr) return;
+    const amount = parseAmount(amountStr);
+    const spenderId = import.meta.env[`VITE_CANISTER_ID_${spenderKey.toUpperCase()}`];
+    if (!spenderId) { setLedgerError(`Missing canister id for ${spenderKey}`); return; }
+    setApproving((s) => ({ ...s, [spenderKey]: true }));
+    setLedgerError('');
+    try {
+      const res = await actors.ledger.icrc2_approve({
+        spender: { owner: Principal.fromText(spenderId), subaccount: [] },
+        amount,
+        expires_at: [],
+        expected_allowance: [],
+        fee: [],
+        memo: [],
+        from_subaccount: [],
+        created_at_time: [],
+      });
+      if ('err' in res) throw new Error(JSON.stringify(res.err));
+      await refreshBalances();
+    } catch (e) {
+      console.error('Approve failed', e);
+      setLedgerError(`Approve failed: ${e.message || e}`);
+    } finally {
+      setApproving((s) => ({ ...s, [spenderKey]: false }));
+    }
+  };
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       navigate('/signin');
     }
   }, [isAuthenticated, loading, navigate]);
+
+  useEffect(() => {
+    if (actors && principal) {
+      refreshBalances();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actors, principal]);
 
   const connectWallet = async () => {
     // Simulate wallet connection
@@ -142,10 +241,10 @@ const Dashboard = () => {
   ];
 
   const portfolioStats = [
-    { label: 'Total Investment', value: '$12,450', change: '+12.5%', trend: 'up' },
-    { label: 'Active Projects', value: '8', change: '+2', trend: 'up' },
-    { label: 'Monthly Returns', value: '$287', change: '+8.2%', trend: 'up' },
-    { label: 'DAO Tokens', value: '1,247', change: '-3.1%', trend: 'down' }
+    { label: 'My Token Balance', value: fmt(balances.user), change: '', trend: 'up' },
+    { label: 'Treasury Balance', value: fmt(balances.treasury), change: '', trend: 'up' },
+    { label: 'Staking Balance', value: fmt(balances.staking), change: '', trend: 'up' },
+    { label: 'Decimals', value: String(decimals), change: '', trend: 'up' }
   ];
 
   const filteredProjects = projects.filter(project => {
@@ -225,6 +324,58 @@ const Dashboard = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Ledger Approvals */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+        >
+          <div className="bg-gray-900/50 border border-cyan-500/30 p-6 rounded-xl backdrop-blur-sm">
+            <h3 className="text-white font-bold mb-4 font-mono flex items-center"><Wallet className="w-4 h-4 mr-2"/>Approve Treasury</h3>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                placeholder="Amount"
+                value={approvals.treasuryAmount}
+                onChange={(e) => setApprovals({ ...approvals, treasuryAmount: e.target.value })}
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono"
+              />
+              <button
+                onClick={() => approveSpender('treasury')}
+                disabled={approving.treasury}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg hover:from-cyan-600 hover:to-purple-700 font-mono"
+              >
+                {approving.treasury ? 'Approving...' : 'Approve'}
+              </button>
+            </div>
+          </div>
+          <div className="bg-gray-900/50 border border-cyan-500/30 p-6 rounded-xl backdrop-blur-sm">
+            <h3 className="text-white font-bold mb-4 font-mono flex items-center"><Shield className="w-4 h-4 mr-2"/>Approve Staking</h3>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                min="0"
+                placeholder="Amount"
+                value={approvals.stakingAmount}
+                onChange={(e) => setApprovals({ ...approvals, stakingAmount: e.target.value })}
+                className="flex-1 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white font-mono"
+              />
+              <button
+                onClick={() => approveSpender('staking')}
+                disabled={approving.staking}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-purple-600 text-white rounded-lg hover:from-cyan-600 hover:to-purple-700 font-mono"
+              >
+                {approving.staking ? 'Approving...' : 'Approve'}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+        {ledgerError && (
+          <div className="mb-8 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-mono">{ledgerError}</div>
+        )}
 
         {/* Portfolio Stats - INSTANT HOVER SCALING */}
         <motion.div

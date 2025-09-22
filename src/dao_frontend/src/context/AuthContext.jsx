@@ -24,7 +24,23 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const client = await AuthClient.create();
+        // Ensure WebCrypto (SubtleCrypto) availability; polyfill if needed
+        let cryptoImpl = (typeof window !== 'undefined' && window.crypto && window.crypto.subtle)
+          ? window.crypto
+          : undefined;
+        if (!cryptoImpl) {
+          try {
+            const { Crypto } = await import('@peculiar/webcrypto');
+            cryptoImpl = new Crypto();
+            if (typeof globalThis !== 'undefined') {
+              // @ts-ignore
+              globalThis.crypto = cryptoImpl;
+            }
+          } catch (e) {
+            console.warn('WebCrypto polyfill not available:', e);
+          }
+        }
+        const client = await AuthClient.create({ crypto: cryptoImpl });
         setAuthClient(client);
 
         // Check if user is already authenticated
@@ -57,23 +73,39 @@ export const AuthProvider = ({ children }) => {
 
   // Login function with Internet Identity using popup
   const login = async () => {
-    if (!authClient) {
-      throw new Error('Auth client not initialized');
-    }
-
     try {
       setLoading(true);
+      // Lazily initialize if not yet available
+      let client = authClient;
+      if (!client) {
+        let cryptoImpl = (typeof window !== 'undefined' && window.crypto && window.crypto.subtle)
+          ? window.crypto
+          : undefined;
+        if (!cryptoImpl) {
+          try {
+            const { Crypto } = await import('@peculiar/webcrypto');
+            cryptoImpl = new Crypto();
+            if (typeof globalThis !== 'undefined') {
+              // @ts-ignore
+              globalThis.crypto = cryptoImpl;
+            }
+          } catch (e) {
+            console.warn('WebCrypto polyfill not available:', e);
+          }
+        }
+        client = await AuthClient.create({ crypto: cryptoImpl });
+        setAuthClient(client);
+      }
       
       const identityProvider = import.meta.env.VITE_DFX_NETWORK === "ic" 
         ? "https://identity.ic0.app"
         : `http://${import.meta.env.VITE_CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`;
 
 
-      await authClient.login({
+      await client.login({
         identityProvider,
         onSuccess: async () => {
-
-          const currentIdentity = authClient.getIdentity();
+          const currentIdentity = client.getIdentity();
           const principal = currentIdentity.getPrincipal();
 
 

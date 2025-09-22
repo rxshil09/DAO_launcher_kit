@@ -37,7 +37,8 @@ module {
         tokenName: Text;
         tokenSymbol: Text;
         totalSupply: Nat;
-        initialPrice: Nat;
+        treasuryAllocation: Nat; // Percentage for treasury
+        communityAllocation: Nat; // Percentage for community
         votingPeriod: Nat;
         quorumThreshold: Nat;
         proposalThreshold: Nat;
