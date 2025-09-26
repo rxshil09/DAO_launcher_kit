@@ -50,6 +50,7 @@ dfx deploy staking
 dfx deploy treasury
 dfx deploy proposals
 dfx deploy assets
+dfx deploy icrc1_ledger
 
 # Deploy governance with proper initialization
 dfx deploy governance --argument "(principal \"$(dfx canister id dao_backend)\", principal \"$(dfx canister id staking)\")"
@@ -80,7 +81,7 @@ open http://localhost:5173
 ### System Design Principles
 
 #### 1. Microservices Architecture
-The system uses a modular approach with eight specialized canisters:
+The system uses a modular approach with nine specialized canisters:
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -113,6 +114,7 @@ The system uses a modular approach with eight specialized canisters:
 - **Treasury**: Financial operations, multi-sig wallets, and fund management
 - **Proposals**: Proposal templates, categorization, and execution logic
 - **Assets**: File storage, metadata management, and content distribution
+- **ICRC1 Ledger**: Standard token operations, balance tracking, and transfers
 
 #### 3. Upgrade Safety
 All canisters implement upgrade-safe patterns:

@@ -29,6 +29,7 @@ A comprehensive DAO (Decentralized Autonomous Organization) creation and managem
 - **📁 Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
 - **🔍 DAO Registry**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=5mfqz-3yaaa-aaaao-a4pna-cai
 - **📊 DAO Analytics**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=5fg3f-nqaaa-aaaao-a4pmq-cai
+- **🪙 ICRC1 Ledger**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=zpwzl-tiaaa-aaaao-a4pwa-cai
 
 ### Mainnet Canister IDs
 ```
@@ -41,6 +42,7 @@ Proposals:       772tz-taaaa-aaaao-a4pdq-cai
 Assets:          uulqk-jaaaa-aaaao-a4o7q-cai
 DAO Registry:    5mfqz-3yaaa-aaaao-a4pna-cai
 DAO Analytics:   5fg3f-nqaaa-aaaao-a4pmq-cai
+ICRC1 Ledger:    zpwzl-tiaaa-aaaao-a4pwa-cai
 Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
 ```
 
@@ -56,6 +58,7 @@ Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
 - **Staking Mechanism**: Flexible token staking with customizable periods and reward structures
 - **Asset Management**: Advanced asset handling and portfolio management
 - **Proposal Framework**: Full lifecycle proposal management with various proposal types
+- **ICRC1 Token Standard**: Native support for ICRC1 tokens with full ledger integration for seamless token operations
 
 ### Discovery & Analytics
 - **DAO Explorer**: Global registry to discover and join DAOs created by other users
@@ -100,6 +103,10 @@ src/dao_backend/
 │   └── main.test.mo      # Asset management tests
 └── shared/               # Common types and utilities
     └── types.mo          # Shared data structures
+
+third_party/icrc1/         # ICRC1 Token Standard Implementation
+├── ic-icrc1-ledger.wasm.gz # Pre-built ICRC1 ledger canister
+└── ledger.did             # ICRC1 ledger interface definition
 ```
 
 ### Frontend Application Structure
@@ -139,6 +146,7 @@ dao_backend       ← Core coordinator
 ├── treasury      ← Independent treasury operations
 ├── proposals     ← Proposal management
 ├── assets        ← Asset storage and management
+├── icrc1_ledger  ← ICRC1 token standard implementation
 └── internet_identity  ← Authentication provider
 ```
 
@@ -235,6 +243,7 @@ VITE_CANISTER_ID_PROPOSALS=772tz-taaaa-aaaao-a4pdq-cai
 VITE_CANISTER_ID_ASSETS=uulqk-jaaaa-aaaao-a4o7q-cai
 VITE_CANISTER_ID_DAO_REGISTRY=5mfqz-3yaaa-aaaao-a4pna-cai
 VITE_CANISTER_ID_DAO_ANALYTICS=5fg3f-nqaaa-aaaao-a4pmq-cai
+VITE_CANISTER_ID_ICRC1_LEDGER=zpwzl-tiaaa-aaaao-a4pwa-cai
 VITE_CANISTER_ID_INTERNET_IDENTITY=7wzyf-fiaaa-aaaao-a4pca-cai
 VITE_HOST=https://icp0.io
 VITE_DFX_NETWORK=ic
@@ -556,5 +565,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 🌐 **Live on IC Mainnet**: [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/)
 
-*Built with ❤️ on the Internet Computer blockchain*
+
 

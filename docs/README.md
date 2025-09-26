@@ -98,6 +98,7 @@ Welcome to the comprehensive documentation for the DAO Launcher Kit! This collec
 ├── Treasury API
 ├── Proposals API
 ├── Assets API
+├── ICRC1 Ledger API
 ├── Error Handling
 ├── Type Definitions
 └── SDK Examples

@@ -11,6 +11,7 @@
 - [Treasury API](#treasury-api)
 - [Proposals API](#proposals-api)
 - [Assets API](#assets-api)
+- [ICRC1 Ledger API](#icrc1-ledger-api)
 - [Error Handling](#error-handling)
 - [Type Definitions](#type-definitions)
 
@@ -33,6 +34,7 @@ IC Mainnet: https://{canister_id}.ic0.app
 - **treasury**: Financial operations and multi-signature wallets
 - **proposals**: Proposal lifecycle management and templates
 - **assets**: File storage and metadata management
+- **icrc1_ledger**: ICRC1 token standard implementation for native token operations
 - **internet_identity**: Authentication service (provided by DFINITY)
 
 ## Authentication
@@ -746,6 +748,103 @@ Gets token balance for an account.
 **Parameters:**
 ```motoko
 balanceOf(account: Principal) : async TokenAmount
+```
+
+## ICRC1 Ledger API
+
+The ICRC1 ledger provides standard token operations following the ICRC1 token standard.
+
+### Get Balance
+Queries the balance of tokens for a specific account.
+
+**Endpoint:** `icrc1_ledger.icrc1_balance_of`
+
+**Parameters:**
+```motoko
+icrc1_balance_of(account: Account) : async Tokens
+```
+
+**Example:**
+```javascript
+const balance = await actors.icrc1Ledger.icrc1_balance_of({
+  owner: Principal.fromText("rdmx6-jaaaa-aaaaa-aaadq-cai"),
+  subaccount: []
+});
+```
+
+### Transfer Tokens
+Transfers tokens from the caller to another account.
+
+**Endpoint:** `icrc1_ledger.icrc1_transfer`
+
+**Parameters:**
+```motoko
+icrc1_transfer(args: TransferArgs) : async TransferResult
+```
+
+**Example:**
+```javascript
+const transferResult = await actors.icrc1Ledger.icrc1_transfer({
+  to: {
+    owner: Principal.fromText("rdmx6-jaaaa-aaaaa-aaadq-cai"),
+    subaccount: []
+  },
+  amount: 1000000n, // Amount in smallest token unit
+  fee: null,
+  memo: null,
+  from_subaccount: null,
+  created_at_time: null
+});
+```
+
+### Get Metadata
+Retrieves metadata information about the token.
+
+**Endpoint:** `icrc1_ledger.icrc1_metadata`
+
+**Parameters:**
+```motoko
+icrc1_metadata() : async MetaData
+```
+
+### Get Token Symbol
+Gets the token symbol.
+
+**Endpoint:** `icrc1_ledger.icrc1_symbol`
+
+**Parameters:**
+```motoko
+icrc1_symbol() : async Text
+```
+
+### Get Token Name
+Gets the token name.
+
+**Endpoint:** `icrc1_ledger.icrc1_name`
+
+**Parameters:**
+```motoko
+icrc1_name() : async Text
+```
+
+### Get Decimals
+Gets the number of decimal places for the token.
+
+**Endpoint:** `icrc1_ledger.icrc1_decimals`
+
+**Parameters:**
+```motoko
+icrc1_decimals() : async Nat8
+```
+
+### Get Total Supply
+Gets the total token supply.
+
+**Endpoint:** `icrc1_ledger.icrc1_total_supply`
+
+**Parameters:**
+```motoko
+icrc1_total_supply() : async Tokens
 ```
 
 ## Error Handling
