@@ -53,6 +53,8 @@ persistent actor DAOMain {
     type UserProfile = Types.UserProfile;
     type DAOStats = Types.DAOStats;
     type DAOConfig = Types.DAOConfig;
+    type DAOConfigStable = Types.DAOConfigStable;
+    type DAOConfigAllocations = Types.DAOConfigAllocations;
     type Activity = Types.Activity;
 
     // Typed interface for the Registry canister
@@ -69,7 +71,8 @@ persistent actor DAOMain {
     private var totalMembers : Nat = 0;
     private var userProfilesEntries : [(Principal, UserProfile)] = [];
     private var adminPrincipalsEntries : [Principal] = [];
-    private var daoConfig : ?DAOConfig = null;
+    private var daoConfig : ?DAOConfigStable = null;
+    private var daoConfigAllocations : ?DAOConfigAllocations = null;
 
     // Registry integration
     private var registryCanisterId : ?Principal = null;
@@ -79,6 +82,7 @@ persistent actor DAOMain {
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
     private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
     private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
+    private transient var cachedDaoConfig : ?DAOConfig = null;
 
     // Canister references for modular architecture
     // These maintain connections to other specialized canisters in the DAO ecosystem
@@ -253,7 +257,7 @@ persistent actor DAOMain {
 
         switch (registryCanister) {
             case (?registry) {
-                switch (daoConfig) {
+                switch (getCurrentDAOConfig()) {
                     case (?config) {
                         let result = await registry.registerDAO(
                             daoName,
@@ -330,17 +334,18 @@ persistent actor DAOMain {
         is_public: Bool;
         creation_date: Int;
     } {
-        let category = switch (daoConfig) {
+        let currentConfig = getCurrentDAOConfig();
+        let category = switch (currentConfig) {
             case (?config) ?config.category;
             case null null;
         };
         
-        let token_symbol = switch (daoConfig) {
+        let token_symbol = switch (currentConfig) {
             case (?config) ?config.tokenSymbol;
             case null null;
         };
         
-        let website = switch (daoConfig) {
+        let website = switch (currentConfig) {
             case (?config) ?config.website;
             case null null;
         };
@@ -357,12 +362,96 @@ persistent actor DAOMain {
         }
     };
 
+
+    private func defaultAllocations() : DAOConfigAllocations {
+        {
+            treasuryAllocation = 40;
+            communityAllocation = 60;
+        }
+    };
+
+    private func resolveAllocations() : DAOConfigAllocations {
+        switch (daoConfigAllocations) {
+            case (?alloc) alloc;
+            case null defaultAllocations();
+        }
+    };
+
+    private func toStableConfig(config: DAOConfig) : DAOConfigStable {
+        {
+            category = config.category;
+            website = config.website;
+            selectedModules = config.selectedModules;
+            moduleFeatures = config.moduleFeatures;
+            tokenName = config.tokenName;
+            tokenSymbol = config.tokenSymbol;
+            totalSupply = config.totalSupply;
+            initialPrice = config.initialPrice;
+            votingPeriod = config.votingPeriod;
+            quorumThreshold = config.quorumThreshold;
+            proposalThreshold = config.proposalThreshold;
+            fundingGoal = config.fundingGoal;
+            fundingDuration = config.fundingDuration;
+            minInvestment = config.minInvestment;
+            termsAccepted = config.termsAccepted;
+            kycRequired = config.kycRequired;
+        }
+    };
+
+    private func toRuntimeConfig(stableConfig: DAOConfigStable, allocations: DAOConfigAllocations) : DAOConfig {
+        {
+            category = stableConfig.category;
+            website = stableConfig.website;
+            selectedModules = stableConfig.selectedModules;
+            moduleFeatures = stableConfig.moduleFeatures;
+            tokenName = stableConfig.tokenName;
+            tokenSymbol = stableConfig.tokenSymbol;
+            totalSupply = stableConfig.totalSupply;
+            initialPrice = stableConfig.initialPrice;
+            treasuryAllocation = allocations.treasuryAllocation;
+            communityAllocation = allocations.communityAllocation;
+            votingPeriod = stableConfig.votingPeriod;
+            quorumThreshold = stableConfig.quorumThreshold;
+            proposalThreshold = stableConfig.proposalThreshold;
+            fundingGoal = stableConfig.fundingGoal;
+            fundingDuration = stableConfig.fundingDuration;
+            minInvestment = stableConfig.minInvestment;
+            termsAccepted = stableConfig.termsAccepted;
+            kycRequired = stableConfig.kycRequired;
+        }
+    };
+
+    private func getCurrentDAOConfig() : ?DAOConfig {
+        switch (cachedDaoConfig) {
+            case (?config) ?config;
+            case null {
+                switch (daoConfig) {
+                    case (?stableConfig) {
+                        let merged = toRuntimeConfig(stableConfig, resolveAllocations());
+                        cachedDaoConfig := ?merged;
+                        ?merged;
+                    };
+                    case null null;
+                }
+            };
+        }
+    };
+
+    private func persistDAOConfig(config: DAOConfig) {
+        daoConfig := ?toStableConfig(config);
+        daoConfigAllocations := ?{
+            treasuryAllocation = config.treasuryAllocation;
+            communityAllocation = config.communityAllocation;
+        };
+        cachedDaoConfig := ?config;
+    };
+
     // DAO configuration
     public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
         if (not isAdmin(msg.caller)) {
             return #err("Only admins can set DAO configuration");
         };
-        daoConfig := ?config;
+        persistDAOConfig(config);
         Debug.print("DAO configuration saved");
         
         // Auto-register with registry if configured and not already registered
@@ -498,7 +587,7 @@ persistent actor DAOMain {
     };
 
     public query func getDAOConfig() : async ?DAOConfig {
-        daoConfig
+        getCurrentDAOConfig()
     };
 
     public query func getUserProfile(userId: Principal) : async ?UserProfile {

@@ -1,4 +1,4 @@
-
+﻿
 // Hook to interact with DAO canisters
 import { useState } from 'react';
 import { useDAOAPI } from '../utils/daoAPI';
@@ -102,6 +102,7 @@ export const useDAOOperations = () => {
                 tokenName: daoConfig.tokenName,
                 tokenSymbol: daoConfig.tokenSymbol,
                 totalSupply: BigInt(daoConfig.totalSupply || 0),
+                initialPrice: BigInt(daoConfig.initialPrice || 0),
                 treasuryAllocation: BigInt(daoConfig.treasuryAllocation || 40),
                 communityAllocation: BigInt(daoConfig.communityAllocation || 60),
                 votingPeriod: toNanoseconds(daoConfig.votingPeriod || 0),

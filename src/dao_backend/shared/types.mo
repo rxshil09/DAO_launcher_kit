@@ -37,6 +37,7 @@ module {
         tokenName: Text;
         tokenSymbol: Text;
         totalSupply: Nat;
+        initialPrice: Nat; // Legacy field retained for upgrade compatibility
         treasuryAllocation: Nat; // Percentage for treasury
         communityAllocation: Nat; // Percentage for community
         votingPeriod: Nat;
@@ -47,6 +48,30 @@ module {
         minInvestment: Nat;
         termsAccepted: Bool;
         kycRequired: Bool;
+    };
+
+    public type DAOConfigStable = {
+        category: Text;
+        website: Text;
+        selectedModules: [Text];
+        moduleFeatures: [ModuleFeature];
+        tokenName: Text;
+        tokenSymbol: Text;
+        totalSupply: Nat;
+        initialPrice: Nat;
+        votingPeriod: Nat;
+        quorumThreshold: Nat;
+        proposalThreshold: Nat;
+        fundingGoal: Nat;
+        fundingDuration: Nat;
+        minInvestment: Nat;
+        termsAccepted: Bool;
+        kycRequired: Bool;
+    };
+
+    public type DAOConfigAllocations = {
+        treasuryAllocation: Nat;
+        communityAllocation: Nat;
     };
 
     // Token and Balance types
