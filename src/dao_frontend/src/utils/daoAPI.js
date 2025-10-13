@@ -43,9 +43,18 @@ export class DAOAPIWrapper {
     }
 
     // DAO Management APIs
-    async initializeDAO(name, description, initialAdmins) {
+    async initializeDAO(name, description, initialAdmins, registryId, analyticsId) {
+        // Import Principal if needed
+        const { Principal } = await import('@dfinity/principal');
+        
         return this.callAPI(
-            () => this.actors.daoBackend.initialize(name, description, initialAdmins),
+            () => this.actors.daoBackend.initialize(
+                name, 
+                description, 
+                initialAdmins,
+                registryId ? [Principal.fromText(registryId)] : [],
+                analyticsId ? [Principal.fromText(analyticsId)] : []
+            ),
             'Initialize DAO'
         );
     }
@@ -185,6 +194,20 @@ export class DAOAPIWrapper {
         return this.callAPI(
             () => this.actors.daoBackend.registerWithRegistry(),
             'Register with Registry'
+        );
+    }
+
+    async getRegistryDAOId() {
+        return this.callAPI(
+            () => this.actors.daoBackend.getRegistryDAOId(),
+            'Get Registry DAO ID'
+        );
+    }
+
+    async isRegisteredInRegistry() {
+        return this.callAPI(
+            () => this.actors.daoBackend.isRegisteredInRegistry(),
+            'Check Registry Registration Status'
         );
     }
 

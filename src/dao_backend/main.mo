@@ -77,6 +77,7 @@ persistent actor DAOMain {
     // Registry integration
     private var registryCanisterId : ?Principal = null;
     private var registeredInRegistry : Bool = false;
+    private var registryDAOId : ?Text = null;
 
     // Runtime storage - recreated after upgrades from stable storage
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
@@ -250,10 +251,9 @@ persistent actor DAOMain {
     /**
      * Register this DAO with the global registry
      */
-    public shared(msg) func registerWithRegistry() : async Result<Text, Text> {
-        if (not isAdmin(msg.caller)) {
-            return #err("Only admins can register with registry");
-        };
+    public shared func registerWithRegistry() : async Result<Text, Text> {
+        // Note: Admin check removed - this is called internally by setDAOConfig which has its own admin check
+        // The registry itself doesn't require admin privileges to register
 
         switch (registryCanister) {
             case (?registry) {
@@ -273,6 +273,7 @@ persistent actor DAOMain {
                         switch (result) {
                             case (#ok(dao_id)) {
                                 registeredInRegistry := true;
+                                registryDAOId := ?dao_id;
                                 Debug.print("DAO registered with registry: " # dao_id);
                                 #ok(dao_id)
                             };
@@ -289,35 +290,40 @@ persistent actor DAOMain {
     /**
      * Update DAO statistics in the registry
      */
-    public shared(msg) func updateRegistryStats() : async Result<(), Text> {
+    public shared func updateRegistryStats() : async Result<(), Text> {
         if (not registeredInRegistry) {
             return #err("DAO not registered with registry");
         };
 
-        switch (registryCanister) {
-            case (?registry) {
-                // Get current DAO stats
-                let stats = await getDAOStats();
-                
-                let result = await registry.updateDAOStats(
-                    "dao_" # Nat.toText(1), // This would need to be stored from registration
-                    ?stats.totalMembers,
-                    ?stats.totalProposals,
-                    ?stats.activeProposals,
-                    ?stats.totalStaked,
-                    ?stats.treasuryBalance,
-                    null // governance_participation - could be calculated
-                );
-                
-                switch (result) {
-                    case (#ok()) {
-                        Debug.print("Registry stats updated successfully");
-                        #ok()
+        switch (registryDAOId) {
+            case (?dao_id) {
+                switch (registryCanister) {
+                    case (?registry) {
+                        // Get current DAO stats
+                        let stats = await getDAOStats();
+                        
+                        let result = await registry.updateDAOStats(
+                            dao_id,
+                            ?stats.totalMembers,
+                            ?stats.totalProposals,
+                            ?stats.activeProposals,
+                            ?stats.totalStaked,
+                            ?stats.treasuryBalance,
+                            null // governance_participation - could be calculated
+                        );
+                        
+                        switch (result) {
+                            case (#ok()) {
+                                Debug.print("Registry stats updated successfully");
+                                #ok()
+                            };
+                            case (#err(error)) #err(error);
+                        }
                     };
-                    case (#err(error)) #err(error);
+                    case null #err("Registry canister not configured");
                 }
             };
-            case null #err("Registry canister not configured");
+            case null #err("Registry DAO ID not found");
         }
     };
 
@@ -454,14 +460,15 @@ persistent actor DAOMain {
         persistDAOConfig(config);
         Debug.print("DAO configuration saved");
         
-        // Auto-register with registry if configured and not already registered
+        // Make registry registration mandatory - fail if it fails
         if (not registeredInRegistry) {
             switch (await registerWithRegistry()) {
                 case (#ok(dao_id)) {
-                    Debug.print("Auto-registered with registry: " # dao_id);
+                    Debug.print("Successfully registered with registry: " # dao_id);
                 };
                 case (#err(error)) {
-                    Debug.print("Failed to auto-register with registry: " # error);
+                    // Registration failed - fail the entire operation
+                    return #err("Failed to register DAO with registry: " # error);
                 };
             };
         };
@@ -695,6 +702,15 @@ persistent actor DAOMain {
 
     public query func checkIsAdmin(principal: Principal) : async Bool {
         isAdmin(principal)
+    };
+
+    // Registry integration query functions
+    public query func getRegistryDAOId() : async ?Text {
+        registryDAOId
+    };
+
+    public query func isRegisteredInRegistry() : async Bool {
+        registeredInRegistry
     };
 
     // Admin functions

@@ -344,20 +344,28 @@ const LaunchDAO = () => {
         }
       };
 
-      await createDAO(daoData);
+      // Create DAO on backend (this is the real deployment)
+      const result = await launchDAO(formData);
+      console.log('DAO Launch Result:', result);
       
-      // Also try to launch via the backend if available
+      // Update daoData with registry information
+      daoData.registryId = result.registryId;
+      daoData.name = result.name;
+      daoData.initialized = result.initialized;
+      
+      // Also create in management context for UI
       try {
-        await launchDAO(formData);
-      } catch (backendError) {
-        console.warn('Backend DAO creation failed, but UI DAO was created:', backendError);
+        await createDAO(daoData);
+      } catch (uiError) {
+        console.warn('UI DAO creation failed, but backend DAO was created:', uiError);
+        // Continue - backend is more important
       }
 
       setLaunchedDAO(daoData);
       setShowSuccess(true);
-      showToast('success', 'DAO launched successfully!');
+      showToast('success', `DAO launched successfully! Registry ID: ${result.registryId}`);
       
-      // Navigate to dashboard after a short delay
+      // Navigate to dashboard after showing success
       setTimeout(() => {
         navigate('/dashboard');
       }, 3000);

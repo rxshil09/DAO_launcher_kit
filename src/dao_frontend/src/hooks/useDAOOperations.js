@@ -1,4 +1,62 @@
-﻿
+﻿/**
+ * useDAOOperations Hook
+ * 
+ * Comprehensive hook for DAO lifecycle management and operations.
+ * Handles the complete 7-step DAO creation process including:
+ * - Initial configuration and admin setup
+ * - Canister reference initialization
+ * - Module and feature configuration
+ * - Team member registration
+ * - Global registry integration
+ * 
+ * @module hooks/useDAOOperations
+ * 
+ * @returns {Object} DAO operations interface
+ * @returns {Function} launchDAO - Main function to create and launch a new DAO
+ * @returns {boolean} loading - Loading state during DAO creation
+ * @returns {string|null} error - Error message if launch fails
+ * 
+ * @example
+ * ```jsx
+ * function LaunchDAOComponent() {
+ *   const { launchDAO, loading, error } = useDAOOperations();
+ *   
+ *   const handleLaunch = async () => {
+ *     try {
+ *       const daoInfo = await launchDAO({
+ *         daoName: "My DAO",
+ *         description: "A decentralized organization",
+ *         category: "DeFi",
+ *         teamMembers: [{name: "Alice", wallet: "...", role: "Admin"}],
+ *         tokenName: "MyToken",
+ *         tokenSymbol: "MTK",
+ *         totalSupply: "1000000",
+ *         // ... other config
+ *       });
+ *       console.log("DAO created:", daoInfo);
+ *     } catch (err) {
+ *       console.error("Launch failed:", err);
+ *     }
+ *   };
+ * }
+ * ```
+ * 
+ * DAO Creation Process:
+ * 1. **Admin Setup**: Extract and validate team member wallets, add creator as admin
+ * 2. **Initialize DAO**: Call dao_backend.initialize() with basic info
+ * 3. **Set References**: Wire up governance, staking, treasury, proposals canisters
+ * 4. **Configure Modules**: Set selected modules and features
+ * 5. **Configure Settings**: Set tokenomics, governance, and funding parameters
+ * 6. **Register Users**: Auto-register creator and team members
+ * 7. **Registry Integration**: Register DAO in global discovery registry
+ * 
+ * Error Handling:
+ * - Validates canister IDs from environment variables
+ * - Handles Principal parsing errors for wallet addresses
+ * - Continues operation even if optional steps fail (registry, user registration)
+ * - Emits DAO_CREATED event on successful completion
+ */
+
 // Hook to interact with DAO canisters
 import { useState } from 'react';
 import { useDAOAPI } from '../utils/daoAPI';
@@ -7,6 +65,11 @@ import { useDAOManagement } from '../context/DAOManagementContext';
 import eventBus, { EVENTS } from '../utils/eventBus';
 import { Principal } from '@dfinity/principal';
 
+/**
+ * Converts seconds to nanoseconds for IC time representation
+ * @param {number} seconds - Time in seconds
+ * @returns {BigInt} Time in nanoseconds
+ */
 const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
 
 export const useDAOOperations = () => {
@@ -16,6 +79,35 @@ export const useDAOOperations = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    /**
+     * Launch a new DAO with full configuration
+     * 
+     * @async
+     * @param {Object} daoConfig - Complete DAO configuration object
+     * @param {string} daoConfig.daoName - Name of the DAO
+     * @param {string} daoConfig.description - DAO description/mission statement
+     * @param {string} daoConfig.category - DAO category (DeFi, Gaming, Social, etc.)
+     * @param {string} daoConfig.website - DAO website URL
+     * @param {Array<string>} daoConfig.selectedModules - Enabled modules (governance, treasury, etc.)
+     * @param {Object} daoConfig.selectedFeatures - Feature flags for each module
+     * @param {string} daoConfig.tokenName - DAO token name
+     * @param {string} daoConfig.tokenSymbol - DAO token symbol
+     * @param {string} daoConfig.totalSupply - Total token supply
+     * @param {string} daoConfig.treasuryAllocation - % allocated to treasury
+     * @param {string} daoConfig.communityAllocation - % allocated to community
+     * @param {string} daoConfig.votingPeriod - Default voting period in seconds
+     * @param {string} daoConfig.quorumThreshold - Minimum voting power for quorum
+     * @param {string} daoConfig.proposalThreshold - Minimum stake to create proposal
+     * @param {string} daoConfig.fundingGoal - Fundraising goal
+     * @param {string} daoConfig.fundingDuration - Fundraising period in seconds
+     * @param {string} daoConfig.minInvestment - Minimum investment amount
+     * @param {Array<Object>} daoConfig.teamMembers - Initial team members
+     * @param {boolean} daoConfig.termsAccepted - Terms and conditions acceptance
+     * @param {boolean} daoConfig.kycRequired - Whether KYC is required
+     * 
+     * @returns {Promise<Object>} DAO information object
+     * @throws {Error} If initialization fails at any step
+     */
     const launchDAO = async (daoConfig) => {
         if (!daoAPI) {
             throw new Error('DAO API not initialized');
@@ -25,7 +117,7 @@ export const useDAOOperations = () => {
         setError(null);
         
         try {
-            // Step 1: Prepare initial admins
+            // Step 1: Prepare initial admins from team members
             const initialAdmins = daoConfig.teamMembers
                 .map(member => member.wallet)
                 .filter(wallet => wallet) // Remove empty wallets
@@ -47,14 +139,23 @@ export const useDAOOperations = () => {
                 }
             }
 
-            // Step 2: Initialize the DAO with basic info
+            // Step 2: Get registry and analytics canister IDs
+            const registryCanisterId = import.meta.env.VITE_CANISTER_ID_DAO_REGISTRY;
+            const analyticsCanisterId = import.meta.env.VITE_CANISTER_ID_DAO_ANALYTICS;
+
+            console.log('Registry Canister ID:', registryCanisterId);
+            console.log('Analytics Canister ID:', analyticsCanisterId);
+
+            // Step 3: Initialize the DAO with basic info, registry, and analytics
             await daoAPI.initializeDAO(
                 daoConfig.daoName,
                 daoConfig.description,
-                initialAdmins
+                initialAdmins,
+                registryCanisterId,
+                analyticsCanisterId
             );
 
-            // Step 3: Set up canister references
+            // Step 4: Set up canister references
             const getCanisterPrincipal = (key) => {
                 const id = import.meta.env[key];
                 if (!id || typeof id !== 'string' || id.trim() === '') {
@@ -164,31 +265,39 @@ export const useDAOOperations = () => {
                 console.warn(`Failed to register ${registrationResults.errorCount} team members`);
             }
 
-            // Step 7: Return the DAO info
+            // Step 7: Verify registry registration
+            console.log('🔍 Verifying registry registration...');
+            const isRegistered = await daoAPI.isRegisteredInRegistry();
+            const registryDAOId = await daoAPI.getRegistryDAOId();
+            
+            if (!isRegistered || !registryDAOId) {
+                throw new Error('DAO was not properly registered in the global registry. This is a critical error.');
+            }
+            
+            console.log('✅ DAO registered with registry ID:', registryDAOId);
+            
+            // Step 8: Get DAO info with registry ID
             const daoInfo = await daoAPI.getDAOInfo();
+            daoInfo.registryId = registryDAOId; // Add registry ID to DAO info
             
             // Refresh the DAO list in the management context
             if (fetchDAOs) {
                 await fetchDAOs();
             }
             
-            // Register with global registry if available
-            try {
-                await daoAPI.registerWithRegistry();
-                console.log('✅ DAO registered with global registry');
-            } catch (registryError) {
-                console.warn('Failed to register with global registry:', registryError);
-                // Don't fail the entire operation if registry registration fails
-            }
-            
             // Emit event for other components to listen
             eventBus.emit(EVENTS.DAO_CREATED, {
                 daoInfo,
                 config: daoConfig,
-                creator: principal
+                creator: principal,
+                registryId: registryDAOId
             });
             
-            return daoInfo;
+            console.log('🎉 DAO launch completed successfully!');
+            console.log('Registry ID:', registryDAOId);
+            console.log('DAO Info:', daoInfo);
+            
+            return { ...daoInfo, registryId: registryDAOId };
 
         } catch (err) {
             console.error('DAO launch failed:', err);

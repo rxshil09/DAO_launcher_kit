@@ -1,3 +1,63 @@
+/**
+ * useAssets Hook
+ * 
+ * Manages decentralized file storage operations including upload, retrieval,
+ * metadata management, and access control. Supports both public and private assets.
+ * 
+ * @module hooks/useAssets
+ * 
+ * @returns {Object} Asset management interface
+ * @returns {Function} uploadAsset - Upload a single file
+ * @returns {Function} batchUploadAssets - Upload multiple files at once
+ * @returns {Function} getAsset - Get asset data by ID
+ * @returns {Function} getAssetMetadata - Get asset metadata only
+ * @returns {Function} getAssetByName - Find asset by name
+ * @returns {Function} getPublicAssets - Get all public assets
+ * @returns {Function} getUserAssets - Get current user's assets
+ * @returns {Function} searchAssetsByTag - Search assets by tag
+ * @returns {Function} deleteAsset - Delete an asset
+ * @returns {Function} updateAssetMetadata - Update asset name, visibility, or tags
+ * @returns {Function} getStorageStats - Get storage usage statistics
+ * @returns {Function} getAuthorizedUploaders - Get list of authorized uploaders
+ * @returns {Function} addAuthorizedUploader - Add authorized uploader (admin)
+ * @returns {Function} removeAuthorizedUploader - Remove authorized uploader (admin)
+ * @returns {Function} updateStorageLimits - Update max file size and total storage (admin)
+ * @returns {Function} getSupportedContentTypes - Get allowed file types
+ * @returns {Function} getHealth - Check canister health status
+ * @returns {boolean} loading - Loading state for operations
+ * @returns {string|null} error - Error message if operation fails
+ * 
+ * @example
+ * ```jsx
+ * function FileUploader() {
+ *   const { uploadAsset, getUserAssets, deleteAsset } = useAssets();
+ *   
+ *   const handleUpload = async (file) => {
+ *     const assetId = await uploadAsset(
+ *       file,
+ *       true, // public
+ *       ["logo", "branding"] // tags
+ *     );
+ *     console.log("Uploaded asset ID:", assetId);
+ *   };
+ *   
+ *   const loadMyAssets = async () => {
+ *     const assets = await getUserAssets();
+ *     // Array of asset metadata objects
+ *   };
+ * }
+ * ```
+ * 
+ * Supported Content Types:
+ * - Images: image/png, image/jpeg, image/svg+xml
+ * - Documents: application/pdf, text/plain
+ * - Data: application/json
+ * 
+ * Storage Limits:
+ * - Max File Size: Configurable (default 5MB)
+ * - Max Total Storage: Configurable per DAO
+ */
+
 import { useState } from 'react';
 import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
@@ -7,6 +67,16 @@ export const useAssets = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  /**
+   * Upload a single file to decentralized storage
+   * 
+   * @async
+   * @param {File} file - File object to upload
+   * @param {boolean} isPublic - Whether asset is publicly accessible (default: true)
+   * @param {Array<string>} tags - Tags for categorization (default: [])
+   * @returns {Promise<number>} Asset ID
+   * @throws {Error} If upload fails (file too large, unsupported type, etc.)
+   */
   const uploadAsset = async (file, isPublic = true, tags = []) => {
     setLoading(true);
     setError(null);

@@ -1,3 +1,66 @@
+/**
+ * useDAODiscovery Hook
+ * 
+ * Provides DAO discovery and search functionality through the global DAO registry.
+ * Supports pagination, filtering, sorting, and statistics retrieval.
+ * 
+ * @module hooks/useDAODiscovery
+ * 
+ * @returns {Object} DAO discovery interface
+ * @returns {Function} getAllPublicDAOs - Get paginated list of all public DAOs
+ * @returns {Function} searchDAOs - Search DAOs with filters and sorting
+ * @returns {Function} getDAOsByCategory - Get DAOs in a specific category
+ * @returns {Function} getDAOsByCreator - Get all DAOs created by a user
+ * @returns {Function} getTrendingDAOs - Get currently trending DAOs
+ * @returns {Function} getDAOStats - Get detailed statistics for a specific DAO
+ * @returns {Function} getSupportedCategories - Get list of available DAO categories
+ * @returns {Function} getRegistryStats - Get platform-wide registry statistics
+ * @returns {boolean} loading - Loading state for operations
+ * @returns {string|null} error - Error message if operation fails
+ * 
+ * @example
+ * ```tsx
+ * function DAOExplorer() {
+ *   const { 
+ *     getAllPublicDAOs, 
+ *     searchDAOs, 
+ *     getTrendingDAOs 
+ *   } = useDAODiscovery();
+ *   
+ *   // Get paginated DAOs
+ *   const loadDAOs = async () => {
+ *     const result = await getAllPublicDAOs(0, 12);
+ *     // { items, total_count, page, page_size, has_next, has_previous }
+ *   };
+ *   
+ *   // Search with filters
+ *   const searchByCategory = async () => {
+ *     const filters = {
+ *       category: "DeFi",
+ *       min_members: 10,
+ *       is_public: true
+ *     };
+ *     const results = await searchDAOs("", filters, "memberCount", 0, 12);
+ *   };
+ *   
+ *   // Get trending
+ *   const trending = await getTrendingDAOs(6);
+ * }
+ * ```
+ * 
+ * Search Filters:
+ * - category: Filter by DAO category (DeFi, Social, Gaming, etc.)
+ * - min_members/max_members: Filter by member count range
+ * - created_after/created_before: Filter by creation date
+ * - is_public: Filter by public/private status
+ * 
+ * Sort Options:
+ * - "memberCount": Sort by number of members
+ * - "creationDate": Sort by DAO age
+ * - "totalValueLocked": Sort by TVL
+ * - "activityScore": Sort by recent activity
+ */
+
 import { useState, useCallback } from 'react';
 import { useActors } from '../context/ActorContext';
 import { Principal } from '@dfinity/principal';
