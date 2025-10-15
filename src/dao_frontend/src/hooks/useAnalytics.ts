@@ -1,3 +1,72 @@
+/**
+ * useAnalytics Hook
+ * 
+ * Provides platform-wide analytics and metrics tracking functionality.
+ * Includes growth metrics, governance stats, treasury analytics, and event recording.
+ * Falls back to mock data when analytics canister is unavailable.
+ * 
+ * @module hooks/useAnalytics
+ * 
+ * @returns {Object} Analytics interface
+ * @returns {Function} getPlatformMetrics - Get overall platform statistics
+ * @returns {Function} getTimeSeriesData - Get time-series data for specific metrics
+ * @returns {Function} getGrowthMetrics - Get growth rates over a period
+ * @returns {Function} getGovernanceStats - Get governance activity statistics
+ * @returns {Function} getTreasuryAnalytics - Get treasury and TVL analytics
+ * @returns {Function} getTopDAOs - Get top-performing DAOs by score
+ * @returns {Function} getActivitySummary - Get activity summary for a period
+ * @returns {Function} recordEvent - Record an analytics event
+ * @returns {boolean} loading - Loading state for operations
+ * @returns {string|null} error - Error message if operation fails
+ * 
+ * @example
+ * ```tsx
+ * function AnalyticsDashboard() {
+ *   const { 
+ *     getPlatformMetrics, 
+ *     getTimeSeriesData, 
+ *     recordEvent 
+ *   } = useAnalytics();
+ *   
+ *   // Get platform overview
+ *   const loadMetrics = async () => {
+ *     const metrics = await getPlatformMetrics();
+ *     // { total_daos, total_users, total_tvl, active_users_24h, ... }
+ *   };
+ *   
+ *   // Get chart data
+ *   const loadChartData = async () => {
+ *     const data = await getTimeSeriesData("userCount", "daily", 30);
+ *     // [{ timestamp, value }, ...]
+ *   };
+ *   
+ *   // Record user action
+ *   await recordEvent("proposalCreated", "dao-123", "user-456", 
+ *     { category: "treasury" }, 5000);
+ * }
+ * ```
+ * 
+ * Event Types:
+ * - daoCreated: New DAO launched
+ * - userRegistered: New user registered
+ * - proposalCreated: Proposal submitted
+ * - voteCast: Vote recorded
+ * - treasuryDeposit/treasuryWithdrawal: Treasury operations
+ * - stakingEvent: Staking activity
+ * 
+ * Time Series Metrics:
+ * - userCount: Total registered users
+ * - daoCount: Total DAOs
+ * - proposalCount: Cumulative proposals
+ * - tvl: Total value locked
+ * 
+ * Timeframes:
+ * - "hourly": Hourly data points
+ * - "daily": Daily aggregation
+ * - "weekly": Weekly aggregation
+ * - "monthly": Monthly aggregation
+ */
+
 import { useState, useCallback } from 'react';
 import { useActors } from '../context/ActorContext';
 
