@@ -32,6 +32,9 @@ module {
     public type DAOConfig = {
         category: Text;
         website: Text;
+        logoUrl: ?Text; // External URL for logo (backward compatibility)
+        logoAssetId: ?Text; // Asset ID for uploaded logo
+        logoType: ?Text; // 'upload' or 'url' or 'none'
         selectedModules: [Text];
         moduleFeatures: [ModuleFeature];
         tokenName: Text;
@@ -53,6 +56,9 @@ module {
     public type DAOConfigStable = {
         category: Text;
         website: Text;
+        logoUrl: ?Text; // External URL for logo (backward compatibility)
+        logoAssetId: ?Text; // Asset ID for uploaded logo
+        logoType: ?Text; // 'upload' or 'url' or 'none'
         selectedModules: [Text];
         moduleFeatures: [ModuleFeature];
         tokenName: Text;

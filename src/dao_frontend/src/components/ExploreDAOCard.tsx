@@ -16,6 +16,7 @@ import {
   Clock
 } from 'lucide-react';
 import { DAOMetadata } from '../types/dao';
+import { useLogoImage } from '../hooks/useLogoImage';
 
 interface ExploreDAOCardProps {
   dao: DAOMetadata;
@@ -25,6 +26,13 @@ interface ExploreDAOCardProps {
 }
 
 const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isTrending = false }) => {
+  // Pass both camelCase and snake_case + legacy logo; the hook will normalize
+  const { imageUrl, handleImageError } = useLogoImage({
+    logoType: (dao as any).logoType ?? (dao as any).logo_type,
+    logoAssetId: (dao as any).logoAssetId ?? (dao as any).logo_asset_id,
+    logoUrl: (dao as any).logoUrl ?? (dao as any).logo_url,
+    legacyLogo: (dao as any).logo,
+  });
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
       case 'defi':
@@ -76,7 +84,9 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
+    if (!timestamp) return "N/A";
+    const ms = timestamp > 9_999_999_999 ? Math.floor(timestamp / 1_000_000) : timestamp;
+    return new Date(ms).toLocaleDateString();
   };
 
   const formatTVL = (amount: number) => {
@@ -126,11 +136,16 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
       {/* Header with Logo and Category */}
       <div className="relative h-48 overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(dao.category)} opacity-20`}></div>
-        {dao.logo_url ? (
+        {imageUrl ? (
           <img 
-            src={dao.logo_url} 
+            src={imageUrl} 
             alt={dao.name}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Failed to load DAO logo:', imageUrl);
+              e.currentTarget.style.display = 'none';
+              handleImageError();
+            }}
           />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${getCategoryColor(dao.category)} flex items-center justify-center`}>

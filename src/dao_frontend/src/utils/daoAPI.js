@@ -43,9 +43,9 @@ export class DAOAPIWrapper {
     }
 
     // DAO Management APIs
-    async initializeDAO(name, description, initialAdmins) {
+    async initializeDAO(name, description, initialAdmins, registryId, analyticsId, config) {
         return this.callAPI(
-            () => this.actors.daoBackend.initialize(name, description, initialAdmins),
+            () => this.actors.daoBackend.initialize(name, description, initialAdmins, registryId, analyticsId, config),
             'Initialize DAO'
         );
     }

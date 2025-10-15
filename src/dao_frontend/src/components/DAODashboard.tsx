@@ -22,6 +22,11 @@ import {
   RefreshCw
 } from 'lucide-react';
 
+type ToastType = {
+  type: 'success' | 'error' | 'info' | 'warning';
+  message: string;
+} | null;
+
 const DAODashboard: React.FC = () => {
   const { isAuthenticated, principal, loading: authLoading } = useAuth();
   const { daos, loading, error, fetchDAOs } = useDAOManagement();
@@ -29,7 +34,7 @@ const DAODashboard: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [toast, setToast] = useState(null);
+  const [toast, setToast] = useState<ToastType>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Ledger balances + approvals
@@ -163,7 +168,7 @@ const DAODashboard: React.FC = () => {
 
   // Listen for storage changes to update DAOs when created in other tabs
   React.useEffect(() => {
-    const handleStorageChange = (e) => {
+    const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `user_daos_${principal}` && e.newValue) {
         fetchDAOs();
       }
@@ -185,7 +190,7 @@ const DAODashboard: React.FC = () => {
     }
   };
 
-  const showToast = (type, message) => {
+  const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string) => {
     setToast({ type, message });
   };
 

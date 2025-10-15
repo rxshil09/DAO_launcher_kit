@@ -20,6 +20,7 @@ import {
   AlertCircle,
   ExternalLink
 } from 'lucide-react';
+import { useLogoImage } from '../hooks/useLogoImage';
 
 const DAOManagement: React.FC = () => {
   const { daoId } = useParams<{ daoId: string }>();
@@ -27,6 +28,15 @@ const DAOManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [dao, setDAO] = useState(selectedDAO);
+  const {
+    imageUrl: headerLogoUrl,
+    handleImageError: handleHeaderLogoError,
+  } = useLogoImage({
+    logoType: dao?.logoType,
+    logoAssetId: dao?.logoAssetId,
+    logoUrl: dao?.logoUrl,
+    legacyLogo: dao?.logo,
+  });
 
   const tabs = [
     { id: 'overview', name: 'Overview', icon: BarChart3, path: 'overview' },
@@ -121,14 +131,22 @@ const DAOManagement: React.FC = () => {
 
           {/* DAO Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                {dao.logo ? (
-                  <img src={dao.logo} alt={dao.name} className="w-full h-full object-cover rounded-xl" />
-                ) : (
-                  <Shield className="w-8 h-8 text-white" />
-                )}
-              </div>
+              <div className="flex items-center space-x-4 mb-4 md:mb-0">
+               <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                 {headerLogoUrl ? (
+                   <img
+                     src={headerLogoUrl}
+                     alt={dao.name}
+                     className="w-full h-full object-cover"
+                     onError={(e) => {
+                       e.currentTarget.style.display = 'none';
+                       handleHeaderLogoError();
+                     }}
+                   />
+                 ) : (
+                   <Shield className="w-8 h-8 text-white" />
+                 )}
+               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white font-mono">{dao.name}</h1>
                 <div className="flex items-center space-x-4 text-sm">

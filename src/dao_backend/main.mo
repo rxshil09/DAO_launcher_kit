@@ -59,8 +59,31 @@ persistent actor DAOMain {
 
     // Typed interface for the Registry canister
     type RegistryService = actor {
-        registerDAO: shared (Text, Text, Text, Bool, Principal, ?Text, ?Text, ?Text) -> async Result<Text, Text>;
+        registerDAO: shared (
+            Text,
+            Text,
+            Text,
+            Bool,
+            Principal,
+            ?Text,
+            ?Text,
+            ?Text,
+            ?Text,
+            ?Text
+        ) -> async Result<Text, Text>;
         updateDAOStats: shared (Text, ?Nat, ?Nat, ?Nat, ?Nat, ?Nat, ?Float) -> async Result<(), Text>;
+        updateDAOMetadata: shared (
+            Text,
+            ?Text,
+            ?Text,
+            ?Text,
+            ?Bool,
+            ?Text,
+            ?Text,
+            ?Text,
+            ?Text,
+            ?Text
+        ) -> async Result<(), Text>;
     };
 
     // Stable storage for upgrades - persists across canister upgrades
@@ -77,6 +100,7 @@ persistent actor DAOMain {
     // Registry integration
     private var registryCanisterId : ?Principal = null;
     private var registeredInRegistry : Bool = false;
+    private var registryDaoId : ?Text = null;
 
     // Runtime storage - recreated after upgrades from stable storage
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
@@ -159,7 +183,8 @@ persistent actor DAOMain {
         description: Text,
         initialAdmins: [Principal],
         registry_id: ?Principal,
-        analytics_id: ?Principal
+        analytics_id: ?Principal,
+        config: Types.DAOConfig
     ) : async Result<(), Text> {
         // Prevent double initialization
         if (initialized) {
@@ -168,6 +193,9 @@ persistent actor DAOMain {
 
         daoName := name;
         daoDescription := description;
+        
+        // Store DAO configuration
+        daoConfig := ?config;
         
         // Set initial admins - these users can manage DAO configuration
         for (admin in initialAdmins.vals()) {
@@ -204,7 +232,7 @@ persistent actor DAOMain {
                     #DAO_CREATED,
                     ?name,
                     ?msg.caller,
-                    [("category", ""), ("description", description)],
+                    [("category", config.category), ("description", description)],
                     null
                 );
             };
@@ -247,6 +275,35 @@ persistent actor DAOMain {
         #ok()
     };
 
+    private func syncRegistryMetadata() : async () {
+        if (not registeredInRegistry) {
+            return;
+        };
+        switch (registryCanister, registryDaoId, getCurrentDAOConfig()) {
+            case (?registry, ?dao_id, ?config) {
+                let result = await registry.updateDAOMetadata(
+                    dao_id,
+                    null,
+                    null,
+                    null,
+                    null,
+                    ?config.website,
+                    config.logoUrl,
+                    config.logoAssetId,
+                    config.logoType,
+                    ?config.tokenSymbol
+                );
+                switch (result) {
+                    case (#ok()) {};
+                    case (#err(error)) {
+                        Debug.print("Failed to sync registry metadata: " # error);
+                    };
+                };
+            };
+            case _ {};
+        };
+    };
+
     /**
      * Register this DAO with the global registry
      */
@@ -266,13 +323,17 @@ persistent actor DAOMain {
                             true, // is_public - could be configurable
                             Principal.fromActor(DAOMain),
                             ?config.website,
-                            null, // logo_url - could be added to config
+                            config.logoUrl,
+                            config.logoAssetId,
+                            config.logoType,
                             ?config.tokenSymbol
                         );
                         
                         switch (result) {
                             case (#ok(dao_id)) {
                                 registeredInRegistry := true;
+                                registryDaoId := ?dao_id;
+                                await syncRegistryMetadata();
                                 Debug.print("DAO registered with registry: " # dao_id);
                                 #ok(dao_id)
                             };
@@ -299,8 +360,13 @@ persistent actor DAOMain {
                 // Get current DAO stats
                 let stats = await getDAOStats();
                 
+                let daoId = switch (registryDaoId) {
+                    case (?id) id;
+                    case null return #err("DAO registry identifier unavailable");
+                };
+                
                 let result = await registry.updateDAOStats(
-                    "dao_" # Nat.toText(1), // This would need to be stored from registration
+                    daoId,
                     ?stats.totalMembers,
                     ?stats.totalProposals,
                     ?stats.activeProposals,
@@ -390,6 +456,9 @@ persistent actor DAOMain {
             votingPeriod = config.votingPeriod;
             quorumThreshold = config.quorumThreshold;
             proposalThreshold = config.proposalThreshold;
+            logoAssetId = config.logoAssetId;
+            logoType = config.logoType;
+            logoUrl = config.logoUrl;
             fundingGoal = config.fundingGoal;
             fundingDuration = config.fundingDuration;
             minInvestment = config.minInvestment;
@@ -413,6 +482,9 @@ persistent actor DAOMain {
             votingPeriod = stableConfig.votingPeriod;
             quorumThreshold = stableConfig.quorumThreshold;
             proposalThreshold = stableConfig.proposalThreshold;
+            logoAssetId = stableConfig.logoAssetId;
+            logoType = stableConfig.logoType;
+            logoUrl = stableConfig.logoUrl;
             fundingGoal = stableConfig.fundingGoal;
             fundingDuration = stableConfig.fundingDuration;
             minInvestment = stableConfig.minInvestment;
@@ -464,6 +536,8 @@ persistent actor DAOMain {
                     Debug.print("Failed to auto-register with registry: " # error);
                 };
             };
+        } else {
+            await syncRegistryMetadata();
         };
         
         #ok()

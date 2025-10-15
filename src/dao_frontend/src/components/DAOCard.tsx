@@ -4,14 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   DollarSign, 
-  TrendingUp, 
-  Calendar,
   ArrowRight,
-  Star,
-  Activity,
   Shield
 } from 'lucide-react';
 import { DAO } from '../types/dao';
+import { useLogoImage } from '../hooks/useLogoImage';
 
 interface DAOCardProps {
   dao: DAO;
@@ -20,6 +17,12 @@ interface DAOCardProps {
 
 const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
   const navigate = useNavigate();
+  const { imageUrl, handleImageError } = useLogoImage({
+    logoType: dao.logoType,
+    logoAssetId: dao.logoAssetId,
+    logoUrl: dao.logoUrl,
+    legacyLogo: dao.logo,
+  });
 
   const handleManage = () => {
     navigate(`/dao/${dao.id}/manage/overview`);
@@ -68,11 +71,16 @@ const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
       {/* Header with Logo and Status */}
       <div className="relative h-48 overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(dao.category)} opacity-20`}></div>
-        {dao.logo ? (
+        {imageUrl ? (
           <img 
-            src={dao.logo} 
+            src={imageUrl} 
             alt={dao.name}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Image failed to load:', imageUrl);
+              e.currentTarget.style.display = 'none';
+              handleImageError();
+            }}
           />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${getCategoryColor(dao.category)} flex items-center justify-center`}>

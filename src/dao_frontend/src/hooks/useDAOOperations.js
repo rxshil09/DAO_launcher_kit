@@ -8,6 +8,24 @@ import eventBus, { EVENTS } from '../utils/eventBus';
 import { Principal } from '@dfinity/principal';
 
 const toNanoseconds = (seconds) => BigInt(seconds) * 1_000_000_000n;
+const toOptionalText = (value) => {
+    if (value === undefined || value === null || value === '') {
+        return [];
+    }
+    return [String(value)];
+};
+const isAlreadyInitializedError = (error) => {
+    if (!error) return false;
+    const message = typeof error === 'string' ? error : error.message;
+    return typeof message === 'string' && message.toLowerCase().includes('dao already initialized');
+};
+const handleAlreadyInitialized = (error, operationName) => {
+    if (isAlreadyInitializedError(error)) {
+        console.warn(`${operationName} skipped: DAO already initialized.`);
+        return true;
+    }
+    return false;
+};
 
 export const useDAOOperations = () => {
     const daoAPI = useDAOAPI();
@@ -26,7 +44,7 @@ export const useDAOOperations = () => {
         
         try {
             // Step 1: Prepare initial admins
-            const initialAdmins = daoConfig.teamMembers
+            const initialAdmins = (daoConfig.teamMembers || [])
                 .map(member => member.wallet)
                 .filter(wallet => wallet) // Remove empty wallets
                 .map(wallet => Principal.fromText(wallet)); // Convert to Principal
@@ -47,14 +65,51 @@ export const useDAOOperations = () => {
                 }
             }
 
-            // Step 2: Initialize the DAO with basic info
-            await daoAPI.initializeDAO(
-                daoConfig.daoName,
-                daoConfig.description,
-                initialAdmins
-            );
+            // Step 2: Prepare DAO configuration
+            const moduleFeatures = Object.entries(daoConfig.selectedFeatures || {})
+                .map(([moduleId, features]) => ({
+                    moduleId,
+                    features: Object.entries(features)
+                        .filter(([_, selected]) => selected)
+                        .map(([featureId]) => featureId)
+                }))
+                .filter(mf => mf.features.length > 0);
 
-            // Step 3: Set up canister references
+            const rawLogoUrl =
+                daoConfig.logoType === 'url'
+                    ? daoConfig.logoSource ?? daoConfig.logoUrl
+                    : daoConfig.logoUrl;
+            const rawLogoAssetId =
+                daoConfig.logoType === 'upload'
+                    ? daoConfig.logoSource ?? daoConfig.logoAssetId
+                    : daoConfig.logoAssetId;
+            const rawLogoType = daoConfig.logoType;
+
+            const config = {
+                category: daoConfig.category || 'Other',
+                website: daoConfig.website || '',
+                logoUrl: toOptionalText(rawLogoUrl),
+                logoAssetId: toOptionalText(rawLogoAssetId),
+                logoType: toOptionalText(rawLogoType),
+                selectedModules: daoConfig.selectedModules || [],
+                moduleFeatures,
+                tokenName: daoConfig.tokenName || '',
+                tokenSymbol: daoConfig.tokenSymbol || '',
+                totalSupply: BigInt(daoConfig.totalSupply || 0),
+                initialPrice: BigInt(daoConfig.initialPrice || 0),
+                treasuryAllocation: BigInt(daoConfig.treasuryAllocation || 40),
+                communityAllocation: BigInt(daoConfig.communityAllocation || 60),
+                votingPeriod: BigInt(daoConfig.votingPeriod || 0),
+                quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
+                proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
+                fundingGoal: BigInt(daoConfig.fundingGoal || 0),
+                fundingDuration: BigInt(daoConfig.fundingDuration || 0),
+                minInvestment: BigInt(daoConfig.minInvestment || 0),
+                termsAccepted: daoConfig.termsAccepted || false,
+                kycRequired: daoConfig.kycRequired || false
+            };
+
+            // Helper function to get canister principals
             const getCanisterPrincipal = (key) => {
                 const id = import.meta.env[key];
                 if (!id || typeof id !== 'string' || id.trim() === '') {
@@ -67,53 +122,89 @@ export const useDAOOperations = () => {
                 }
             };
 
-            let governanceCanisterId, stakingCanisterId, treasuryCanisterId, proposalsCanisterId;
+            // Get all canister principals
+            let governanceCanisterId, stakingCanisterId, treasuryCanisterId, proposalsCanisterId, registryId, analyticsId;
             try {
                 governanceCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_GOVERNANCE');
                 stakingCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_STAKING');
                 treasuryCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_TREASURY');
                 proposalsCanisterId = getCanisterPrincipal('VITE_CANISTER_ID_PROPOSALS');
+                
+                // Get registry and analytics IDs (optional)
+                try {
+                    registryId = getCanisterPrincipal('VITE_CANISTER_ID_DAO_REGISTRY');
+                } catch {
+                    registryId = null;
+                }
+                try {
+                    analyticsId = getCanisterPrincipal('VITE_CANISTER_ID_DAO_ANALYTICS');
+                } catch {
+                    analyticsId = null;
+                }
             } catch (err) {
                 throw new Error(`Canister configuration error: ${err.message}`);
             }
 
-            await daoAPI.setCanisterReferences(
-                governanceCanisterId,
-                stakingCanisterId,
-                treasuryCanisterId,
-                proposalsCanisterId
-            );
+            // Initialize the DAO with all required parameters
+            // Optional Principals must be passed as [] (null) or [Principal] (some value)
+            try {
+                await daoAPI.initializeDAO(
+                    daoConfig.daoName,
+                    daoConfig.description,
+                    initialAdmins,
+                    registryId ? [registryId] : [],
+                    analyticsId ? [analyticsId] : [],
+                    config
+                );
+            } catch (initError) {
+                if (!handleAlreadyInitialized(initError, 'Initialize DAO')) {
+                    throw initError;
+                }
+            }
 
-            // Step 4: Configure DAO settings
-            const moduleFeatures = Object.entries(daoConfig.selectedFeatures || {})
-                .map(([moduleId, features]) => ({
-                    moduleId,
-                    features: Object.entries(features)
-                        .filter(([_, selected]) => selected)
-                        .map(([featureId]) => featureId)
-                }))
-                .filter(mf => mf.features.length > 0);
+            try {
+                await daoAPI.setCanisterReferences(
+                    governanceCanisterId,
+                    stakingCanisterId,
+                    treasuryCanisterId,
+                    proposalsCanisterId
+                );
+            } catch (referencesError) {
+                if (!handleAlreadyInitialized(referencesError, 'Set canister references')) {
+                    throw referencesError;
+                }
+            }
 
-            await daoAPI.setDAOConfig({
-                category: daoConfig.category,
-                website: daoConfig.website,
-                selectedModules: daoConfig.selectedModules,
-                moduleFeatures,
-                tokenName: daoConfig.tokenName,
-                tokenSymbol: daoConfig.tokenSymbol,
-                totalSupply: BigInt(daoConfig.totalSupply || 0),
-                initialPrice: BigInt(daoConfig.initialPrice || 0),
-                treasuryAllocation: BigInt(daoConfig.treasuryAllocation || 40),
-                communityAllocation: BigInt(daoConfig.communityAllocation || 60),
-                votingPeriod: toNanoseconds(daoConfig.votingPeriod || 0),
-                quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
-                proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
-                fundingGoal: BigInt(daoConfig.fundingGoal || 0),
-                fundingDuration: toNanoseconds(daoConfig.fundingDuration || 0),
-                minInvestment: BigInt(daoConfig.minInvestment || 0),
-                termsAccepted: daoConfig.termsAccepted,
-                kycRequired: daoConfig.kycRequired
-            });
+            // Step 4: Configure DAO settings (moduleFeatures already defined earlier)
+            try {
+                await daoAPI.setDAOConfig({
+                    category: daoConfig.category,
+                    website: daoConfig.website,
+                    logoUrl: toOptionalText(rawLogoUrl),
+                    logoAssetId: toOptionalText(rawLogoAssetId),
+                    logoType: toOptionalText(rawLogoType),
+                    selectedModules: daoConfig.selectedModules,
+                    moduleFeatures,
+                    tokenName: daoConfig.tokenName,
+                    tokenSymbol: daoConfig.tokenSymbol,
+                    totalSupply: BigInt(daoConfig.totalSupply || 0),
+                    initialPrice: BigInt(daoConfig.initialPrice || 0),
+                    treasuryAllocation: BigInt(daoConfig.treasuryAllocation || 40),
+                    communityAllocation: BigInt(daoConfig.communityAllocation || 60),
+                    votingPeriod: toNanoseconds(daoConfig.votingPeriod || 0),
+                    quorumThreshold: BigInt(daoConfig.quorumThreshold || 0),
+                    proposalThreshold: BigInt(daoConfig.proposalThreshold || 0),
+                    fundingGoal: BigInt(daoConfig.fundingGoal || 0),
+                    fundingDuration: toNanoseconds(daoConfig.fundingDuration || 0),
+                    minInvestment: BigInt(daoConfig.minInvestment || 0),
+                    termsAccepted: daoConfig.termsAccepted,
+                    kycRequired: daoConfig.kycRequired
+                });
+            } catch (configError) {
+                if (!handleAlreadyInitialized(configError, 'Set DAO configuration')) {
+                    throw configError;
+                }
+            }
 
             // Step 5: Register initial users via admin method
             if (creatorPrincipal) {

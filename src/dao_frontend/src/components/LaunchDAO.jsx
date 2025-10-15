@@ -7,6 +7,7 @@ import { useDAOManagement } from '../context/DAOManagementContext';
 import BackgroundParticles from './BackgroundParticles';
 import LaunchSuccess from './LaunchSuccess';
 import Toast from './Toast';
+import { ImageUpload } from './ImageUpload';
 import { 
   ArrowRight, 
   ArrowLeft, 
@@ -52,6 +53,8 @@ const LaunchDAO = () => {
     description: '',
     category: '',
     website: '',
+    logoSource: '', // Stores either assetId or external URL
+    logoType: 'none', // 'none' | 'upload' | 'url'
     
     // Step 2: Module Selection
     selectedModules: ['governance', 'treasury'], // Required modules
@@ -169,6 +172,18 @@ const LaunchDAO = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
     }
+  };
+
+  const handleImageSelection = (source) => {
+    setFormData(prev => ({
+      ...prev,
+      logoSource: source.value,
+      logoType: source.type
+    }));
+  };
+
+  const handleImageError = (error) => {
+    showToast('error', error);
   };
 
   const handleModuleToggle = (moduleId) => {
@@ -327,6 +342,9 @@ const LaunchDAO = () => {
         description: formData.description,
         category: formData.category,
         tokenSymbol: formData.tokenSymbol,
+        logoUrl: formData.logoType === 'url' ? formData.logoSource : undefined,
+        logoAssetId: formData.logoType === 'upload' ? formData.logoSource : undefined,
+        logoType: formData.logoType,
         memberCount: 1,
         totalValueLocked: '$0',
         status: 'active',
@@ -451,6 +469,15 @@ const LaunchDAO = () => {
                 onChange={(e) => handleInputChange('website', e.target.value)}
                 placeholder="https://your-dao-website.com"
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white font-mono"
+              />
+            </div>
+
+            <div>
+              <ImageUpload
+                onImageSelected={handleImageSelection}
+                onError={handleImageError}
+                currentValue={formData.logoSource}
+                label="Logo Image"
               />
             </div>
           </div>

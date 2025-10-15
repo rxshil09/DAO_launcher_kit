@@ -10,6 +10,7 @@ import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Blob "mo:base/Blob";
 import Nat32 "mo:base/Nat32";
+import Char "mo:base/Char";
 
 persistent actor AssetCanister {
     type Result<T, E> = Result.Result<T, E>;
@@ -115,8 +116,8 @@ persistent actor AssetCanister {
     // Public functions
 
     // Upload an asset.
-    // If no uploaders have been authorized, the upload will be rejected unless
-    // `allowOpenUploads` was set to true during deployment.
+    // Only authenticated users (logged in with Internet Identity) can upload.
+    // Anonymous users are rejected to prevent spam and abuse.
     public shared(msg) func uploadAsset(
         name: Text,
         contentType: Text,
@@ -125,13 +126,12 @@ persistent actor AssetCanister {
         tags: [Text]
     ) : async Result<AssetId, Text> {
         let caller = msg.caller;
-        if (authorizedUploaders.size() == 0) {
-            if (not allowOpenUploads) {
-                return #err("Uploads are disabled until an uploader is authorized or open uploads are enabled");
-            };
-        } else if (not isAuthorized(caller)) {
-            return #err("Not authorized to upload assets");
+        
+        // Only allow authenticated users (Internet Identity)
+        if (Principal.isAnonymous(caller)) {
+            return #err("Please authenticate with Internet Identity to upload assets");
         };
+        
         let dataSize = data.size();
 
         // Validate input
@@ -141,6 +141,11 @@ persistent actor AssetCanister {
 
         if (dataSize == 0) {
             return #err("Asset data cannot be empty");
+        };
+
+        // IC message size limit is 2MB
+        if (dataSize > 2_097_152) {
+            return #err("File too large. Maximum size is 2MB");
         };
 
         if (dataSize > maxFileSize) {
@@ -201,6 +206,19 @@ persistent actor AssetCanister {
                 }
             };
             case null #err("Asset not found");
+        }
+    };
+
+    public query func getAssetBytes(assetId: AssetId) : async ?AssetData {
+        switch (assets.get(assetId)) {
+            case (?asset) {
+                if (asset.isPublic) {
+                    ?asset.data
+                } else {
+                    null
+                }
+            };
+            case null null;
         }
     };
 
@@ -494,5 +512,98 @@ persistent actor AssetCanister {
         };
         
         Buffer.toArray(results)
+    };
+
+    // HTTP interface to serve assets via browser
+    public type HeaderField = (Text, Text);
+    public type HttpRequest = {
+        method: Text;
+        url: Text;
+        headers: [HeaderField];
+        body: Blob;
+    };
+    public type HttpResponse = {
+        status_code: Nat16;
+        headers: [HeaderField];
+        body: Blob;
+    };
+
+    public query func http_request(request: HttpRequest) : async HttpResponse {
+        // Parse asset ID from URL query parameter: ?file=<assetId>
+        let url = request.url;
+        
+        // Simple parsing for ?file=<id>
+        if (Text.contains(url, #text "file=")) {
+            // Extract asset ID after "file="
+            let parts = Iter.toArray(Text.split(url, #text "file="));
+            if (parts.size() >= 2) {
+                let idText = parts[1];
+                // Remove any trailing parameters
+                let idParts = Iter.toArray(Text.split(idText, #text "&"));
+                let assetIdText = idParts[0];
+                
+                // Try to parse as Nat
+                switch (textToNat(assetIdText)) {
+                    case (?assetId) {
+                        // Look up asset in the HashMap
+                        switch (assets.get(assetId)) {
+                            case (?asset) {
+                                // Serve the asset (check if public)
+                                if (asset.isPublic) {
+                                    return {
+                                        status_code = 200;
+                                        headers = [
+                                            ("Content-Type", asset.contentType),
+                                            ("Cache-Control", "public, max-age=31536000")
+                                        ];
+                                        body = asset.data;
+                                    };
+                                } else {
+                                    // Asset exists but is private
+                                    return {
+                                        status_code = 403;
+                                        headers = [("Content-Type", "text/plain")];
+                                        body = Text.encodeUtf8("Access forbidden: Asset is private");
+                                    };
+                                };
+                            };
+                            case null {
+                                // Asset not found in HashMap
+                                Debug.print("Asset not found in HashMap: " # Nat.toText(assetId));
+                            };
+                        };
+                    };
+                    case null {
+                        // Invalid asset ID format
+                        return {
+                            status_code = 400;
+                            headers = [("Content-Type", "text/plain")];
+                            body = Text.encodeUtf8("Invalid asset ID format");
+                        };
+                    };
+                };
+            };
+        };
+
+        // Return 404 if not found
+        {
+            status_code = 404;
+            headers = [("Content-Type", "text/plain")];
+            body = Text.encodeUtf8("Asset not found");
+        }
+    };
+
+    // Helper function to parse Text to Nat
+    private func textToNat(t: Text) : ?Nat {
+        var n : Nat = 0;
+        for (c in t.chars()) {
+            if (c >= '0' and c <= '9') {
+                let digit = Nat32.toNat(Char.toNat32(c) - Char.toNat32('0'));
+                n := n * 10 + digit;
+            } else {
+                return null;
+            };
+        };
+        ?n
     };
 }

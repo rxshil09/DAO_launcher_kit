@@ -43,6 +43,8 @@ persistent actor DAORegistry {
         dao_canister_id: Principal;
         website: ?Text;
         logo_url: ?Text;
+        logo_asset_id: ?Text; // Asset ID for uploaded logos
+        logo_type: ?Text; // 'upload' or 'url'
         token_symbol: ?Text;
         total_value_locked: Nat;
         active_proposals: Nat;
@@ -145,6 +147,10 @@ persistent actor DAORegistry {
 
     /**
      * Register a new DAO in the global registry
+     * 
+     * NOTE: Logo is permanently stored during DAO creation.
+     * The logo (logo_url, logo_asset_id, logo_type) cannot be changed after initialization.
+     * No update function is provided for logo modification to ensure DAO branding permanence.
      */
     public shared(msg) func registerDAO(
         name: Text,
@@ -154,6 +160,8 @@ persistent actor DAORegistry {
         dao_canister_id: Principal,
         website: ?Text,
         logo_url: ?Text,
+        logo_asset_id: ?Text,
+        logo_type: ?Text,
         token_symbol: ?Text
     ) : async Result<Text, Text> {
         let caller = msg.caller;
@@ -174,7 +182,7 @@ persistent actor DAORegistry {
             case null {};
         };
 
-        let now = Time.now() / 1_000_000;
+        let now = Time.now();
         let metadata : DAOMetadata = {
             dao_id = dao_id;
             name = name;
@@ -187,6 +195,8 @@ persistent actor DAORegistry {
             dao_canister_id = dao_canister_id;
             website = website;
             logo_url = logo_url;
+            logo_asset_id = logo_asset_id;
+            logo_type = logo_type;
             token_symbol = token_symbol;
             total_value_locked = 0;
             active_proposals = 0;
@@ -561,6 +571,8 @@ persistent actor DAORegistry {
                     dao_canister_id = metadata.dao_canister_id;
                     website = metadata.website;
                     logo_url = metadata.logo_url;
+                    logo_asset_id = metadata.logo_asset_id;
+                    logo_type = metadata.logo_type;
                     token_symbol = metadata.token_symbol;
                     total_value_locked = Option.get(total_staked, metadata.total_value_locked);
                     active_proposals = Option.get(active_proposals, metadata.active_proposals);
@@ -584,7 +596,10 @@ persistent actor DAORegistry {
         category: ?Text,
         is_public: ?Bool,
         website: ?Text,
-        logo_url: ?Text
+        logo_url: ?Text,
+        logo_asset_id: ?Text,
+        logo_type: ?Text,
+        token_symbol: ?Text
     ) : async Result<(), Text> {
         switch (daoMetadata.get(dao_id)) {
             case (?metadata) {
@@ -616,10 +631,12 @@ persistent actor DAORegistry {
                     dao_canister_id = metadata.dao_canister_id;
                     website = website;
                     logo_url = logo_url;
-                    token_symbol = metadata.token_symbol;
+                    logo_asset_id = switch (logo_asset_id) { case (?value) ?value; case null metadata.logo_asset_id };
+                    logo_type = switch (logo_type) { case (?value) ?value; case null metadata.logo_type };
+                    token_symbol = switch (token_symbol) { case (?value) ?value; case null metadata.token_symbol };
                     total_value_locked = metadata.total_value_locked;
                     active_proposals = metadata.active_proposals;
-                    last_activity = Time.now() / 1_000_000;
+                    last_activity = Time.now();
                 };
 
                 daoMetadata.put(dao_id, updatedMetadata);

@@ -1,4 +1,4 @@
-# DAOVerse - DAO Launcher Kit
+﻿# DAOVerse - DAO Launcher Kit
 
 [![Internet Computer](https://img.shields.io/badge/Internet%20Computer-Protocol-29ABE2?style=flat-square)](https://internetcomputer.org/)
 [![Motoko](https://img.shields.io/badge/Backend-Motoko-8A2BE2?style=flat-square)](https://github.com/dfinity/motoko)
@@ -6,7 +6,7 @@
 [![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square)](https://vitejs.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC?style=flat-square)](https://tailwindcss.com/)
 
-A comprehensive DAO (Decentralized Autonomous Organization) creation and management platform built on the Internet Computer blockchain. Create, deploy, and manage DAOs with advanced governance systems, treasury management, and staking mechanisms.
+A comprehensive DAO (Decentralized Autonomous Organization) creation and management platform built on the Internet Computer blockchain. Create, deploy, and manage DAOs with advanced governance systems, treasury management, and staking mechanisms, now featuring a dedicated ICRC-1 ledger for native token accounting and treasury synchronization.
 
 ## 🌐 Live Deployment
 
@@ -49,7 +49,6 @@ Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
 > 🎯 **Quick Start**: Visit [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/) to start using DAOVerse immediately!
 
 > 📖 **For Developers**: Follow the [Quick Start](#quick-start) section below to deploy your own instance.
-
 ## Key Features
 
 ### Core DAO Components
@@ -58,7 +57,7 @@ Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
 - **Staking Mechanism**: Flexible token staking with customizable periods and reward structures
 - **Asset Management**: Advanced asset handling and portfolio management
 - **Proposal Framework**: Full lifecycle proposal management with various proposal types
-- **ICRC1 Token Standard**: Native support for ICRC1 tokens with full ledger integration for seamless token operations
+- **ICRC1 Ledger Integration**: Dedicated ICRC-1 ledger canister powering token issuance, transfers, and DAO-wide accounting
 
 ### Discovery & Analytics
 - **DAO Explorer**: Global registry to discover and join DAOs created by other users
@@ -84,12 +83,12 @@ Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
 ### Backend Canister Structure
 ```
 src/dao_backend/
-├── main.mo                # Main DAO coordinator and entry point
-├── dao_registry/          # Global DAO discovery system
+├── main.mo               # Main DAO coordinator and entry point
+├── dao_registry/         # Global DAO discovery system
 │   └── main.mo           # Registry for cross-DAO exploration
-├── analytics/             # Platform metrics and insights
+├── analytics/            # Platform metrics and insights
 │   └── main.mo           # Event tracking and analytics
-├── governance/            # Voting and proposal management system
+├── governance/           # Voting and proposal management system
 │   ├── main.mo           # Governance canister logic
 │   └── main.test.mo      # Unit tests for governance
 ├── staking/              # Token staking and rewards
@@ -104,50 +103,52 @@ src/dao_backend/
 └── shared/               # Common types and utilities
     └── types.mo          # Shared data structures
 
-third_party/icrc1/         # ICRC1 Token Standard Implementation
-├── ic-icrc1-ledger.wasm.gz # Pre-built ICRC1 ledger canister
-└── ledger.did             # ICRC1 ledger interface definition
+third_party/icrc1/            # ICRC1 Token Standard Implementation
+├── ic-icrc1-ledger.wasm.gz   # Pre-built ICRC1 ledger canister
+└── ledger.did                # ICRC1 ledger interface definition
 ```
+
+**ICRC1 Ledger Addition:** The kit now ships with a dedicated ICRC1 ledger canister managing native token balances across governance, treasury, and staking modules.
 
 ### Frontend Application Structure
 ```
 src/dao_frontend/
 ├── src/
-│   ├── components/          # React UI components
-│   │   ├── DAODashboard.tsx # Main dashboard interface
-│   │   ├── DAOManagement.tsx # DAO creation and management
-│   │   ├── ExplorePage.tsx  # DAO discovery and exploration
-│   │   ├── MetricsDashboard.tsx # Platform analytics dashboard
-│   │   ├── Governance.jsx   # Voting and proposal interface
-│   │   ├── Treasury.jsx     # Treasury management UI
-│   │   ├── Staking.jsx      # Staking interface
-│   │   ├── Assets.jsx       # Asset management
-│   │   ├── Settings.jsx     # Configuration and preferences
-│   │   └── modals/          # Modal dialogs and popups
-│   ├── hooks/               # Custom React hooks
-│   │   ├── useDAODiscovery.ts # DAO exploration functionality
-│   │   └── useAnalytics.ts  # Platform metrics integration
-│   ├── context/             # React context providers
-│   ├── utils/               # Utility functions
-│   ├── config/              # Configuration and setup
-│   │   └── agent.ts         # Internet Computer agent setup
-│   └── declarations/        # Generated canister interfaces
-├── public/                  # Static assets and resources
-└── dist/                    # Built frontend files
+│   ├── components/                 # React UI components
+│   │   ├── DAODashboard.tsx        # Main dashboard interface
+│   │   ├── DAOManagement.tsx       # DAO creation and management
+│   │   ├── ExplorePage.tsx         # DAO discovery and exploration
+│   │   ├── MetricsDashboard.tsx    # Platform analytics dashboard
+│   │   ├── Governance.jsx          # Voting and proposal interface
+│   │   ├── Treasury.jsx            # Treasury management UI
+│   │   ├── Staking.jsx             # Staking interface
+│   │   ├── Assets.jsx              # Asset management
+│   │   ├── Settings.jsx            # Configuration and preferences
+│   │   └── modals/                 # Modal dialogs and popups
+│   ├── hooks/                      # Custom React hooks
+│   │   ├── useDAODiscovery.ts      # DAO exploration functionality
+│   │   └── useAnalytics.ts         # Platform metrics integration
+│   ├── context/                    # React context providers
+│   ├── utils/                      # Utility functions
+│   ├── config/                     # Configuration and setup
+│   │   └── agent.ts                # Internet Computer agent setup
+│   └── declarations/               # Generated canister interfaces
+├── public/                         # Static assets and resources
+└── dist/                           # Built frontend files
 ```
 
 ### Canister Dependencies
 ```
-dao_backend       ← Core coordinator
-├── dao_registry  ← Global DAO discovery system
-├── dao_analytics ← Platform metrics and tracking
-├── governance    ← Depends on dao_backend, staking
-├── staking       ← Independent base canister
-├── treasury      ← Independent treasury operations
-├── proposals     ← Proposal management
-├── assets        ← Asset storage and management
-├── icrc1_ledger  ← ICRC1 token standard implementation
-└── internet_identity  ← Authentication provider
+dao_backend             ← Core coordinator
+├── dao_registry        ← Global DAO discovery system
+├── dao_analytics       ← Platform metrics and tracking
+├── governance          ← Depends on dao_backend, staking
+├── staking             ← Independent base canister
+├── treasury            ← Independent treasury operations
+├── proposals           ← Proposal management
+├── assets              ← Asset storage and management
+├── icrc1_ledger        ← ICRC1 token standard implementation
+└── internet_identity   ← Authentication provider
 ```
 
 ## Quick Start

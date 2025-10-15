@@ -4,6 +4,9 @@ export interface DAO {
   description: string;
   tokenSymbol: string;
   logo?: string;
+  logoUrl?: string; // External URL for logo
+  logoAssetId?: string; // Asset ID for uploaded logo
+  logoType?: 'upload' | 'url' | 'none'; // Type of logo source
   memberCount: number;
   totalValueLocked: string;
   createdAt: Date;
@@ -35,6 +38,8 @@ export interface DAOMetadata {
   dao_canister_id: string;
   website?: string;
   logo_url?: string;
+  logo_asset_id?: string; // Asset ID for uploaded logos
+  logo_type?: string; // 'upload' or 'url'
   token_symbol?: string;
   total_value_locked: number;
   active_proposals: number;
