@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useDAO } from '../context/DAOContext';
+import { useToast } from '../context/ToastContext';
 import { 
   Wallet, 
   User, 
@@ -31,6 +32,7 @@ import {
 const Navbar = () => {
   const { isAuthenticated, logout, principal, userSettings } = useAuth();
   const { hasActiveDAO, activeDAO } = useDAO();
+  const toast = useToast();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -49,9 +51,26 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const copyPrincipal = () => {
-    navigator.clipboard.writeText(principal);
-    // You could add a toast notification here
+  const copyPrincipal = async () => {
+    try {
+      await navigator.clipboard.writeText(principal);
+      toast({ type: 'success', message: 'Principal ID copied to clipboard!' });
+    } catch (error) {
+      // Fallback for older browsers or permission issues
+      const textArea = document.createElement('textarea');
+      textArea.value = principal;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({ type: 'success', message: 'Principal ID copied to clipboard!' });
+      } catch (err) {
+        toast({ type: 'error', message: 'Failed to copy to clipboard' });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const userStats = {
@@ -306,7 +325,7 @@ const Navbar = () => {
                 >
                   <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <Wallet className="w-4 h-4 lg:w-5 lg:h-5 relative z-10" />
-                  <span className="font-semibold relative z-10 hidden sm:inline">Connect Wallet</span>
+                  <span className="font-semibold relative z-10 hidden sm:inline">Connect Identity</span>
                   <span className="font-semibold relative z-10 sm:hidden">Connect</span>
                 </Link>
               )}

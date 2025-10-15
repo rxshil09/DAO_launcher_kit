@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import BackgroundParticles from './BackgroundParticles';
 import { ArrowRight, Shield, Zap, Users, TrendingUp, Star, CheckCircle, Gamepad2, Coins, Rocket, Globe, Lock, Sparkles, BarChart3 } from 'lucide-react';
 
 const LandingPage = () => {
@@ -97,9 +96,8 @@ const LandingPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative">
+    <div className="min-h-screen text-white overflow-hidden relative">
       {/* Background Particles - Completely Independent Component */}
-      <BackgroundParticles />
 
       {/* Content */}
       <div className="relative z-10">

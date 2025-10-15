@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useActors } from '../context/ActorContext';
 import { Principal } from '@dfinity/principal';
-import BackgroundParticles from './BackgroundParticles';
 import { 
   TrendingUp, 
   Wallet, 
@@ -257,8 +256,7 @@ const Dashboard = () => {
   // Show loading spinner while auth is initializing
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
@@ -275,9 +273,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen text-white relative overflow-hidden">
       {/* Background Particles */}
-      <BackgroundParticles />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}

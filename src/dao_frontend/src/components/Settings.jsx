@@ -3,12 +3,10 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useActors } from '../context/ActorContext';
 import { useNavigate } from 'react-router-dom';
-import BackgroundParticles from './BackgroundParticles';
 import { 
   User, 
   Shield, 
   Bell, 
-  Palette, 
   Globe, 
   Lock,
   Eye,
@@ -116,14 +114,12 @@ const Settings = () => {
     { id: 'profile', name: 'Profile', icon: User },
     { id: 'security', name: 'Security', icon: Shield },
     { id: 'notifications', name: 'Notifications', icon: Bell },
-    { id: 'privacy', name: 'Privacy', icon: Eye },
-    { id: 'appearance', name: 'Appearance', icon: Palette }
+    { id: 'privacy', name: 'Privacy', icon: Eye }
   ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
@@ -139,9 +135,8 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen text-white relative overflow-hidden">
       {/* Background Particles */}
-      <BackgroundParticles />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}
@@ -429,43 +424,7 @@ const Settings = () => {
                 </div>
               )}
 
-              {/* Appearance Tab */}
-              {activeTab === 'appearance' && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-white mb-6 font-mono">Appearance Settings</h2>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-300 mb-4 font-mono">Theme</label>
-                    <div className="grid grid-cols-2 gap-4">
-                      {['dark', 'light'].map((theme) => (
-                        <button
-                          key={theme}
-                          onClick={() => handleInputChange('theme', theme)}
-                          className={`p-4 rounded-lg border-2 transition-all ${
-                            formData.theme === theme
-                              ? 'border-cyan-500 bg-cyan-500/20'
-                              : 'border-gray-600 bg-gray-800/50 hover:border-gray-500'
-                          }`}
-                        >
-                          <div className={`w-full h-20 rounded mb-3 ${
-                            theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-                          }`}></div>
-                          <span className="text-white font-mono capitalize">{theme}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
 
-                  <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <AlertCircle className="w-5 h-5 text-yellow-400 mr-2" />
-                      <span className="text-yellow-400 font-mono text-sm">
-                        Light theme is coming soon!
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Save Button */}
               <div className="flex justify-end pt-6 border-t border-gray-700">

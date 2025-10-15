@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useDAOManagement } from '../context/DAOManagementContext';
-import BackgroundParticles from './BackgroundParticles';
 import { 
   ArrowLeft,
   Settings,
@@ -70,8 +69,7 @@ const DAOManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
@@ -84,8 +82,7 @@ const DAOManagement: React.FC = () => {
 
   if (!dao) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
@@ -105,8 +102,7 @@ const DAOManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <BackgroundParticles />
+    <div className="min-h-screen text-white relative overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header with Breadcrumb */}
@@ -167,13 +163,6 @@ const DAOManagement: React.FC = () => {
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Dashboard</span>
               </Link>
-              <button
-                onClick={() => navigate('/settings')}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors font-mono"
-              >
-                <Settings className="w-4 h-4" />
-                <span>Settings</span>
-              </button>
             </div>
           </div>
         </motion.div>

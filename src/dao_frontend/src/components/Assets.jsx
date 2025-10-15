@@ -163,7 +163,7 @@ const Assets = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white pt-24 px-4">
+    <div className="min-h-screen text-white pt-24 px-4">
       <h2 className="text-2xl font-mono mb-4">Assets</h2>
       {stats && (
         <div className="mb-4 text-sm">

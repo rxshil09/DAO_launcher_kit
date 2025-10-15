@@ -2,14 +2,32 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Copy, ExternalLink, ArrowRight, Share2, Twitter, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 const LaunchSuccess = ({ daoData, onClose }) => {
   const navigate = useNavigate();
+  const toast = useToast();
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // You could add a toast notification here
-    console.log('Copied to clipboard:', text);
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ type: 'success', message: 'Copied to clipboard!' });
+    } catch (error) {
+      // Fallback for older browsers or permission issues
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({ type: 'success', message: 'Copied to clipboard!' });
+      } catch (err) {
+        toast({ type: 'error', message: 'Failed to copy to clipboard' });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const shareOnTwitter = () => {

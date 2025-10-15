@@ -4,10 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDAOManagement } from '../context/DAOManagementContext';
 import { useActors } from '../context/ActorContext';
+import { useToast } from '../context/ToastContext';
 import { Principal } from '@dfinity/principal';
-import BackgroundParticles from './BackgroundParticles';
 import DAOCard from './DAOCard';
-import Toast from './Toast';
 import { 
   Plus, 
   Search, 
@@ -22,19 +21,14 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-type ToastType = {
-  type: 'success' | 'error' | 'info' | 'warning';
-  message: string;
-} | null;
-
 const DAODashboard: React.FC = () => {
   const { isAuthenticated, principal, loading: authLoading } = useAuth();
   const { daos, loading, error, fetchDAOs } = useDAOManagement();
   const actors = useActors();
+  const toast = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [toast, setToast] = useState<ToastType>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Ledger balances + approvals
@@ -182,22 +176,21 @@ const DAODashboard: React.FC = () => {
     setRefreshing(true);
     try {
       await fetchDAOs();
-      setToast({ type: 'success', message: 'DAOs refreshed successfully!' });
+      toast({ type: 'success', message: 'DAOs refreshed successfully!' });
     } catch (err) {
-      setToast({ type: 'error', message: 'Failed to refresh DAOs' });
+      toast({ type: 'error', message: 'Failed to refresh DAOs' });
     } finally {
       setRefreshing(false);
     }
   };
 
   const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string) => {
-    setToast({ type, message });
+    toast({ type, message });
   };
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
@@ -213,8 +206,7 @@ const DAODashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <BackgroundParticles />
+    <div className="min-h-screen text-white relative overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}
@@ -490,14 +482,6 @@ const DAODashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Toast Notifications */}
-      {toast && (
-        <Toast
-          type={toast.type}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 };
