@@ -23,6 +23,7 @@ import ManagementTreasury from './components/management/ManagementTreasury';
 import ManagementProposals from './components/management/ManagementProposals';
 import ManagementAssets from './components/management/ManagementAssets';
 import ManagementAdmins from './components/management/ManagementAdmins';
+import MemberDirectory from './components/MemberDirectory';
 import BackgroundParticles from './components/BackgroundParticles';
 import './app.css';
 
@@ -61,6 +62,7 @@ function App() {
                 <Route path="treasury" element={<ManagementTreasury />} />
                 <Route path="proposals" element={<ManagementProposals />} />
                 <Route path="assets" element={<ManagementAssets />} />
+                <Route path="members" element={<MemberDirectory />} />
                 <Route path="admins" element={<ManagementAdmins />} />
               </Route>
               </Routes>

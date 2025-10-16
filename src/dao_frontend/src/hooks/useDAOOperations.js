@@ -264,9 +264,21 @@ export const useDAOOperations = () => {
             }
             
             // Register with global registry if available
+            let registryDaoId = null;
             try {
-                await daoAPI.registerWithRegistry();
-                console.log('✅ DAO registered with global registry');
+                const registryResult = await daoAPI.registerWithRegistry();
+                if (registryResult && 'ok' in registryResult) {
+                    registryDaoId = registryResult.ok;
+                    console.log('✅ DAO registered with global registry, ID:', registryDaoId);
+                    
+                    // Update the DAO in DAOManagementContext with the registry ID
+                    if (createDAO && registryDaoId) {
+                        // Store the registry ID for membership tracking
+                        daoInfo.registryId = registryDaoId;
+                        daoInfo.dao_id = registryDaoId;
+                        console.log('✅ Updated DAO with registry ID:', registryDaoId);
+                    }
+                }
             } catch (registryError) {
                 console.warn('Failed to register with global registry:', registryError);
                 // Don't fail the entire operation if registry registration fails
@@ -276,7 +288,8 @@ export const useDAOOperations = () => {
             eventBus.emit(EVENTS.DAO_CREATED, {
                 daoInfo,
                 config: daoConfig,
-                creator: principal
+                creator: principal,
+                registryId: registryDaoId
             });
             
             return daoInfo;

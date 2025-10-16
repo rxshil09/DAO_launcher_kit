@@ -46,7 +46,8 @@ const DAOManagement: React.FC = () => {
     { id: 'treasury', name: 'Treasury', icon: DollarSign, path: 'treasury' },
     { id: 'proposals', name: 'Proposals', icon: FileText, path: 'proposals' },
     { id: 'assets', name: 'Assets', icon: Image, path: 'assets' },
-    { id: 'admins', name: 'Admins', icon: Users, path: 'admins' }
+    { id: 'members', name: 'Members', icon: Users, path: 'members' },
+    { id: 'admins', name: 'Admins', icon: Shield, path: 'admins' }
   ];
 
   useEffect(() => {
