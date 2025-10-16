@@ -134,6 +134,7 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
         logoUrl: daoData.logoUrl,
         logoAssetId: daoData.logoAssetId,
         logoType: daoData.logoType,
+        website: daoData.website,
         memberCount: 1,
         totalValueLocked: '$0',
         createdAt: new Date(),

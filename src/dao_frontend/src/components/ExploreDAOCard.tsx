@@ -1,9 +1,9 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
+import React from "react";
+import { motion } from "framer-motion";
+import {
+  Users,
+  DollarSign,
+  TrendingUp,
   Calendar,
   ArrowRight,
   Star,
@@ -13,10 +13,10 @@ import {
   Globe,
   Zap,
   Award,
-  Clock
-} from 'lucide-react';
-import { DAOMetadata } from '../types/dao';
-import { useLogoImage } from '../hooks/useLogoImage';
+  Clock,
+} from "lucide-react";
+import { DAOMetadata } from "../types/dao";
+import { useLogoImage } from "../hooks/useLogoImage";
 
 interface ExploreDAOCardProps {
   dao: DAOMetadata;
@@ -25,7 +25,12 @@ interface ExploreDAOCardProps {
   isTrending?: boolean;
 }
 
-const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isTrending = false }) => {
+const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
+  dao,
+  index,
+  onJoin,
+  isTrending = false,
+}) => {
   // Pass both camelCase and snake_case + legacy logo; the hook will normalize
   const { imageUrl, handleImageError } = useLogoImage({
     logoType: (dao as any).logoType ?? (dao as any).logo_type,
@@ -35,48 +40,48 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
   });
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'defi':
-        return 'from-green-400 to-emerald-500';
-      case 'gaming':
-        return 'from-purple-400 to-pink-500';
-      case 'social':
-        return 'from-blue-400 to-cyan-500';
-      case 'nft':
-        return 'from-orange-400 to-red-500';
-      case 'infrastructure':
-        return 'from-gray-400 to-slate-500';
-      case 'investment':
-        return 'from-yellow-400 to-orange-500';
-      case 'community':
-        return 'from-pink-400 to-rose-500';
-      case 'education':
-        return 'from-indigo-400 to-purple-500';
-      case 'art':
-        return 'from-violet-400 to-purple-500';
+      case "defi":
+        return "from-green-400 to-emerald-500";
+      case "gaming":
+        return "from-purple-400 to-pink-500";
+      case "social":
+        return "from-blue-400 to-cyan-500";
+      case "nft":
+        return "from-orange-400 to-red-500";
+      case "infrastructure":
+        return "from-gray-400 to-slate-500";
+      case "investment":
+        return "from-yellow-400 to-orange-500";
+      case "community":
+        return "from-pink-400 to-rose-500";
+      case "education":
+        return "from-indigo-400 to-purple-500";
+      case "art":
+        return "from-violet-400 to-purple-500";
       default:
-        return 'from-gray-400 to-gray-500';
+        return "from-gray-400 to-gray-500";
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'defi':
+      case "defi":
         return DollarSign;
-      case 'gaming':
+      case "gaming":
         return Activity;
-      case 'social':
+      case "social":
         return Users;
-      case 'nft':
+      case "nft":
         return Award;
-      case 'infrastructure':
+      case "infrastructure":
         return Shield;
-      case 'investment':
+      case "investment":
         return TrendingUp;
-      case 'community':
+      case "community":
         return Globe;
-      case 'education':
+      case "education":
         return Star;
-      case 'art':
+      case "art":
         return Zap;
       default:
         return Shield;
@@ -85,7 +90,8 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
 
   const formatDate = (timestamp: number) => {
     if (!timestamp) return "N/A";
-    const ms = timestamp > 9_999_999_999 ? Math.floor(timestamp / 1_000_000) : timestamp;
+    const ms =
+      timestamp > 9_999_999_999 ? Math.floor(timestamp / 1_000_000) : timestamp;
     return new Date(ms).toLocaleDateString();
   };
 
@@ -101,11 +107,14 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
   const getActivityStatus = (lastActivity: number) => {
     const now = Date.now();
     const daysSinceActivity = (now - lastActivity) / (1000 * 60 * 60 * 24);
-    
-    if (daysSinceActivity < 1) return { status: 'Very Active', color: 'text-green-400' };
-    if (daysSinceActivity < 7) return { status: 'Active', color: 'text-blue-400' };
-    if (daysSinceActivity < 30) return { status: 'Moderate', color: 'text-yellow-400' };
-    return { status: 'Low Activity', color: 'text-gray-400' };
+
+    if (daysSinceActivity < 1)
+      return { status: "Very Active", color: "text-green-400" };
+    if (daysSinceActivity < 7)
+      return { status: "Active", color: "text-blue-400" };
+    if (daysSinceActivity < 30)
+      return { status: "Moderate", color: "text-yellow-400" };
+    return { status: "Low Activity", color: "text-gray-400" };
   };
 
   const CategoryIcon = getCategoryIcon(dao.category);
@@ -116,10 +125,10 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
-      whileHover={{ 
-        scale: 1.02, 
+      whileHover={{
+        scale: 1.02,
         y: -5,
-        boxShadow: "0 25px 50px rgba(59, 130, 246, 0.15)"
+        boxShadow: "0 25px 50px rgba(59, 130, 246, 0.15)",
       }}
       className="bg-gray-900/50 border border-gray-700/50 rounded-xl backdrop-blur-sm overflow-hidden hover:border-blue-400/50 transition-all group relative"
     >
@@ -135,24 +144,32 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
 
       {/* Header with Logo and Category */}
       <div className="relative h-48 overflow-hidden">
-        <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(dao.category)} opacity-20`}></div>
+        <div
+          className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(
+            dao.category
+          )} opacity-20`}
+        ></div>
         {imageUrl ? (
-          <img 
-            src={imageUrl} 
+          <img
+            src={imageUrl}
             alt={dao.name}
             className="w-full h-full object-cover"
             onError={(e) => {
-              console.error('Failed to load DAO logo:', imageUrl);
-              e.currentTarget.style.display = 'none';
+              console.error("Failed to load DAO logo:", imageUrl);
+              e.currentTarget.style.display = "none";
               handleImageError();
             }}
           />
         ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${getCategoryColor(dao.category)} flex items-center justify-center`}>
+          <div
+            className={`w-full h-full bg-gradient-to-br ${getCategoryColor(
+              dao.category
+            )} flex items-center justify-center`}
+          >
             <CategoryIcon className="w-16 h-16 text-white/80" />
           </div>
         )}
-        
+
         {/* Category Badge */}
         <div className="absolute top-4 right-4">
           <span className="px-3 py-1 rounded-full text-xs font-medium bg-black/30 text-white border border-white/20 backdrop-blur-sm">
@@ -162,8 +179,15 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
 
         {/* Activity Status */}
         <div className="absolute bottom-4 left-4">
-          <div className={`flex items-center space-x-1 px-2 py-1 bg-black/30 backdrop-blur-sm rounded-full text-xs ${activityStatus.color}`}>
-            <div className={`w-2 h-2 rounded-full ${activityStatus.color.replace('text-', 'bg-')}`}></div>
+          <div
+            className={`flex items-center space-x-1 px-2 py-1 bg-black/30 backdrop-blur-sm rounded-full text-xs ${activityStatus.color}`}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${activityStatus.color.replace(
+                "text-",
+                "bg-"
+              )}`}
+            ></div>
             <span>{activityStatus.status}</span>
           </div>
         </div>
@@ -191,6 +215,19 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
           {dao.description}
         </p>
 
+        {dao.website && (
+          <a
+            href={dao.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm mb-4 transition-colors group/link"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Globe className="w-3 h-3 mr-1" />
+            <span className="break-all">DAO Website</span>
+          </a>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
@@ -198,15 +235,19 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
               <Users className="w-4 h-4 text-blue-400" />
               <span className="text-xs text-gray-400 font-mono">MEMBERS</span>
             </div>
-            <p className="text-lg font-bold text-white">{dao.member_count.toLocaleString()}</p>
+            <p className="text-lg font-bold text-white">
+              {dao.member_count.toLocaleString()}
+            </p>
           </div>
-          
+
           <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
             <div className="flex items-center space-x-2 mb-1">
               <DollarSign className="w-4 h-4 text-green-400" />
               <span className="text-xs text-gray-400 font-mono">TVL</span>
             </div>
-            <p className="text-lg font-bold text-white">{formatTVL(dao.total_value_locked)}</p>
+            <p className="text-lg font-bold text-white">
+              {formatTVL(dao.total_value_locked)}
+            </p>
           </div>
         </div>
 
@@ -214,16 +255,21 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
         <div className="space-y-2 mb-6">
           <div className="flex justify-between text-sm">
             <span className="text-gray-400 font-mono">Active Proposals</span>
-            <span className="text-blue-400 font-bold">{dao.active_proposals}</span>
+            <span className="text-blue-400 font-bold">
+              {dao.active_proposals}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-400 font-mono">Created</span>
-            <span className="text-gray-300">{formatDate(dao.creation_date)}</span>
+            <span className="text-gray-300">
+              {formatDate(dao.creation_date)}
+            </span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-gray-400 font-mono">Creator</span>
             <span className="text-cyan-400 font-mono text-xs">
-              {dao.creator_principal.slice(0, 8)}...{dao.creator_principal.slice(-6)}
+              {dao.creator_principal.slice(0, 8)}...
+              {dao.creator_principal.slice(-6)}
             </span>
           </div>
         </div>
@@ -239,7 +285,7 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({ dao, index, onJoin, isT
             <span>Join DAO</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </motion.button>
-          
+
           {dao.website && (
             <motion.a
               href={dao.website}

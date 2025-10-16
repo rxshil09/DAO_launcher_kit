@@ -11,6 +11,7 @@ import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
 import Float "mo:base/Float";
 import Error "mo:base/Error";
+import Int "mo:base/Int";
 
 import Types "../shared/types";
 
@@ -103,6 +104,7 @@ persistent actor GovernanceCanister {
         let daoTemp : actor {
             getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
             checkIsAdmin: shared query (Principal) -> async Bool;
+            getDAOConfig: shared query () -> async ?Types.DAOConfig;
         } = actor(Principal.toText(newDaoId));
         let isAdmin = await daoTemp.checkIsAdmin(caller);
         if (caller != self and not isAdmin) {

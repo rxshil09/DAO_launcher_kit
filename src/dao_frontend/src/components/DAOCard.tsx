@@ -5,7 +5,8 @@ import {
   Users, 
   DollarSign, 
   ArrowRight,
-  Shield
+  Shield,
+  Globe
 } from 'lucide-react';
 import { DAO } from '../types/dao';
 import { useLogoImage } from '../hooks/useLogoImage';
@@ -122,6 +123,20 @@ const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
         <p className="text-gray-400 text-sm mb-4 line-clamp-2 leading-relaxed">
           {dao.description}
         </p>
+
+        {/* Website Link */}
+        {dao.website && (
+          <a
+            href={dao.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm mb-4 transition-colors group/link"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Globe className="w-3 h-3 mr-1" />
+            <span className="break-all">DAO Website</span>
+          </a>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-6">

@@ -52,7 +52,9 @@ const LaunchDAO = () => {
   const [launchedDAO, setLaunchedDAO] = useState(null);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
   const [formData, setFormData] = useState({
     // Step 1: Basic Info
     daoName: "",
@@ -142,7 +144,11 @@ const LaunchDAO = () => {
       icon: Target,
       description: "Fundraising goals and parameters",
     },
-    { title: "Team", icon: Users, description: "Add team members and roles" },
+    {
+      title: "Team",
+      icon: Users,
+      description: "Add team members and roles",
+    },
     {
       title: "Launch",
       icon: Rocket,
@@ -339,10 +345,10 @@ const LaunchDAO = () => {
     // Find the feature to check if it's locked
     const module = modules.find((m) => m.id === moduleId);
     const feature = module?.features?.find((f) => f.id === featureId);
-    
+
     // Don't allow toggling locked features or default features
     if (feature?.status === "coming-soon" || feature?.isDefault) return;
-    
+
     setFormData((prev) => ({
       ...prev,
       selectedFeatures: {
@@ -491,6 +497,7 @@ const LaunchDAO = () => {
         logoAssetId:
           formData.logoType === "upload" ? formData.logoSource : undefined,
         logoType: formData.logoType,
+        website: formData.website || undefined,
         memberCount: 1,
         totalValueLocked: "$0",
         status: "active",
@@ -681,143 +688,159 @@ const LaunchDAO = () => {
               {modules.map((module) => {
                 const ModuleIcon = module.icon;
                 const isSelected = formData.selectedModules.includes(module.id);
-                
-                return (
-                <div
-                  key={module.id}
-                  className={`bg-gray-800/50 border rounded-lg p-6 transition-all ${
-                    isSelected 
-                      ? `${module.borderColor} shadow-lg` 
-                      : "border-gray-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                      {/* Module Icon */}
-                      <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center border ${
-                          isSelected
-                            ? `${module.iconBgColor} ${module.borderColor}`
-                            : "bg-gray-700/50 border-gray-600"
-                        }`}
-                      >
-                        <ModuleIcon 
-                          className={`w-6 h-6 ${
-                            isSelected ? module.iconColor : "text-gray-400"
-                          }`} 
-                        />
-                      </div>
-                      
-                      {/* Module Info */}
-                      <div>
-                        <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-                          {module.name}
-                          {module.required && (
-                            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30 font-mono">
-                              Required
-                            </span>
-                          )}
-                          {isSelected && !module.required && (
-                            <span className={`px-2 py-1 ${module.iconBgColor} ${module.iconColor} text-xs rounded border ${module.borderColor} font-mono`}>
-                              ✓ Added
-                            </span>
-                          )}
-                        </h4>
-                        <p className="text-gray-400 text-sm">
-                          {module.description}
-                        </p>
-                      </div>
-                    </div>
-                    {!module.required && (
-                      <button
-                        type="button"
-                        onClick={() => handleModuleToggle(module.id)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                          formData.selectedModules.includes(module.id)
-                            ? "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
-                            : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30"
-                        }`}
-                      >
-                        {formData.selectedModules.includes(module.id)
-                          ? "Remove"
-                          : "Add"}
-                      </button>
-                    )}
-                  </div>
 
-                  {formData.selectedModules.includes(module.id) &&
-                    module.features && (
-                      <div className="space-y-2 pl-9">
-                        <h5 className="text-sm font-semibold text-gray-300 font-mono">
-                          Features:
-                        </h5>
-                        {module.features.map((feature) => {
-                          const isLocked = feature.status === "coming-soon";
-                          const isDefault = feature.isDefault;
-                          const isAvailable = feature.status === "available";
-                          
-                          return (
-                            <label
-                              key={feature.id}
-                              className={`flex items-start space-x-3 ${
-                                isLocked || isDefault ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-                              }`}
-                              title={
-                                isLocked
-                                  ? `Coming Soon - Expected ${feature.releaseETA}`
-                                  : isDefault
-                                  ? "Default feature - always enabled"
-                                  : ""
-                              }
-                            >
-                              <input
-                                type="checkbox"
-                                checked={
-                                  formData.selectedFeatures[module.id]?.[
-                                    feature.id
-                                  ] || false
-                                }
-                                onChange={() =>
-                                  handleFeatureToggle(module.id, feature.id)
-                                }
-                                disabled={isLocked || isDefault}
-                                className={`w-4 h-4 mt-0.5 rounded focus:ring-cyan-500 ${
-                                  isLocked || isDefault
-                                    ? "bg-gray-600 border-gray-500 cursor-not-allowed"
-                                    : "text-cyan-500 bg-gray-700 border-gray-600"
-                                }`}
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className={`text-sm ${isLocked ? "text-gray-400" : "text-white"}`}>
-                                    {feature.name}
-                                  </span>
-                                  {isAvailable && !isDefault && (
-                                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded border border-green-500/30 font-mono">
-                                      ✓ Available
-                                    </span>
-                                  )}
-                                  {isDefault && (
-                                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30 font-mono">
-                                      Default
-                                    </span>
-                                  )}
-                                  {isLocked && (
-                                    <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded border border-yellow-500/30 font-mono">
-                                      🔒 Coming {feature.releaseETA}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className={`text-xs mt-0.5 ${isLocked ? "text-gray-500" : "text-gray-400"}`}>
-                                  {feature.description}
-                                </p>
-                              </div>
-                            </label>
-                          );
-                        })}
+                return (
+                  <div
+                    key={module.id}
+                    className={`bg-gray-800/50 border rounded-lg p-6 transition-all ${
+                      isSelected
+                        ? `${module.borderColor} shadow-lg`
+                        : "border-gray-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        {/* Module Icon */}
+                        <div
+                          className={`w-12 h-12 rounded-lg flex items-center justify-center border ${
+                            isSelected
+                              ? `${module.iconBgColor} ${module.borderColor}`
+                              : "bg-gray-700/50 border-gray-600"
+                          }`}
+                        >
+                          <ModuleIcon
+                            className={`w-6 h-6 ${
+                              isSelected ? module.iconColor : "text-gray-400"
+                            }`}
+                          />
+                        </div>
+
+                        {/* Module Info */}
+                        <div>
+                          <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+                            {module.name}
+                            {module.required && (
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30 font-mono">
+                                Required
+                              </span>
+                            )}
+                            {isSelected && !module.required && (
+                              <span
+                                className={`px-2 py-1 ${module.iconBgColor} ${module.iconColor} text-xs rounded border ${module.borderColor} font-mono`}
+                              >
+                                ✓ Added
+                              </span>
+                            )}
+                          </h4>
+                          <p className="text-gray-400 text-sm">
+                            {module.description}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                </div>
+                      {!module.required && (
+                        <button
+                          type="button"
+                          onClick={() => handleModuleToggle(module.id)}
+                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            formData.selectedModules.includes(module.id)
+                              ? "bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30"
+                              : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30"
+                          }`}
+                        >
+                          {formData.selectedModules.includes(module.id)
+                            ? "Remove"
+                            : "Add"}
+                        </button>
+                      )}
+                    </div>
+
+                    {formData.selectedModules.includes(module.id) &&
+                      module.features && (
+                        <div className="space-y-2 pl-9">
+                          <h5 className="text-sm font-semibold text-gray-300 font-mono">
+                            Features:
+                          </h5>
+                          {module.features.map((feature) => {
+                            const isLocked = feature.status === "coming-soon";
+                            const isDefault = feature.isDefault;
+                            const isAvailable = feature.status === "available";
+
+                            return (
+                              <label
+                                key={feature.id}
+                                className={`flex items-start space-x-3 ${
+                                  isLocked || isDefault
+                                    ? "cursor-not-allowed opacity-60"
+                                    : "cursor-pointer"
+                                }`}
+                                title={
+                                  isLocked
+                                    ? `Coming Soon - Expected ${feature.releaseETA}`
+                                    : isDefault
+                                    ? "Default feature - always enabled"
+                                    : ""
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    formData.selectedFeatures[module.id]?.[
+                                      feature.id
+                                    ] || false
+                                  }
+                                  onChange={() =>
+                                    handleFeatureToggle(module.id, feature.id)
+                                  }
+                                  disabled={isLocked || isDefault}
+                                  className={`w-4 h-4 mt-0.5 rounded focus:ring-cyan-500 ${
+                                    isLocked || isDefault
+                                      ? "bg-gray-600 border-gray-500 cursor-not-allowed"
+                                      : "text-cyan-500 bg-gray-700 border-gray-600"
+                                  }`}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span
+                                      className={`text-sm ${
+                                        isLocked
+                                          ? "text-gray-400"
+                                          : "text-white"
+                                      }`}
+                                    >
+                                      {feature.name}
+                                    </span>
+                                    {isAvailable && !isDefault && (
+                                      <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded border border-green-500/30 font-mono">
+                                        ✓ Available
+                                      </span>
+                                    )}
+                                    {isDefault && (
+                                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30 font-mono">
+                                        Default
+                                      </span>
+                                    )}
+                                    {isLocked && (
+                                      <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded border border-yellow-500/30 font-mono">
+                                        🔒 Coming {feature.releaseETA}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p
+                                    className={`text-xs mt-0.5 ${
+                                      isLocked
+                                        ? "text-gray-500"
+                                        : "text-gray-400"
+                                    }`}
+                                  >
+                                    {feature.description}
+                                  </p>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                  </div>
                 );
               })}
             </div>
@@ -954,11 +977,12 @@ const LaunchDAO = () => {
             <div>
               <div className="text-l text-gray-300 mt-3 font-mono">
                 Token pricing will be determined by market dynamics. Configure
-                how tokens are initially distributed in the <b>*Initial Distribution Stratagy*</b> section.
+                how tokens are initially distributed in the{" "}
+                <b>*Initial Distribution Strategy*</b> section.
               </div>
               <div className="text-s text-cyan-400 mt-2 font-mono">
-                💡 Price discovery happens through trading. Focus on utility
-                and community value.
+                💡 Price discovery happens through trading. Focus on utility and
+                community value.
               </div>
             </div>
           </div>
@@ -1276,23 +1300,31 @@ const LaunchDAO = () => {
                   </h5>
                   <div className="space-y-2">
                     {formData.selectedModules.map((moduleId) => {
-                      const module = modules.find(m => m.id === moduleId);
-                      const enabledFeatures = formData.selectedFeatures[moduleId] 
+                      const module = modules.find((m) => m.id === moduleId);
+                      const enabledFeatures = formData.selectedFeatures[
+                        moduleId
+                      ]
                         ? Object.entries(formData.selectedFeatures[moduleId])
                             .filter(([_, enabled]) => enabled)
                             .map(([featureId]) => {
-                              const feature = module?.features?.find(f => f.id === featureId);
+                              const feature = module?.features?.find(
+                                (f) => f.id === featureId
+                              );
                               return feature?.name || featureId;
                             })
                         : [];
-                      
+
                       return (
                         <div key={moduleId} className="text-sm">
-                          <p className="text-white font-semibold">✓ {module?.name || moduleId}</p>
+                          <p className="text-white font-semibold">
+                            ✓ {module?.name || moduleId}
+                          </p>
                           {enabledFeatures.length > 0 && (
                             <ul className="ml-4 mt-1 space-y-0.5">
                               {enabledFeatures.map((featureName, idx) => (
-                                <li key={idx} className="text-gray-400 text-xs">• {featureName}</li>
+                                <li key={idx} className="text-gray-400 text-xs">
+                                  • {featureName}
+                                </li>
                               ))}
                             </ul>
                           )}
@@ -1358,29 +1390,6 @@ const LaunchDAO = () => {
                   {errors.termsAccepted}
                 </p>
               )}
-            </div>
-
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6">
-              <label className="flex items-start space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.kycRequired}
-                  onChange={(e) =>
-                    handleInputChange("kycRequired", e.target.checked)
-                  }
-                  className="w-5 h-5 text-cyan-500 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500 mt-1"
-                />
-                <div>
-                  <span className="text-white font-semibold">
-                    Require KYC for members
-                  </span>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Enable Know Your Customer (KYC) verification for DAO
-                    members. This may be required for certain jurisdictions or
-                    investment types.
-                  </p>
-                </div>
-              </label>
             </div>
           </div>
         );
@@ -1460,12 +1469,14 @@ const LaunchDAO = () => {
           exit={{ opacity: 0, x: -20 }}
           className="bg-gray-900/50 border border-cyan-500/30 rounded-xl backdrop-blur-sm p-8 mb-8"
         >
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2 font-mono">
-              {steps[currentStep].title.toUpperCase()}
-            </h2>
-            <p className="text-gray-400">{steps[currentStep].description}</p>
-          </div>
+          {currentStep !== steps.length - 1 && (
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2 font-mono">
+                {steps[currentStep].title.toUpperCase()}
+              </h2>
+              <p className="text-gray-400">{steps[currentStep].description}</p>
+            </div>
+          )}
 
           {renderStepContent()}
         </motion.div>

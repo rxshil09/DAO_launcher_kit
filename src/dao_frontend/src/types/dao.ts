@@ -7,6 +7,7 @@ export interface DAO {
   logoUrl?: string; // External URL for logo
   logoAssetId?: string; // Asset ID for uploaded logo
   logoType?: 'upload' | 'url' | 'none'; // Type of logo source
+  website?: string; // Optional website URL
   memberCount: number;
   totalValueLocked: string;
   createdAt: Date;

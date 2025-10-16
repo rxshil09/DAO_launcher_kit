@@ -244,6 +244,8 @@ export const useDAODiscovery = () => {
         dao_canister_id: item.dao_canister_id.toText(),
         website: item.website?.[0],
         logo_url: item.logo_url?.[0],
+        logo_asset_id: item.logo_asset_id?.[0],
+        logo_type: item.logo_type?.[0],
         token_symbol: item.token_symbol?.[0],
         total_value_locked: Number(item.total_value_locked),
         active_proposals: Number(item.active_proposals),
