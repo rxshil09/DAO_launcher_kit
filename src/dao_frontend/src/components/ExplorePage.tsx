@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useActors } from '../context/ActorContext';
 import { useDAODiscovery } from '../hooks/useDAODiscovery';
 import { useToast } from '../context/ToastContext';
 import ExploreDAOCard from './ExploreDAOCard';
@@ -27,6 +28,7 @@ import { DAOMetadata, SearchFilters, SortOption } from '../types/dao';
 
 const ExplorePage: React.FC = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const actors = useActors();
   const {
     getAllPublicDAOs,
     searchDAOs,
@@ -160,14 +162,38 @@ const ExplorePage: React.FC = () => {
     toast({ type, message });
   };
 
-  const handleJoinDAO = (dao: DAOMetadata) => {
+  const handleJoinDAO = async (dao: DAOMetadata) => {
     if (!isAuthenticated) {
       navigate('/signin');
       return;
     }
+
+    if (!actors?.daoBackend) {
+      showToast('error', 'Backend not available. Please try again.');
+      return;
+    }
     
-    // Navigate to DAO management page
-    navigate(`/dao/${dao.dao_id}/manage/overview`);
+    try {
+      showToast('info', 'Joining DAO...');
+      
+      // Actually join the DAO via backend
+      const result = await actors.daoBackend.joinDAO(dao.dao_id);
+      
+      if ('ok' in result) {
+        showToast('success', `Successfully joined ${dao.name}! 🎉`);
+        
+        // Refresh DAOs to update member count
+        await loadDAOs(currentPage, false);
+        
+        // Navigate to DAO management page
+        navigate(`/dao/${dao.dao_id}/manage/overview`);
+      } else {
+        showToast('error', `Failed to join: ${result.err}`);
+      }
+    } catch (error) {
+      console.error('Join DAO failed:', error);
+      showToast('error', 'Failed to join DAO. Please try again.');
+    }
   };
 
   const sortOptions = [

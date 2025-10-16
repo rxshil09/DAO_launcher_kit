@@ -6,6 +6,8 @@ import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
+import Array "mo:base/Array";
+import Buffer "mo:base/Buffer";
 
 import Types "shared/types";
 
@@ -102,11 +104,19 @@ persistent actor DAOMain {
     private var registeredInRegistry : Bool = false;
     private var registryDaoId : ?Text = null;
 
+    // Membership tracking - stable storage for DAO membership system
+    private var daoMembersEntries : [(Text, [Principal])] = [];
+    private var userMembershipsEntries : [(Principal, [Text])] = [];
+
     // Runtime storage - recreated after upgrades from stable storage
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
     private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
     private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
     private transient var cachedDaoConfig : ?DAOConfig = null;
+
+    // Membership tracking - runtime storage for efficient lookups
+    private transient var daoMembers = HashMap.HashMap<Text, [Principal]>(10, Text.equal, Text.hash);
+    private transient var userMemberships = HashMap.HashMap<Principal, [Text]>(50, Principal.equal, Principal.hash);
 
     // Canister references for modular architecture
     // These maintain connections to other specialized canisters in the DAO ecosystem
@@ -130,6 +140,8 @@ persistent actor DAOMain {
     system func preupgrade() {
         userProfilesEntries := Iter.toArray(userProfiles.entries());
         adminPrincipalsEntries := Iter.toArray(adminPrincipals.keys());
+        daoMembersEntries := Iter.toArray(daoMembers.entries());
+        userMembershipsEntries := Iter.toArray(userMemberships.entries());
     };
 
     /**
@@ -148,6 +160,21 @@ persistent actor DAOMain {
         for (admin in adminPrincipalsEntries.vals()) {
             adminPrincipals.put(admin, true);
         };
+
+        // Restore membership data from stable storage
+        daoMembers := HashMap.fromIter<Text, [Principal]>(
+            daoMembersEntries.vals(),
+            daoMembersEntries.size(),
+            Text.equal,
+            Text.hash
+        );
+
+        userMemberships := HashMap.fromIter<Principal, [Text]>(
+            userMembershipsEntries.vals(),
+            userMembershipsEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
 
         // Restore registry canister reference if available
         switch (registryCanisterId) {
@@ -333,8 +360,15 @@ persistent actor DAOMain {
                             case (#ok(dao_id)) {
                                 registeredInRegistry := true;
                                 registryDaoId := ?dao_id;
+                                
+                                // Add the creator as the first member when registering
+                                daoMembers.put(dao_id, [msg.caller]);
+                                userMemberships.put(msg.caller, [dao_id]);
+                                totalMembers := 1;
+                                
                                 await syncRegistryMetadata();
                                 Debug.print("DAO registered with registry: " # dao_id);
+                                Debug.print("Creator added as first member");
                                 #ok(dao_id)
                             };
                             case (#err(error)) #err(error);
@@ -795,6 +829,246 @@ persistent actor DAOMain {
         Debug.print("Admin removed: " # Principal.toText(adminToRemove));
         #ok()
     };
+
+    // ==================== MEMBERSHIP MANAGEMENT ====================
+
+    /**
+     * Join a DAO as a member
+     * Adds the caller to the DAO's member list and tracks the membership
+     */
+    public shared(msg) func joinDAO(daoId: Text) : async Result<(), Text> {
+        let caller = msg.caller;
+        
+        // Validate DAO ID
+        if (daoId == "") {
+            return #err("Invalid DAO ID");
+        };
+        
+        // Check if already a member
+        let currentMembers = switch (daoMembers.get(daoId)) {
+            case (?members) members;
+            case null [];
+        };
+        
+        let isMember = Array.find<Principal>(currentMembers, func(p) = Principal.equal(p, caller));
+        if (isMember != null) {
+            return #err("Already a member of this DAO");
+        };
+        
+        // Add to DAO members list
+        let updatedMembers = Array.append<Principal>(currentMembers, [caller]);
+        daoMembers.put(daoId, updatedMembers);
+        
+        // Add to user's memberships
+        let currentDAOs = switch (userMemberships.get(caller)) {
+            case (?daos) daos;
+            case null [];
+        };
+        let updatedDAOs = Array.append<Text>(currentDAOs, [daoId]);
+        userMemberships.put(caller, updatedDAOs);
+        
+        // Update total members count
+        totalMembers += 1;
+        
+        // Update registry if connected
+        if (registeredInRegistry) {
+            ignore updateRegistryStats();
+        };
+
+        // Record analytics event
+        ignore recordAnalyticsEvent(#MEMBER_ADDED, ?daoId, ?caller, [], null);
+        
+        Debug.print("User " # Principal.toText(caller) # " joined DAO: " # daoId);
+        #ok()
+    };
+
+    /**
+     * Leave a DAO
+     * Removes the caller from the DAO's member list
+     */
+    public shared(msg) func leaveDAO(daoId: Text) : async Result<(), Text> {
+        let caller = msg.caller;
+        
+        // Get current members
+        let currentMembers = switch (daoMembers.get(daoId)) {
+            case (?members) members;
+            case null return #err("DAO not found");
+        };
+        
+        // Check if user is a member
+        let isMember = Array.find<Principal>(currentMembers, func(p) = Principal.equal(p, caller));
+        if (isMember == null) {
+            return #err("Not a member of this DAO");
+        };
+        
+        // Remove from DAO members
+        let updatedMembers = Array.filter<Principal>(currentMembers, func(p) = not Principal.equal(p, caller));
+        daoMembers.put(daoId, updatedMembers);
+        
+        // Remove from user's memberships
+        let currentDAOs = switch (userMemberships.get(caller)) {
+            case (?daos) daos;
+            case null return #err("User has no memberships");
+        };
+        let updatedDAOs = Array.filter<Text>(currentDAOs, func(d) = d != daoId);
+        userMemberships.put(caller, updatedDAOs);
+        
+        // Update total members count
+        if (totalMembers > 0) {
+            totalMembers -= 1;
+        };
+        
+        // Update registry if connected
+        if (registeredInRegistry) {
+            ignore updateRegistryStats();
+        };
+
+        // Record analytics event
+        ignore recordAnalyticsEvent(#MEMBER_REMOVED, ?daoId, ?caller, [], null);
+        
+        Debug.print("User " # Principal.toText(caller) # " left DAO: " # daoId);
+        #ok()
+    };
+
+    /**
+     * Check if a user is a member of a DAO
+     */
+    public query func isMember(daoId: Text, userId: Principal) : async Bool {
+        let members = switch (daoMembers.get(daoId)) {
+            case (?m) m;
+            case null return false;
+        };
+        let found = Array.find<Principal>(members, func(p) = Principal.equal(p, userId));
+        found != null
+    };
+
+    /**
+     * Get all member Principals of a DAO
+     */
+    public query func getDAOMembers(daoId: Text) : async [Principal] {
+        switch (daoMembers.get(daoId)) {
+            case (?members) members;
+            case null [];
+        }
+    };
+
+    /**
+     * Get member count for a DAO
+     */
+    public query func getDAOMemberCount(daoId: Text) : async Nat {
+        switch (daoMembers.get(daoId)) {
+            case (?members) members.size();
+            case null 0;
+        }
+    };
+
+    /**
+     * Get all DAOs a user is a member of
+     */
+    public query func getUserMemberships(userId: Principal) : async [Text] {
+        switch (userMemberships.get(userId)) {
+            case (?daos) daos;
+            case null [];
+        }
+    };
+
+    /**
+     * Get detailed member profiles for a DAO
+     * Returns UserProfile information for all members
+     */
+    public query func getDAOMemberProfiles(daoId: Text) : async [UserProfile] {
+        let members = switch (daoMembers.get(daoId)) {
+            case (?m) m;
+            case null return [];
+        };
+        
+        let profiles = Buffer.Buffer<UserProfile>(0);
+        for (memberId in members.vals()) {
+            switch (userProfiles.get(memberId)) {
+                case (?profile) profiles.add(profile);
+                case null {
+                    // Create minimal profile for users without registered profiles
+                    let minimalProfile : UserProfile = {
+                        id = memberId;
+                        displayName = "";
+                        bio = "";
+                        joinedAt = 0;
+                        reputation = 0;
+                        totalStaked = 0;
+                        votingPower = 0;
+                    };
+                    profiles.add(minimalProfile);
+                };
+            };
+        };
+        
+        Buffer.toArray(profiles)
+    };
+
+    // Helper function to record analytics events
+    private func recordAnalyticsEvent(
+        eventType: { #DAO_CREATED; #USER_JOINED; #PROPOSAL_CREATED; #VOTE_CAST; #TREASURY_DEPOSIT; #TREASURY_WITHDRAWAL; #TOKENS_STAKED; #TOKENS_UNSTAKED; #REWARDS_CLAIMED; #DAO_UPDATED; #MEMBER_ADDED; #MEMBER_REMOVED },
+        daoId: ?Text,
+        userId: ?Principal,
+        metadata: [(Text, Text)],
+        value: ?Float
+    ) : async () {
+        switch (analyticsCanister) {
+            case (?analytics) {
+                try {
+                    let result = await analytics.recordEvent(eventType, daoId, userId, metadata, value);
+                    switch (result) {
+                        case (#ok(_)) {};
+                        case (#err(e)) Debug.print("Analytics error: " # e);
+                    };
+                } catch (e) {
+                    Debug.print("Failed to record analytics event");
+                };
+            };
+            case null {};
+        };
+    };
+
+    /**
+     * Admin function to manually add a user to a DAO's member list
+     * Useful for fixing existing DAOs or adding users without requiring them to click "Join"
+     */
+    public shared(msg) func addMemberAdmin(daoId: Text, userId: Principal) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can add members directly");
+        };
+
+        // Check if already a member
+        let currentMembers = switch (daoMembers.get(daoId)) {
+            case (?members) members;
+            case null [];
+        };
+        
+        let isMember = Array.find<Principal>(currentMembers, func(p) = Principal.equal(p, userId));
+        if (isMember != null) {
+            return #err("User is already a member");
+        };
+        
+        // Add to DAO members list
+        let updatedMembers = Array.append<Principal>(currentMembers, [userId]);
+        daoMembers.put(daoId, updatedMembers);
+        
+        // Add to user's memberships
+        let currentDAOs = switch (userMemberships.get(userId)) {
+            case (?daos) daos;
+            case null [];
+        };
+        let updatedDAOs = Array.append<Text>(currentDAOs, [daoId]);
+        userMemberships.put(userId, updatedDAOs);
+        
+        // Update total members count
+        totalMembers += 1;
+        
+        Debug.print("Admin added user " # Principal.toText(userId) # " to DAO: " # daoId);
+        #ok()
+    };
+
+    // ==================== END MEMBERSHIP MANAGEMENT ====================
 
     // Health check
     public query func health() : async { status: Text; timestamp: Int } {

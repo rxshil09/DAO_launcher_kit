@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -14,9 +14,14 @@ import {
   Zap,
   Award,
   Clock,
+  Check,
+  Loader2,
 } from "lucide-react";
+import { Principal } from "@dfinity/principal";
 import { DAOMetadata } from "../types/dao";
 import { useLogoImage } from "../hooks/useLogoImage";
+import { useAuth } from "../context/AuthContext";
+import { useActors } from "../context/ActorContext";
 
 interface ExploreDAOCardProps {
   dao: DAOMetadata;
@@ -31,6 +36,12 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
   onJoin,
   isTrending = false,
 }) => {
+  const { principal } = useAuth();
+  const actors = useActors();
+  const [isMember, setIsMember] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [checkingMembership, setCheckingMembership] = useState(false);
+
   // Pass both camelCase and snake_case + legacy logo; the hook will normalize
   const { imageUrl, handleImageError } = useLogoImage({
     logoType: (dao as any).logoType ?? (dao as any).logo_type,
@@ -38,6 +49,43 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
     logoUrl: (dao as any).logoUrl ?? (dao as any).logo_url,
     legacyLogo: (dao as any).logo,
   });
+
+  // Check membership status when component mounts or principal changes
+  useEffect(() => {
+    const checkMembership = async () => {
+      if (!principal || !actors?.daoBackend) {
+        setIsMember(false);
+        return;
+      }
+      
+      setCheckingMembership(true);
+      try {
+        const result = await actors.daoBackend.isMember(dao.dao_id, Principal.fromText(principal));
+        setIsMember(result);
+      } catch (error) {
+        console.error('Failed to check membership:', error);
+        setIsMember(false);
+      } finally {
+        setCheckingMembership(false);
+      }
+    };
+    
+    checkMembership();
+  }, [dao.dao_id, principal, actors]);
+
+  const handleJoinClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoading(true);
+    try {
+      await onJoin(dao);
+      // Update membership status after successful join
+      setIsMember(true);
+    } catch (error) {
+      console.error('Join failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
       case "defi":
@@ -276,15 +324,41 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
 
         {/* Action Buttons */}
         <div className="flex space-x-3">
-          <motion.button
-            onClick={() => onJoin(dao)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-4 rounded-lg transition-all font-semibold flex items-center justify-center space-x-2 group"
-          >
-            <span>Join DAO</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </motion.button>
+          {checkingMembership ? (
+            <div className="flex-1 bg-gray-800/50 border border-gray-700 text-gray-400 py-3 px-4 rounded-lg flex items-center justify-center space-x-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Checking...</span>
+            </div>
+          ) : isMember ? (
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="flex-1 bg-green-600/20 border border-green-500/50 text-green-400 py-3 px-4 rounded-lg flex items-center justify-center space-x-2"
+            >
+              <Check className="w-5 h-5" />
+              <span className="font-semibold">Member</span>
+            </motion.div>
+          ) : (
+            <motion.button
+              onClick={handleJoinClick}
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 px-4 rounded-lg transition-all font-semibold flex items-center justify-center space-x-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Joining...</span>
+                </>
+              ) : (
+                <>
+                  <span>Join DAO</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </motion.button>
+          )}
 
           {dao.website && (
             <motion.a
