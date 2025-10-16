@@ -542,10 +542,6 @@ const LaunchDAO = () => {
         `DAO launched successfully! Registry ID: ${result.registryId}`
       );
 
-      // Navigate to dashboard after showing success
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 3000);
     } catch (error) {
       console.error("Failed to launch DAO:", error);
       showToast("error", `Failed to launch DAO: ${error.message}`);

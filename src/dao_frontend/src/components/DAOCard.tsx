@@ -120,23 +120,35 @@ const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
         </div>
 
         {/* Description */}
-        <p className="text-gray-400 text-sm mb-4 line-clamp-2 leading-relaxed">
-          {dao.description}
-        </p>
+        <div className="mb-4 min-h-[3.5rem] flex items-start">
+          <p className="text-gray-400 text-sm leading-relaxed w-full overflow-hidden break-words" style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word'
+          }}>
+            {dao.description || <span>&nbsp;</span>}
+          </p>
+        </div>
 
-        {/* Website Link */}
-        {dao.website && (
-          <a
-            href={dao.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm mb-4 transition-colors group/link"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Globe className="w-3 h-3 mr-1" />
-            <span className="break-all">DAO Website</span>
-          </a>
-        )}
+        {/* Website Link (always reserve space for 1 line) */}
+        <div className="mb-4 min-h-[1.5rem] flex items-center">
+          {dao.website ? (
+            <a
+              href={dao.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm transition-colors group/link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Globe className="w-3 h-3 mr-1" />
+              <span className="break-all">DAO Website</span>
+            </a>
+          ) : (
+            <span>&nbsp;</span>
+          )}
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-6">

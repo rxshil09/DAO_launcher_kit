@@ -38,6 +38,10 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
     logoUrl: (dao as any).logoUrl ?? (dao as any).logo_url,
     legacyLogo: (dao as any).logo,
   });
+  
+  // Extract website URL from DAO metadata - check all possible field names
+  const websiteUrl = dao.website || (dao as any).website_url || '';
+  
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
       case "defi":
@@ -210,23 +214,36 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
           )}
         </div>
 
-        {/* Description */}
-        <p className="text-gray-400 text-sm mb-4 line-clamp-2 leading-relaxed">
-          {dao.description}
-        </p>
+        {/* Description (always reserve space for 2 lines) */}
+        <div className="mb-4 min-h-[3.5rem] flex items-start">
+          <p className="text-gray-400 text-sm leading-relaxed w-full overflow-hidden break-words" style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word'
+          }}>
+            {dao.description || <span>&nbsp;</span>}
+          </p>
+        </div>
 
-        {dao.website && (
-          <a
-            href={dao.website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm mb-4 transition-colors group/link"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Globe className="w-3 h-3 mr-1" />
-            <span className="break-all">DAO Website</span>
-          </a>
-        )}
+        {/* Website Link (always reserve space for 1 line) */}
+        <div className="mb-4 min-h-[1.5rem] flex items-center">
+          {websiteUrl ? (
+            <a
+              href={websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm transition-colors group/link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Globe className="w-3 h-3 mr-1" />
+              <span className="break-all">DAO Website</span>
+            </a>
+          ) : (
+            <span>&nbsp;</span>
+          )}
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-6">
@@ -286,14 +303,15 @@ const ExploreDAOCard: React.FC<ExploreDAOCardProps> = ({
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </motion.button>
 
-          {dao.website && (
+          {websiteUrl && (
             <motion.a
-              href={dao.website}
+              href={websiteUrl}
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="p-3 bg-gray-800 border border-gray-700 rounded-lg text-gray-400 hover:text-cyan-400 hover:border-cyan-500/30 transition-colors"
+              onClick={(e) => e.stopPropagation()}
             >
               <ExternalLink className="w-4 h-4" />
             </motion.a>

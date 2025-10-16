@@ -49,8 +49,12 @@ const LaunchSuccess = ({ daoData, onClose }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900 border border-cyan-500/30 rounded-xl p-8 max-w-2xl w-full relative"
+        className="bg-gray-900 border border-cyan-500/30 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative my-auto"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
       >
         {/* Close button */}
         <button

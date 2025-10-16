@@ -204,6 +204,11 @@ body {
   }
 }
 
+/* Hide scrollbar for modal */
+.overflow-y-auto::-webkit-scrollbar {
+  display: none;
+}
+
 /* Print styles */
 @media print {
   .no-print {
