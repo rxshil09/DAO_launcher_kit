@@ -37,6 +37,8 @@ const DAOManagement: React.FC = () => {
     legacyLogo: dao?.logo,
   });
 
+  // TODO: Filter tabs based on dao.selectedModules from backend config
+  // For now, showing all tabs. Should fetch DAO config and filter based on enabled modules
   const tabs = [
     { id: 'overview', name: 'Overview', icon: BarChart3, path: 'overview' },
     { id: 'governance', name: 'Governance', icon: Vote, path: 'governance' },

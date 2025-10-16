@@ -58,6 +58,7 @@ persistent actor GovernanceCanister {
     var dao : actor {
         getUserProfile: shared query (Principal) -> async ?Types.UserProfile;
         checkIsAdmin: shared query (Principal) -> async Bool;
+        getDAOConfig: shared query () -> async ?Types.DAOConfig;
     } = actor("aaaaa-aa");
 
     var staking : actor {
@@ -79,6 +80,7 @@ persistent actor GovernanceCanister {
     private var stakingId : Principal = Principal.fromText("aaaaa-aa");
     private var initialized : Bool = false;
     private var analyticsId : ?Principal = null;
+    private var cachedDAOConfig : ?Types.DAOConfig = null; // Cached DAO configuration with module features
 
     // Runtime storage - rebuilt from stable storage after upgrades
     // HashMaps provide O(1) lookup performance for governance operations
@@ -122,6 +124,9 @@ persistent actor GovernanceCanister {
             case null {};
         };
         
+        // Fetch DAO configuration to enable feature-based behavior
+        await fetchDAOConfig();
+        
         Debug.print("Initialization complete");
     };
 
@@ -130,6 +135,53 @@ persistent actor GovernanceCanister {
         analyticsId := ?analytics_id;
         analyticsCanister := ?(actor (Principal.toText(analytics_id)) : AnalyticsService);
         #ok()
+    };
+
+    // Fetch DAO configuration from dao_backend
+    private func fetchDAOConfig() : async () {
+        try {
+            let configOpt = await dao.getDAOConfig();
+            cachedDAOConfig := configOpt;
+        } catch (e) {
+            Debug.print("Failed to fetch DAO config: " # Error.message(e));
+        };
+    };
+
+    // Check if a specific governance feature is enabled
+    private func isFeatureEnabled(featureId: Text) : Bool {
+        switch (cachedDAOConfig) {
+            case (?daoConfig) {
+                // Find governance module features
+                for (moduleFeature in daoConfig.moduleFeatures.vals()) {
+                    if (moduleFeature.moduleId == "governance") {
+                        for (feature in moduleFeature.features.vals()) {
+                            if (feature == featureId) {
+                                return true;
+                            };
+                        };
+                    };
+                };
+                false
+            };
+            case null false;
+        };
+    };
+
+    // Calculate voting power based on configured voting mechanism
+    // - Token-weighted (default): Direct stake amount
+    // - Quadratic: Square root of stake to reduce whale influence
+    private func calculateVotingPower(rawVotingPower: Nat) : Nat {
+        if (isFeatureEnabled("quadratic-voting")) {
+            // Apply quadratic formula: voting power = sqrt(tokens)
+            // This reduces large holder influence (whale with 10000 tokens gets ~100 votes vs 10000 votes)
+            let power = Float.fromInt(rawVotingPower);
+            let sqrtPower = Float.sqrt(power);
+            let adjustedPower = Float.toInt(sqrtPower);
+            Int.abs(adjustedPower)
+        } else {
+            // Default token-weighted voting (1 token = 1 vote)
+            rawVotingPower
+        };
     };
 
     // Initialize default configuration
@@ -295,12 +347,15 @@ persistent actor GovernanceCanister {
             case (?_) {};
         };
 
-        // Determine voting power from staking data
+        // Determine raw voting power from staking data
         let summary = await staking.getUserStakingSummary(caller);
-        let votingPower = summary.totalVotingPower;
-        if (votingPower == 0) {
+        let rawVotingPower = summary.totalVotingPower;
+        if (rawVotingPower == 0) {
             return #err("No voting power");
         };
+
+        // Apply voting mechanism (token-weighted or quadratic based on DAO config)
+        let votingPower = calculateVotingPower(rawVotingPower);
 
         // Create vote record
         let vote : Vote = {

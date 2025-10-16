@@ -31,6 +31,9 @@ import {
   Minus,
   Eye,
   EyeOff,
+  Landmark,
+  TrendingUp,
+  ScrollText,
 } from "lucide-react";
 
 const LaunchDAO = () => {
@@ -68,12 +71,17 @@ const LaunchDAO = () => {
         "delegated-voting": false,
       },
       treasury: {
-        "multi-sig": true,
+        "manual-withdrawals": true, // Always enabled by default
+        "multi-sig": false,
         "automated-distributions": false,
       },
       staking: {
-        "flexible-periods": true,
-        "reward-compounding": true,
+        "flexible-periods": false,
+        "reward-compounding": false,
+      },
+      proposals: {
+        "proposal-templates": false,
+        "custom-fields": false,
       },
     },
 
@@ -147,22 +155,30 @@ const LaunchDAO = () => {
       id: "governance",
       name: "Governance",
       description: "Voting mechanisms and proposal systems",
+      icon: Vote,
+      iconColor: "text-blue-400",
+      iconBgColor: "bg-blue-500/10",
+      borderColor: "border-blue-500/30",
       required: true,
       features: [
         {
           id: "token-voting",
           name: "Token Weighted Voting",
           description: "Traditional token-based voting power",
+          status: "available",
         },
         {
           id: "quadratic-voting",
           name: "Quadratic Voting",
           description: "Quadratic voting to prevent whale dominance",
+          status: "available",
         },
         {
           id: "delegated-voting",
           name: "Delegated Voting",
           description: "Allow vote delegation to representatives",
+          status: "coming-soon",
+          releaseETA: "Soon!",
         },
       ],
     },
@@ -170,17 +186,32 @@ const LaunchDAO = () => {
       id: "treasury",
       name: "Treasury",
       description: "Financial management and fund allocation",
+      icon: Landmark,
+      iconColor: "text-green-400",
+      iconBgColor: "bg-green-500/10",
+      borderColor: "border-green-500/30",
       required: true,
       features: [
+        {
+          id: "manual-withdrawals",
+          name: "Manual Withdrawals",
+          description: "Single admin can execute withdrawals immediately",
+          status: "available",
+          isDefault: true,
+        },
         {
           id: "multi-sig",
           name: "Multi-Signature Wallet",
           description: "Require multiple approvals for transactions",
+          status: "coming-soon",
+          releaseETA: "Soon!",
         },
         {
           id: "automated-distributions",
           name: "Automated Distributions",
           description: "Automatic reward and payment distributions",
+          status: "coming-soon",
+          releaseETA: "Soon!",
         },
       ],
     },
@@ -188,17 +219,50 @@ const LaunchDAO = () => {
       id: "staking",
       name: "Staking",
       description: "Token staking and reward mechanisms",
+      icon: TrendingUp,
+      iconColor: "text-purple-400",
+      iconBgColor: "bg-purple-500/10",
+      borderColor: "border-purple-500/30",
       required: false,
       features: [
         {
           id: "flexible-periods",
           name: "Flexible Staking Periods",
           description: "Multiple staking duration options",
+          status: "available",
         },
         {
           id: "reward-compounding",
           name: "Reward Compounding",
           description: "Automatic reward reinvestment",
+          status: "coming-soon",
+          releaseETA: "Soon!",
+        },
+      ],
+    },
+    {
+      id: "proposals",
+      name: "Proposals",
+      description: "Proposal templates and management system",
+      icon: ScrollText,
+      iconColor: "text-orange-400",
+      iconBgColor: "bg-orange-500/10",
+      borderColor: "border-orange-500/30",
+      required: false,
+      features: [
+        {
+          id: "proposal-templates",
+          name: "Proposal Templates",
+          description: "Pre-defined templates for common proposal types",
+          status: "coming-soon",
+          releaseETA: "Soon!",
+        },
+        {
+          id: "custom-fields",
+          name: "Custom Fields",
+          description: "Add custom fields to proposal forms",
+          status: "coming-soon",
+          releaseETA: "Soon!",
         },
       ],
     },
@@ -272,6 +336,13 @@ const LaunchDAO = () => {
   };
 
   const handleFeatureToggle = (moduleId, featureId) => {
+    // Find the feature to check if it's locked
+    const module = modules.find((m) => m.id === moduleId);
+    const feature = module?.features?.find((f) => f.id === featureId);
+    
+    // Don't allow toggling locked features or default features
+    if (feature?.status === "coming-soon" || feature?.isDefault) return;
+    
     setFormData((prev) => ({
       ...prev,
       selectedFeatures: {
@@ -607,30 +678,48 @@ const LaunchDAO = () => {
             </div>
 
             <div className="space-y-4">
-              {modules.map((module) => (
+              {modules.map((module) => {
+                const ModuleIcon = module.icon;
+                const isSelected = formData.selectedModules.includes(module.id);
+                
+                return (
                 <div
                   key={module.id}
-                  className="bg-gray-800/50 border border-gray-700 rounded-lg p-6"
+                  className={`bg-gray-800/50 border rounded-lg p-6 transition-all ${
+                    isSelected 
+                      ? `${module.borderColor} shadow-lg` 
+                      : "border-gray-700"
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-4">
+                      {/* Module Icon */}
                       <div
-                        className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
-                          formData.selectedModules.includes(module.id)
-                            ? "bg-cyan-500 border-cyan-500"
-                            : "border-gray-600"
+                        className={`w-12 h-12 rounded-lg flex items-center justify-center border ${
+                          isSelected
+                            ? `${module.iconBgColor} ${module.borderColor}`
+                            : "bg-gray-700/50 border-gray-600"
                         }`}
                       >
-                        {formData.selectedModules.includes(module.id) && (
-                          <Check className="w-4 h-4 text-white" />
-                        )}
+                        <ModuleIcon 
+                          className={`w-6 h-6 ${
+                            isSelected ? module.iconColor : "text-gray-400"
+                          }`} 
+                        />
                       </div>
+                      
+                      {/* Module Info */}
                       <div>
-                        <h4 className="text-lg font-semibold text-white flex items-center">
+                        <h4 className="text-lg font-semibold text-white flex items-center gap-2">
                           {module.name}
                           {module.required && (
-                            <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30">
+                            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30 font-mono">
                               Required
+                            </span>
+                          )}
+                          {isSelected && !module.required && (
+                            <span className={`px-2 py-1 ${module.iconBgColor} ${module.iconColor} text-xs rounded border ${module.borderColor} font-mono`}>
+                              ✓ Added
                             </span>
                           )}
                         </h4>
@@ -662,37 +751,75 @@ const LaunchDAO = () => {
                         <h5 className="text-sm font-semibold text-gray-300 font-mono">
                           Features:
                         </h5>
-                        {module.features.map((feature) => (
-                          <label
-                            key={feature.id}
-                            className="flex items-center space-x-3 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={
-                                formData.selectedFeatures[module.id]?.[
-                                  feature.id
-                                ] || false
+                        {module.features.map((feature) => {
+                          const isLocked = feature.status === "coming-soon";
+                          const isDefault = feature.isDefault;
+                          const isAvailable = feature.status === "available";
+                          
+                          return (
+                            <label
+                              key={feature.id}
+                              className={`flex items-start space-x-3 ${
+                                isLocked || isDefault ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                              }`}
+                              title={
+                                isLocked
+                                  ? `Coming Soon - Expected ${feature.releaseETA}`
+                                  : isDefault
+                                  ? "Default feature - always enabled"
+                                  : ""
                               }
-                              onChange={() =>
-                                handleFeatureToggle(module.id, feature.id)
-                              }
-                              className="w-4 h-4 text-cyan-500 bg-gray-700 border-gray-600 rounded focus:ring-cyan-500"
-                            />
-                            <div>
-                              <span className="text-white text-sm">
-                                {feature.name}
-                              </span>
-                              <p className="text-gray-400 text-xs">
-                                {feature.description}
-                              </p>
-                            </div>
-                          </label>
-                        ))}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={
+                                  formData.selectedFeatures[module.id]?.[
+                                    feature.id
+                                  ] || false
+                                }
+                                onChange={() =>
+                                  handleFeatureToggle(module.id, feature.id)
+                                }
+                                disabled={isLocked || isDefault}
+                                className={`w-4 h-4 mt-0.5 rounded focus:ring-cyan-500 ${
+                                  isLocked || isDefault
+                                    ? "bg-gray-600 border-gray-500 cursor-not-allowed"
+                                    : "text-cyan-500 bg-gray-700 border-gray-600"
+                                }`}
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className={`text-sm ${isLocked ? "text-gray-400" : "text-white"}`}>
+                                    {feature.name}
+                                  </span>
+                                  {isAvailable && !isDefault && (
+                                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 text-xs rounded border border-green-500/30 font-mono">
+                                      ✓ Available
+                                    </span>
+                                  )}
+                                  {isDefault && (
+                                    <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded border border-blue-500/30 font-mono">
+                                      Default
+                                    </span>
+                                  )}
+                                  {isLocked && (
+                                    <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded border border-yellow-500/30 font-mono">
+                                      🔒 Coming {feature.releaseETA}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className={`text-xs mt-0.5 ${isLocked ? "text-gray-500" : "text-gray-400"}`}>
+                                  {feature.description}
+                                </p>
+                              </div>
+                            </label>
+                          );
+                        })}
                       </div>
                     )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -1140,6 +1267,38 @@ const LaunchDAO = () => {
                         {formData.proposalThreshold}%
                       </span>
                     </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h5 className="text-cyan-400 font-semibold mb-2 font-mono">
+                    Selected Modules & Features
+                  </h5>
+                  <div className="space-y-2">
+                    {formData.selectedModules.map((moduleId) => {
+                      const module = modules.find(m => m.id === moduleId);
+                      const enabledFeatures = formData.selectedFeatures[moduleId] 
+                        ? Object.entries(formData.selectedFeatures[moduleId])
+                            .filter(([_, enabled]) => enabled)
+                            .map(([featureId]) => {
+                              const feature = module?.features?.find(f => f.id === featureId);
+                              return feature?.name || featureId;
+                            })
+                        : [];
+                      
+                      return (
+                        <div key={moduleId} className="text-sm">
+                          <p className="text-white font-semibold">✓ {module?.name || moduleId}</p>
+                          {enabledFeatures.length > 0 && (
+                            <ul className="ml-4 mt-1 space-y-0.5">
+                              {enabledFeatures.map((featureName, idx) => (
+                                <li key={idx} className="text-gray-400 text-xs">• {featureName}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
