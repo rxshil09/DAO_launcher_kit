@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [userSettings, setUserSettings] = useState({
     displayName: 'Anonymous User'
   });
+  const [displayName, setDisplayName] = useState(null);
   const [loading, setLoading] = useState(true);
   const [authClient, setAuthClient] = useState(null);
   const [identity, setIdentity] = useState(null);
@@ -139,6 +140,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Load user display name from backend
+  const loadUserDisplayName = async (daoBackend) => {
+    if (!principal || !daoBackend) {
+      return;
+    }
+
+    try {
+      // Try to get user settings first
+      const settings = await daoBackend.getMySettings();
+      if (settings && settings.length > 0) {
+        const userDisplayName = settings[0].displayName;
+        setDisplayName(userDisplayName);
+        setUserSettings(prev => ({
+          ...prev,
+          displayName: userDisplayName
+        }));
+      } else {
+        // Fallback to old profile format
+        const profile = await daoBackend.getUserProfile(principal);
+        if (profile && profile.length > 0) {
+          const userDisplayName = profile[0].displayName;
+          setDisplayName(userDisplayName);
+          setUserSettings(prev => ({
+            ...prev,
+            displayName: userDisplayName
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user display name:', error);
+    }
+  };
+
   // Logout function
   const logout = async () => {
     if (!authClient) {
@@ -152,6 +186,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setPrincipal(null);
       setIdentity(null);
+      setDisplayName(null);
       setUserSettings({
         displayName: 'Anonymous User'
       });
@@ -168,9 +203,11 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     principal,
     userSettings,
+    displayName,
     loading,
     login,
     logout,
+    loadUserDisplayName,
     authClient,
     identity
   };

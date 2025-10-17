@@ -59,6 +59,30 @@ persistent actor DAOMain {
     type DAOConfigAllocations = Types.DAOConfigAllocations;
     type Activity = Types.Activity;
 
+    // User settings type with granular field locking and privacy
+    type UserSettings = {
+        displayName: Text;
+        email: ?Text;
+        bio: Text;
+        website: ?Text;
+        privacy: {
+            showProfile: {
+                displayName: Bool;  // Always true when shown
+                bio: Bool;          // User controlled
+                website: Bool;      // User controlled
+            };
+            showInvestments: Bool;
+            showActivity: Bool;
+        };
+        lockedFields: {
+            displayName: Bool;
+            email: Bool;
+            bio: Bool;
+            website: Bool;
+        };
+        createdAt: Int;
+    };
+
     // Typed interface for the Registry canister
     type RegistryService = actor {
         registerDAO: shared (
@@ -95,6 +119,7 @@ persistent actor DAOMain {
     private var daoDescription : Text = "A decentralized autonomous organization for community governance";
     private var totalMembers : Nat = 0;
     private var userProfilesEntries : [(Principal, UserProfile)] = [];
+    private var userSettingsEntries : [(Principal, UserSettings)] = [];
     private var adminPrincipalsEntries : [Principal] = [];
     private var daoConfig : ?DAOConfigStable = null;
     private var daoConfigAllocations : ?DAOConfigAllocations = null;
@@ -111,6 +136,7 @@ persistent actor DAOMain {
     // Runtime storage - recreated after upgrades from stable storage
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
     private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+    private transient var userSettings = HashMap.HashMap<Principal, UserSettings>(100, Principal.equal, Principal.hash);
     private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
     private transient var cachedDaoConfig : ?DAOConfig = null;
 
@@ -139,6 +165,7 @@ persistent actor DAOMain {
      */
     system func preupgrade() {
         userProfilesEntries := Iter.toArray(userProfiles.entries());
+        userSettingsEntries := Iter.toArray(userSettings.entries());
         adminPrincipalsEntries := Iter.toArray(adminPrincipals.keys());
         daoMembersEntries := Iter.toArray(daoMembers.entries());
         userMembershipsEntries := Iter.toArray(userMemberships.entries());
@@ -153,6 +180,14 @@ persistent actor DAOMain {
             userProfilesEntries.vals(), 
             userProfilesEntries.size(), 
             Principal.equal, 
+            Principal.hash
+        );
+        
+        // Restore user settings from stable storage
+        userSettings := HashMap.fromIter<Principal, UserSettings>(
+            userSettingsEntries.vals(),
+            userSettingsEntries.size(),
+            Principal.equal,
             Principal.hash
         );
         
@@ -384,7 +419,7 @@ persistent actor DAOMain {
     /**
      * Update DAO statistics in the registry
      */
-    public shared(msg) func updateRegistryStats() : async Result<(), Text> {
+    public shared(_msg) func updateRegistryStats() : async Result<(), Text> {
         if (not registeredInRegistry) {
             return #err("DAO not registered with registry");
         };
@@ -596,7 +631,32 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
+        // Initialize user settings with no fields locked
+        let initialSettings : UserSettings = {
+            displayName = displayName;
+            email = null;
+            bio = bio;
+            website = null;
+            privacy = {
+                showProfile = {
+                    displayName = true;  // Always true
+                    bio = true;          // Default visible
+                    website = true;      // Default visible
+                };
+                showInvestments = false;
+                showActivity = true;
+            };
+            lockedFields = {
+                displayName = false;
+                email = false;
+                bio = false;
+                website = false;
+            };
+            createdAt = Time.now() / 1_000_000;
+        };
+
         userProfiles.put(caller, userProfile);
+        userSettings.put(caller, initialSettings);
         totalMembers += 1;
 
         // Record user registration event
@@ -637,7 +697,32 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
+        // Initialize user settings
+        let initialSettings : UserSettings = {
+            displayName = displayName;
+            email = null;
+            bio = bio;
+            website = null;
+            privacy = {
+                showProfile = {
+                    displayName = true;  // Always true
+                    bio = true;          // Default visible
+                    website = true;      // Default visible
+                };
+                showInvestments = false;
+                showActivity = true;
+            };
+            lockedFields = {
+                displayName = false;
+                email = false;
+                bio = false;
+                website = false;
+            };
+            createdAt = Time.now() / 1_000_000;
+        };
+
         userProfiles.put(newUser, userProfile);
+        userSettings.put(newUser, initialSettings);
         totalMembers += 1;
 
         // Record user registration event
@@ -658,8 +743,170 @@ persistent actor DAOMain {
         #ok()
     };
 
+    /**
+     * Update user settings with granular field locking
+     * Each field locks independently after first edit
+     * NO ADMIN OVERRIDE - Users have full control
+     */
+    public shared(msg) func updateUserSettings(
+        displayName: Text,
+        email: ?Text,
+        bio: Text,
+        website: ?Text,
+        privacy: {
+            showProfile: {
+                displayName: Bool;
+                bio: Bool;
+                website: Bool;
+            };
+            showInvestments: Bool;
+            showActivity: Bool;
+        }
+    ) : async Result<(), Text> {
+        let caller = msg.caller;
+        
+        switch (userSettings.get(caller)) {
+            case null {
+                // Create new settings if user doesn't have any (backward compatibility)
+                let newSettings : UserSettings = {
+                    displayName = displayName;
+                    email = email;
+                    bio = bio;
+                    website = website;
+                    privacy = privacy;
+                    lockedFields = {
+                        displayName = true;
+                        email = true;
+                        bio = true;
+                        website = true;
+                    };
+                    createdAt = Time.now() / 1_000_000;
+                };
+                userSettings.put(caller, newSettings);
+
+                // Also update the basic profile
+                switch (userProfiles.get(caller)) {
+                    case (?profile) {
+                        let updatedProfile = {
+                            id = profile.id;
+                            displayName = displayName;
+                            bio = bio;
+                            joinedAt = profile.joinedAt;
+                            reputation = profile.reputation;
+                            totalStaked = profile.totalStaked;
+                            votingPower = profile.votingPower;
+                        };
+                        userProfiles.put(caller, updatedProfile);
+                    };
+                    case null {
+                        return #err("User profile not found. Please register first.");
+                    };
+                };
+
+                Debug.print("User settings created for: " # displayName);
+                #ok()
+            };
+            case (?currentSettings) {
+                // Check which fields are being changed and if they're locked
+                var lockedFieldsAttempted : [Text] = [];
+                
+                if (currentSettings.lockedFields.displayName and displayName != currentSettings.displayName) {
+                    lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Display Name"]);
+                };
+                
+                if (currentSettings.lockedFields.email) {
+                    let currentEmail = switch (currentSettings.email) { case (?e) e; case null "" };
+                    let newEmail = switch (email) { case (?e) e; case null "" };
+                    if (currentEmail != newEmail) {
+                        lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Email"]);
+                    };
+                };
+                
+                if (currentSettings.lockedFields.bio and bio != currentSettings.bio) {
+                    lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Bio"]);
+                };
+                
+                if (currentSettings.lockedFields.website) {
+                    let currentWebsite = switch (currentSettings.website) { case (?w) w; case null "" };
+                    let newWebsite = switch (website) { case (?w) w; case null "" };
+                    if (currentWebsite != newWebsite) {
+                        lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Website"]);
+                    };
+                };
+                
+                // If any locked fields were attempted to be changed, reject
+                if (lockedFieldsAttempted.size() > 0) {
+                    let fieldsText = Text.join(", ", lockedFieldsAttempted.vals());
+                    return #err("⚠️ These fields cannot be changed: " # fieldsText # ". Each field can only be edited once.");
+                };
+                
+                // Determine which fields are now being locked (first time they're changed)
+                let newLockedFields = {
+                    displayName = currentSettings.lockedFields.displayName or (displayName != currentSettings.displayName);
+                    email = currentSettings.lockedFields.email or (switch (currentSettings.email, email) {
+                        case (?ce, ?ne) ce != ne;
+                        case (null, ?_) true;
+                        case _ false;
+                    });
+                    bio = currentSettings.lockedFields.bio or (bio != currentSettings.bio);
+                    website = currentSettings.lockedFields.website or (switch (currentSettings.website, website) {
+                        case (?cw, ?nw) cw != nw;
+                        case (null, ?_) true;
+                        case _ false;
+                    });
+                };
+                
+                // Update settings (privacy can always be updated)
+                let updatedSettings : UserSettings = {
+                    displayName = displayName;
+                    email = email;
+                    bio = bio;
+                    website = website;
+                    privacy = privacy;
+                    lockedFields = newLockedFields;
+                    createdAt = currentSettings.createdAt;
+                };
+                userSettings.put(caller, updatedSettings);
+
+                // Also update the basic profile
+                switch (userProfiles.get(caller)) {
+                    case (?profile) {
+                        let updatedProfile = {
+                            id = profile.id;
+                            displayName = displayName;
+                            bio = bio;
+                            joinedAt = profile.joinedAt;
+                            reputation = profile.reputation;
+                            totalStaked = profile.totalStaked;
+                            votingPower = profile.votingPower;
+                        };
+                        userProfiles.put(caller, updatedProfile);
+                    };
+                    case null {};
+                };
+
+                Debug.print("User settings updated for: " # displayName);
+                #ok()
+            };
+        };
+    };
+
+    // Keep old function for backward compatibility (deprecated)
     public shared(msg) func updateUserProfile(displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
+        
+        // Check if settings exist and if fields are locked
+        switch (userSettings.get(caller)) {
+            case (?settings) {
+                if (settings.lockedFields.displayName and displayName != settings.displayName) {
+                    return #err("Display Name is locked. Use updateUserSettings.");
+                };
+                if (settings.lockedFields.bio and bio != settings.bio) {
+                    return #err("Bio is locked. Use updateUserSettings.");
+                };
+            };
+            case null {};
+        };
         
         switch (userProfiles.get(caller)) {
             case null return #err("User not found");
@@ -702,6 +949,53 @@ persistent actor DAOMain {
         userProfiles.get(userId)
     };
 
+    // Query function to get user's own settings (full access)
+    public query(msg) func getMySettings() : async ?UserSettings {
+        userSettings.get(msg.caller)
+    };
+
+    // Query function to get public user settings (limited info, respects granular privacy)
+    // displayName always visible, bio/website respect privacy settings
+    public query func getUserSettings(userId: Principal) : async ?{
+        displayName: Text;
+        bio: ?Text;  // Only visible if privacy allows
+        website: ?Text;  // Only visible if privacy allows
+        privacy: {
+            showProfile: {
+                displayName: Bool;
+                bio: Bool;
+                website: Bool;
+            };
+            showInvestments: Bool;
+            showActivity: Bool;
+        };
+    } {
+        switch (userSettings.get(userId)) {
+            case (?settings) {
+                ?{
+                    displayName = settings.displayName;  // Always shown
+                    bio = if (settings.privacy.showProfile.bio) ?settings.bio else null;
+                    website = if (settings.privacy.showProfile.website) settings.website else null;
+                    privacy = settings.privacy;
+                }
+            };
+            case null null;
+        }
+    };
+
+    // Get which fields are locked for current user
+    public query(msg) func getMyLockedFields() : async ?{
+        displayName: Bool;
+        email: Bool;
+        bio: Bool;
+        website: Bool;
+    } {
+        switch (userSettings.get(msg.caller)) {
+            case (?settings) ?settings.lockedFields;
+            case null null;
+        }
+    };
+
     public query func getAllUsers() : async [UserProfile] {
         Iter.toArray(userProfiles.vals())
     };
@@ -736,6 +1030,41 @@ persistent actor DAOMain {
         // This function will aggregate recent activity from various DAO modules.
         // For now, return an empty list as a placeholder implementation.
         []
+    };
+
+    /**
+     * Get Portfolio Stats for a User
+     * 
+     * Returns aggregated portfolio statistics including:
+     * - Total invested amount (from staking)
+     * - Number of active projects (DAOs user is member of)
+     * - Total returns (from staking rewards)
+     * - Total DAO tokens (from staking)
+     * 
+     * @param userId - Principal ID of the user
+     * @returns Portfolio statistics object
+     */
+    public query func getPortfolioStats(userId: Principal) : async {
+        invested: Nat;
+        projects: Nat;
+        returns: Float;
+        tokens: Nat;
+    } {
+        // Get user's DAO memberships
+        let userDAOs = switch (userMemberships.get(userId)) {
+            case (?daos) daos.size();
+            case null 0;
+        };
+
+        // Return portfolio stats
+        // Note: Staking data would come from staking canister in full implementation
+        // For now, returning basic data that can be enhanced when integrating with staking canister
+        {
+            invested = 0; // Will be fetched from staking canister
+            projects = userDAOs;
+            returns = 0.0; // Will be calculated from staking rewards
+            tokens = 0; // Will be fetched from staking canister
+        }
     };
 
     // Governance operations (temporary implementation until governance canister is ready)
@@ -976,22 +1305,71 @@ persistent actor DAOMain {
      * Get detailed member profiles for a DAO
      * Returns UserProfile information for all members
      */
-    public query func getDAOMemberProfiles(daoId: Text) : async [UserProfile] {
+    // Extended member profile with website and privacy controls
+    public type MemberProfile = {
+        id: Principal;
+        displayName: Text;
+        bio: Text;
+        website: Text;
+        joinedAt: Int;
+        reputation: Nat;
+        totalStaked: Nat;
+        votingPower: Nat;
+    };
+
+    public query func getDAOMemberProfiles(daoId: Text) : async [MemberProfile] {
         let members = switch (daoMembers.get(daoId)) {
             case (?m) m;
             case null return [];
         };
         
-        let profiles = Buffer.Buffer<UserProfile>(0);
+        let profiles = Buffer.Buffer<MemberProfile>(0);
         for (memberId in members.vals()) {
             switch (userProfiles.get(memberId)) {
-                case (?profile) profiles.add(profile);
+                case (?profile) {
+                    // Respect granular privacy settings from userSettings
+                    let profileWithPrivacy = switch (userSettings.get(memberId)) {
+                        case (?settings) {
+                            // Apply privacy: displayName always shown, bio/website respect privacy
+                            {
+                                id = profile.id;
+                                displayName = profile.displayName;  // Always visible
+                                bio = if (settings.privacy.showProfile.bio) profile.bio else "";  // Respect privacy
+                                website = if (settings.privacy.showProfile.website) {
+                                    switch (settings.website) {
+                                        case (?w) w;
+                                        case null "";
+                                    }
+                                } else "";  // Respect privacy
+                                joinedAt = profile.joinedAt;
+                                reputation = profile.reputation;  // Always visible
+                                totalStaked = profile.totalStaked;  // Always visible
+                                votingPower = profile.votingPower;  // Always visible
+                            }
+                        };
+                        case null {
+                            // No settings = show full profile (backward compatibility)
+                            {
+                                id = profile.id;
+                                displayName = profile.displayName;
+                                bio = profile.bio;
+                                website = "";
+                                joinedAt = profile.joinedAt;
+                                reputation = profile.reputation;
+                                totalStaked = profile.totalStaked;
+                                votingPower = profile.votingPower;
+                            }
+                        };
+                    };
+                    profiles.add(profileWithPrivacy);
+                };
                 case null {
                     // Create minimal profile for users without registered profiles
-                    let minimalProfile : UserProfile = {
+                    let minimalProfile : MemberProfile = {
                         id = memberId;
                         displayName = "";
                         bio = "";
+                        website = "";
                         joinedAt = 0;
                         reputation = 0;
                         totalStaked = 0;
@@ -1021,7 +1399,7 @@ persistent actor DAOMain {
                         case (#ok(_)) {};
                         case (#err(e)) Debug.print("Analytics error: " # e);
                     };
-                } catch (e) {
+                } catch (_) {
                     Debug.print("Failed to record analytics event");
                 };
             };
