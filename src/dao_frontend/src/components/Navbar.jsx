@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 
 const Navbar = () => {
-  const { isAuthenticated, logout, principal, userSettings, loadUserDisplayName } = useAuth();
+  const { isAuthenticated, logout, principal, userSettings } = useAuth();
   const { hasActiveDAO, activeDAO } = useDAO();
   const actors = useActors();
   const toast = useToast();
@@ -49,13 +49,6 @@ const Navbar = () => {
     tokens: 0
   });
   const [statsLoading, setStatsLoading] = useState(false);
-
-  // Load user display name from backend when authenticated
-  useEffect(() => {
-    if (isAuthenticated && principal && actors?.daoBackend) {
-      loadUserDisplayName(actors.daoBackend);
-    }
-  }, [isAuthenticated, principal, actors?.daoBackend]);
 
   // Fetch portfolio stats when user is authenticated
   useEffect(() => {

@@ -17,7 +17,7 @@ sleep 5
 
 # Deploy base canisters first (no dependencies)
 echo "🏗️ Deploying base canisters..."
-dfx deploy dao_backend
+dfx deploy dao_backend 
 dfx deploy dao_registry
 dfx deploy dao_analytics
 dfx deploy staking

@@ -12,6 +12,8 @@ import Diagnostics from './components/Diagnostics';
 import Navbar from './components/Navbar';
 import MetricsDashboard from './components/MetricsDashboard';
 import UserRegistrationHandler from './components/UserRegistrationHandler';
+import WelcomePopup from './components/WelcomePopup';
+import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import ScrollToTop from './components/ScrollToTop';
 import { DAOManagementProvider } from './context/DAOManagementContext';
@@ -26,8 +28,10 @@ import ManagementAdmins from './components/management/ManagementAdmins';
 import MemberDirectory from './components/MemberDirectory';
 import BackgroundParticles from './components/BackgroundParticles';
 import './app.css';
+import { useAuth } from './context/AuthContext';
 
 function App() {
+  const { isLoggingIn } = useAuth();
   
   return (
     <ErrorBoundary>
@@ -36,6 +40,17 @@ function App() {
           <Router>
           <ScrollToTop />
           <UserRegistrationHandler />
+          <WelcomePopup />
+          
+          {/* Show loading overlay during authentication */}
+          {isLoggingIn && (
+            <LoadingSpinner 
+              fullScreen 
+              size="large"
+              text="Authenticating with Internet Identity..."
+            />
+          )}
+          
           {/* Create a stacking context so the fixed background sits behind everything */}
           <div className="App relative" style={{ isolation: 'isolate', minHeight: '100vh' }}>
             {/* Background mounted once, never re-mounts across routes */}

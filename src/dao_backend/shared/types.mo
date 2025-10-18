@@ -23,6 +23,26 @@ module {
         votingPower: Nat;
     };
 
+    // Member role types for DAO governance
+    public type MemberRole = {
+        #CREATOR;
+        #ADMIN;
+        #MEMBER;
+        #TREASURER;  // Future use
+        #DELEGATE;   // Future use
+        #MULTISIG;   // Future use
+    };
+
+    // DAO Membership record with role and metadata
+    public type DAOMembership = {
+        daoId: Text;
+        principal: Principal;
+        role: MemberRole;
+        joinedAt: Int;
+        votingPower: Nat;
+        totalStaked: Nat;
+    };
+
     // DAO configuration types
     public type ModuleFeature = {
         moduleId: Text;

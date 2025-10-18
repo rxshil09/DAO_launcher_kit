@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 const Settings = () => {
-  const { isAuthenticated, principal, userSettings, logout, loading, loadUserDisplayName } = useAuth();
+  const { isAuthenticated, principal, userSettings, logout, loading, userProfile } = useAuth();
   const actors = useActors();
   const daoBackend = actors?.daoBackend;
   const navigate = useNavigate();
@@ -183,8 +183,8 @@ const Settings = () => {
           setLockedFields(updatedSettings[0].lockedFields);
         }
         
-        // Update the global auth context with new display name
-        await loadUserDisplayName(daoBackend);
+        // Profile is automatically updated in AuthContext via getOrCreateUserProfile
+        // No need to manually reload display name
         
         setTimeout(() => setSaveMessage(''), 5000);
       } else {
