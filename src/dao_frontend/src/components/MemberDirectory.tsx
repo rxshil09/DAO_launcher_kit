@@ -1,20 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Users, Search, UserCheck, Clock, TrendingUp, Shield, Loader2 } from 'lucide-react';
+import { Users, Search, UserCheck, Clock, TrendingUp, Shield, Loader2, ExternalLink, Globe, Award, Coins, Calendar, UserX, ArrowUpDown, Crown, ShieldCheck, User } from 'lucide-react';
 import { Principal } from '@dfinity/principal';
 import { useActors } from '../context/ActorContext';
 import { useAuth } from '../context/AuthContext';
 
-interface UserProfile {
+interface MemberProfile {
   id: Principal;
+  role: string;  // "Creator", "Admin", "Member", etc.
   displayName: string;
   bio: string;
+  website: string;
   joinedAt: number;
   reputation: number;
   totalStaked: number;
   votingPower: number;
+  showProfile: boolean;  // Privacy flag
+  showBio: boolean;      // Privacy flag
+  showWebsite: boolean;  // Privacy flag
 }
+
+type SortField = 'displayName' | 'role' | 'reputation' | 'votingPower' | 'totalStaked' | 'joinedAt';
+type SortDirection = 'asc' | 'desc';
+
+// Role Badge Component
+interface RoleBadgeProps {
+  role: string;
+  size?: 'sm' | 'md';
+}
+
+const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'md' }) => {
+  const configs = {
+    Creator: {
+      color: 'from-purple-500 to-pink-500',
+      bgColor: 'bg-purple-500/10',
+      borderColor: 'border-purple-500/30',
+      textColor: 'text-purple-400',
+      icon: Crown,
+      tooltip: 'Founded the DAO. Has full governance rights and ultimate authority.',
+    },
+    Admin: {
+      color: 'from-blue-500 to-cyan-500',
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/30',
+      textColor: 'text-blue-400',
+      icon: ShieldCheck,
+      tooltip: 'Can create proposals, manage treasury, and moderate members.',
+    },
+    Member: {
+      color: 'from-gray-500 to-gray-600',
+      bgColor: 'bg-gray-500/10',
+      borderColor: 'border-gray-500/30',
+      textColor: 'text-gray-400',
+      icon: User,
+      tooltip: 'Can vote on proposals and stake tokens.',
+    },
+    Treasurer: {
+      color: 'from-green-500 to-emerald-500',
+      bgColor: 'bg-green-500/10',
+      borderColor: 'border-green-500/30',
+      textColor: 'text-green-400',
+      icon: Coins,
+      tooltip: 'Manages DAO treasury and financial operations.',
+    },
+    Delegate: {
+      color: 'from-orange-500 to-yellow-500',
+      bgColor: 'bg-orange-500/10',
+      borderColor: 'border-orange-500/30',
+      textColor: 'text-orange-400',
+      icon: UserCheck,
+      tooltip: 'Votes on behalf of delegators.',
+    },
+  };
+
+  const config = configs[role as keyof typeof configs] || configs.Member;
+  const Icon = config.icon;
+  const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm';
+  const iconSize = size === 'sm' ? 'w-3 h-3' : 'w-4 h-4';
+
+  return (
+    <div className="group relative inline-block">
+      <div className={`inline-flex items-center gap-1.5 ${sizeClasses} ${config.bgColor} ${config.borderColor} border rounded-full ${config.textColor} font-medium`}>
+        <Icon className={iconSize} />
+        <span>{role}</span>
+      </div>
+      {/* Tooltip */}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-gray-300 whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-10 shadow-xl">
+        {config.tooltip}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+      </div>
+    </div>
+  );
+};
 
 const MemberDirectory: React.FC = () => {
   const { dao } = useOutletContext<{ dao: any }>();
@@ -22,11 +100,13 @@ const MemberDirectory: React.FC = () => {
   const daoName = dao?.name || 'DAO';
   const actors = useActors();
   const { principal } = useAuth();
-  const [members, setMembers] = useState<UserProfile[]>([]);
+  const [members, setMembers] = useState<MemberProfile[]>([]);
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'reputation' | 'voting_power'>('newest');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('votingPower');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     loadMembers();
@@ -91,30 +171,93 @@ const MemberDirectory: React.FC = () => {
     return principal && memberId.toString() === principal;
   };
 
+  // Check if profile is private (using showProfile flag from backend)
+  const isProfilePrivate = (member: MemberProfile) => {
+    return !member.showProfile;
+  };
+
+  // Toggle sort
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  // Sort Icon Component
+  const SortIcon: React.FC<{ field: SortField }> = ({ field }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />;
+    }
+    return (
+      <ArrowUpDown className={`w-4 h-4 text-cyan-400 ${sortDirection === 'desc' ? 'rotate-180' : ''} transition-transform`} />
+    );
+  };
+
   // Filter and sort members
   const filteredMembers = members
     .filter(member => {
+      // Role filter
+      if (roleFilter !== 'all' && member.role !== roleFilter) {
+        return false;
+      }
+      
+      // Search filter
       if (searchQuery === '') return true;
       const query = searchQuery.toLowerCase();
       return (
         member.displayName.toLowerCase().includes(query) ||
         member.id.toString().includes(query) ||
-        member.bio.toLowerCase().includes(query)
+        member.bio.toLowerCase().includes(query) ||
+        member.role.toLowerCase().includes(query)
       );
     })
     .sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return Number(b.joinedAt) - Number(a.joinedAt);
-        case 'oldest':
-          return Number(a.joinedAt) - Number(b.joinedAt);
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'displayName':
+          aValue = a.displayName || a.id.toString();
+          bValue = b.displayName || b.id.toString();
+          return sortDirection === 'asc' 
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        
+        case 'role':
+          // Sort by role hierarchy: Creator > Admin > Member
+          const roleOrder = { 'Creator': 0, 'Admin': 1, 'Treasurer': 2, 'Delegate': 3, 'Member': 4 };
+          aValue = roleOrder[a.role as keyof typeof roleOrder] ?? 999;
+          bValue = roleOrder[b.role as keyof typeof roleOrder] ?? 999;
+          break;
+        
         case 'reputation':
-          return Number(b.reputation) - Number(a.reputation);
-        case 'voting_power':
-          return Number(b.votingPower) - Number(a.votingPower);
+          aValue = Number(a.reputation);
+          bValue = Number(b.reputation);
+          break;
+        
+        case 'votingPower':
+          aValue = Number(a.votingPower);
+          bValue = Number(b.votingPower);
+          break;
+        
+        case 'totalStaked':
+          aValue = Number(a.totalStaked);
+          bValue = Number(b.totalStaked);
+          break;
+        
+        case 'joinedAt':
+          aValue = Number(a.joinedAt);
+          bValue = Number(b.joinedAt);
+          break;
+        
         default:
           return 0;
       }
+
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
     });
 
   if (loading) {
@@ -131,53 +274,125 @@ const MemberDirectory: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Users className="w-8 h-8 text-cyan-400" />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center">
+            <Users className="w-6 h-6 text-white" />
+          </div>
           <div>
             <h2 className="text-2xl font-bold text-white">Members</h2>
             <p className="text-gray-400 text-sm">
-              {memberCount} {memberCount === 1 ? 'member' : 'members'} in {daoName}
+              {memberCount} total member{memberCount !== 1 ? 's' : ''} in {daoName}
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Search and Filters */}
-      <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search members by name, principal, or bio..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-600 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-white placeholder-gray-500"
-            />
+        {/* Stats */}
+        <div className="flex items-center gap-2 text-sm">
+          <div className="bg-cyan-500/10 border border-cyan-500/30 px-4 py-2 rounded-lg">
+            <span className="text-cyan-400 font-semibold">{members.length}</span>
+            <span className="text-gray-400 ml-1">Total</span>
           </div>
-
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
-            className="px-4 py-2 bg-gray-900 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="reputation">Highest Reputation</option>
-            <option value="voting_power">Highest Voting Power</option>
-          </select>
+          <div className="bg-green-500/10 border border-green-500/30 px-4 py-2 rounded-lg">
+            <span className="text-green-400 font-semibold">
+              {members.filter(m => !isProfilePrivate(m)).length}
+            </span>
+            <span className="text-gray-400 ml-1">Public</span>
+          </div>
+          {members.filter(m => isProfilePrivate(m)).length > 0 && (
+            <div className="bg-purple-500/10 border border-purple-500/30 px-4 py-2 rounded-lg">
+              <span className="text-purple-400 font-semibold">
+                {members.filter(m => isProfilePrivate(m)).length}
+              </span>
+              <span className="text-gray-400 ml-1">Private</span>
+            </div>
+          )}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Members Grid */}
+      {/* Search Bar */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="space-y-4"
+      >
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by name, bio, role, or principal..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 transition-colors"
+          />
+        </div>
+
+        {/* Role Filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-gray-400 font-medium">Filter by role:</span>
+          {['all', 'Creator', 'Admin', 'Member', 'Treasurer', 'Delegate'].map((filter) => {
+            const count = filter === 'all' 
+              ? members.length 
+              : members.filter(m => m.role === filter).length;
+            
+            if (filter !== 'all' && count === 0) return null;
+
+            return (
+              <button
+                key={filter}
+                onClick={() => setRoleFilter(filter)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  roleFilter === filter
+                    ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-gray-600'
+                }`}
+              >
+                {filter === 'all' ? 'All' : filter}
+                <span className="ml-1.5 opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      </motion.div>
+
+      {/* Privacy Notice */}
+      {members.filter(m => isProfilePrivate(m)).length > 0 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 flex items-start gap-3"
+        >
+          <Shield className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <h4 className="text-purple-400 font-medium mb-1">Privacy Respected</h4>
+            <p className="text-gray-300 text-sm">
+              Some members have chosen to keep their profile details private. 
+              However, <strong>roles are always visible</strong> for governance transparency, 
+              along with Principal ID, Reputation, Voting Power, and Total Staked.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Table */}
       {filteredMembers.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800/30 rounded-xl border border-gray-700">
-          <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg mb-2">
-            {searchQuery ? 'No members found matching your search.' : 'No members yet.'}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex flex-col items-center justify-center py-20 bg-gray-800/30 rounded-xl border border-gray-700"
+        >
+          <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-4">
+            <Search className="w-10 h-10 text-gray-600" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-400 mb-2">No members found</h3>
+          <p className="text-gray-500 mb-4">
+            {searchQuery ? 'Try adjusting your search' : 'No members in this DAO yet'}
           </p>
           {searchQuery && (
             <button
@@ -187,81 +402,224 @@ const MemberDirectory: React.FC = () => {
               Clear search
             </button>
           )}
-        </div>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMembers.map((member, index) => (
-            <motion.div
-              key={member.id.toString()}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className={`bg-gray-800/50 border rounded-xl p-6 hover:border-cyan-500/50 transition-all ${
-                isCurrentUser(member.id) ? 'border-cyan-500/50 ring-2 ring-cyan-500/20' : 'border-gray-700'
-              }`}
-            >
-              {/* Member Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <h3 className="text-lg font-semibold text-white truncate">
-                      {member.displayName || 'Anonymous Member'}
-                    </h3>
-                    {isCurrentUser(member.id) && (
-                      <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/50 rounded text-cyan-400 text-xs flex-shrink-0">
-                        You
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 font-mono truncate">
-                    {formatPrincipal(member.id)}
-                  </p>
-                </div>
-                
-                {/* Member icon/avatar */}
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                  <UserCheck className="w-6 h-6 text-white" />
-                </div>
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-white/5 border border-gray-700 rounded-xl overflow-hidden"
+        >
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-white/5 border-b border-gray-700">
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('displayName')}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors group"
+                    >
+                      Member
+                      <SortIcon field="displayName" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('role')}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors group"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Role
+                      <SortIcon field="role" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <span className="text-sm font-semibold text-gray-300">Bio</span>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <span className="text-sm font-semibold text-gray-300">Website</span>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <span className="text-sm font-semibold text-gray-300">Principal</span>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('reputation')}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors group"
+                    >
+                      <Award className="w-4 h-4" />
+                      Reputation
+                      <SortIcon field="reputation" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('votingPower')}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors group"
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                      Voting Power
+                      <SortIcon field="votingPower" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('totalStaked')}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors group"
+                    >
+                      <Coins className="w-4 h-4" />
+                      Total Staked
+                      <SortIcon field="totalStaked" />
+                    </button>
+                  </th>
+                  <th className="px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('joinedAt')}
+                      className="flex items-center gap-2 text-sm font-semibold text-gray-300 hover:text-white transition-colors group"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      Join Date
+                      <SortIcon field="joinedAt" />
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMembers.map((member, index) => {
+                  const isPrivate = isProfilePrivate(member);
+                  // Show "Anonymous Member" if no display name OR if profile is private
+                  const isAnonymous = !member.displayName || member.displayName.trim() === '';
+                  const displayName = isAnonymous ? 'Anonymous Member' : (isPrivate ? 'Anonymous Member' : member.displayName);
+                  const showBio = !isPrivate && member.showBio && member.bio && member.bio.trim() !== '';
+                  const showWebsite = !isPrivate && member.showWebsite && member.website && member.website.trim() !== '';
+                  const isCurrent = isCurrentUser(member.id);
 
-              {/* Bio */}
-              {member.bio && (
-                <p className="text-sm text-gray-400 mb-4 line-clamp-2">
-                  {member.bio}
-                </p>
-              )}
+                  return (
+                    <motion.tr
+                      key={member.id.toString()}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      className={`border-b border-gray-700/50 hover:bg-white/5 transition-colors ${
+                        isCurrent ? 'bg-cyan-500/5' : ''
+                      }`}
+                    >
+                      {/* Member Name */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            isPrivate || isAnonymous
+                              ? 'bg-gradient-to-br from-gray-500 to-gray-600' 
+                              : 'bg-gradient-to-br from-cyan-400 to-purple-500'
+                          }`}>
+                            {isPrivate || isAnonymous ? (
+                              <UserX className="w-5 h-5 text-white" />
+                            ) : (
+                              <span className="text-white font-bold text-sm">
+                                {displayName.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="text-white font-medium">{displayName}</p>
+                              {isCurrent && (
+                                <span className="px-2 py-0.5 bg-cyan-500/20 border border-cyan-500/50 rounded text-cyan-400 text-xs">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            {(isPrivate || isAnonymous) && (
+                              <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                                <Shield className="w-3 h-3" />
+                                {isAnonymous ? 'Profile not set' : 'Private'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
 
-              {/* Stats */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400 flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    Joined
-                  </span>
-                  <span className="text-white">{formatDate(Number(member.joinedAt))}</span>
-                </div>
+                      {/* Role - Always visible (governance data) */}
+                      <td className="px-6 py-4">
+                        <RoleBadge role={member.role} />
+                      </td>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400 flex items-center">
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                    Reputation
-                  </span>
-                  <span className="text-cyan-400 font-semibold">{Number(member.reputation)}</span>
-                </div>
+                      {/* Bio */}
+                      <td className="px-6 py-4">
+                        {member.showBio && member.bio && member.bio.trim() !== '' ? (
+                          <p className="text-gray-300 text-sm line-clamp-2 max-w-xs">
+                            {member.bio}
+                          </p>
+                        ) : (
+                          <span className="text-gray-500 text-sm italic">
+                            {!member.showBio ? 'Hidden' : 'No bio'}
+                          </span>
+                        )}
+                      </td>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400 flex items-center">
-                    <Shield className="w-4 h-4 mr-1" />
-                    Voting Power
-                  </span>
-                  <span className="text-purple-400 font-semibold">
-                    {Number(member.votingPower).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                      {/* Website */}
+                      <td className="px-6 py-4">
+                        {member.showWebsite && member.website && member.website.trim() !== '' ? (
+                          <a
+                            href={member.website.startsWith('http') ? member.website : `https://${member.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm transition-colors"
+                          >
+                            <Globe className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate max-w-[150px]">
+                              {member.website.replace(/^https?:\/\//, '')}
+                            </span>
+                          </a>
+                        ) : (
+                          <span className="text-gray-500 text-sm italic">
+                            {!member.showWebsite ? 'Hidden' : '-'}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Principal */}
+                      <td className="px-6 py-4">
+                        <code className="text-gray-400 text-xs font-mono bg-white/5 px-2 py-1 rounded">
+                          {formatPrincipal(member.id)}
+                        </code>
+                      </td>
+
+                      {/* Reputation */}
+                      <td className="px-6 py-4">
+                        <span className="text-yellow-400 font-semibold">
+                          {Number(member.reputation).toLocaleString()}
+                        </span>
+                      </td>
+
+                      {/* Voting Power */}
+                      <td className="px-6 py-4">
+                        <span className="text-purple-400 font-semibold">
+                          {Number(member.votingPower).toLocaleString()}
+                        </span>
+                      </td>
+
+                      {/* Total Staked */}
+                      <td className="px-6 py-4">
+                        <span className="text-green-400 font-semibold">
+                          {Number(member.totalStaked).toLocaleString()}
+                        </span>
+                      </td>
+
+                      {/* Join Date */}
+                      <td className="px-6 py-4">
+                        <span className="text-gray-400 text-sm">
+                          {formatDate(Number(member.joinedAt))}
+                        </span>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
       )}
     </div>
   );

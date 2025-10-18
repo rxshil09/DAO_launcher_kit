@@ -58,6 +58,32 @@ persistent actor DAOMain {
     type DAOConfigStable = Types.DAOConfigStable;
     type DAOConfigAllocations = Types.DAOConfigAllocations;
     type Activity = Types.Activity;
+    type MemberRole = Types.MemberRole;
+    type DAOMembership = Types.DAOMembership;
+
+    // User settings type with granular field locking and privacy
+    type UserSettings = {
+        displayName: Text;
+        email: ?Text;
+        bio: Text;
+        website: ?Text;
+        privacy: {
+            showProfile: {
+                displayName: Bool;  // Always true when shown
+                bio: Bool;          // User controlled
+                website: Bool;      // User controlled
+            };
+            showInvestments: Bool;
+            showActivity: Bool;
+        };
+        lockedFields: {
+            displayName: Bool;
+            email: Bool;
+            bio: Bool;
+            website: Bool;
+        };
+        createdAt: Int;
+    };
 
     // Typed interface for the Registry canister
     type RegistryService = actor {
@@ -95,9 +121,13 @@ persistent actor DAOMain {
     private var daoDescription : Text = "A decentralized autonomous organization for community governance";
     private var totalMembers : Nat = 0;
     private var userProfilesEntries : [(Principal, UserProfile)] = [];
+    private var userSettingsEntries : [(Principal, UserSettings)] = [];
     private var adminPrincipalsEntries : [Principal] = [];
     private var daoConfig : ?DAOConfigStable = null;
     private var daoConfigAllocations : ?DAOConfigAllocations = null;
+    
+    // Welcome popup tracking - tracks which users have seen the welcome popup
+    private var hasSeenWelcomeEntries : [(Principal, Bool)] = [];
 
     // Registry integration
     private var registryCanisterId : ?Principal = null;
@@ -105,17 +135,21 @@ persistent actor DAOMain {
     private var registryDaoId : ?Text = null;
 
     // Membership tracking - stable storage for DAO membership system
-    private var daoMembersEntries : [(Text, [Principal])] = [];
+    private var daoMembersEntries : [(Text, [DAOMembership])] = [];
     private var userMembershipsEntries : [(Principal, [Text])] = [];
 
     // Runtime storage - recreated after upgrades from stable storage
     // These HashMaps provide efficient O(1) lookup for user data and admin permissions
     private transient var userProfiles = HashMap.HashMap<Principal, UserProfile>(100, Principal.equal, Principal.hash);
+    private transient var userSettings = HashMap.HashMap<Principal, UserSettings>(100, Principal.equal, Principal.hash);
     private transient var adminPrincipals = HashMap.HashMap<Principal, Bool>(10, Principal.equal, Principal.hash);
     private transient var cachedDaoConfig : ?DAOConfig = null;
+    
+    // Welcome popup tracking - runtime HashMap for efficient lookups
+    private transient var hasSeenWelcome = HashMap.HashMap<Principal, Bool>(100, Principal.equal, Principal.hash);
 
     // Membership tracking - runtime storage for efficient lookups
-    private transient var daoMembers = HashMap.HashMap<Text, [Principal]>(10, Text.equal, Text.hash);
+    private transient var daoMembers = HashMap.HashMap<Text, [DAOMembership]>(10, Text.equal, Text.hash);
     private transient var userMemberships = HashMap.HashMap<Principal, [Text]>(50, Principal.equal, Principal.hash);
 
     // Canister references for modular architecture
@@ -139,9 +173,11 @@ persistent actor DAOMain {
      */
     system func preupgrade() {
         userProfilesEntries := Iter.toArray(userProfiles.entries());
+        userSettingsEntries := Iter.toArray(userSettings.entries());
         adminPrincipalsEntries := Iter.toArray(adminPrincipals.keys());
         daoMembersEntries := Iter.toArray(daoMembers.entries());
         userMembershipsEntries := Iter.toArray(userMemberships.entries());
+        hasSeenWelcomeEntries := Iter.toArray(hasSeenWelcome.entries());
     };
 
     /**
@@ -156,13 +192,21 @@ persistent actor DAOMain {
             Principal.hash
         );
         
+        // Restore user settings from stable storage
+        userSettings := HashMap.fromIter<Principal, UserSettings>(
+            userSettingsEntries.vals(),
+            userSettingsEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
+        
         // Restore admin permissions from stable storage
         for (admin in adminPrincipalsEntries.vals()) {
             adminPrincipals.put(admin, true);
         };
 
         // Restore membership data from stable storage
-        daoMembers := HashMap.fromIter<Text, [Principal]>(
+        daoMembers := HashMap.fromIter<Text, [DAOMembership]>(
             daoMembersEntries.vals(),
             daoMembersEntries.size(),
             Text.equal,
@@ -172,6 +216,14 @@ persistent actor DAOMain {
         userMemberships := HashMap.fromIter<Principal, [Text]>(
             userMembershipsEntries.vals(),
             userMembershipsEntries.size(),
+            Principal.equal,
+            Principal.hash
+        );
+
+        // Restore welcome popup tracking from stable storage
+        hasSeenWelcome := HashMap.fromIter<Principal, Bool>(
+            hasSeenWelcomeEntries.vals(),
+            hasSeenWelcomeEntries.size(),
             Principal.equal,
             Principal.hash
         );
@@ -361,14 +413,23 @@ persistent actor DAOMain {
                                 registeredInRegistry := true;
                                 registryDaoId := ?dao_id;
                                 
-                                // Add the creator as the first member when registering
-                                daoMembers.put(dao_id, [msg.caller]);
+                                // Add the creator as the first member with CREATOR role when registering
+                                let creatorMembership : DAOMembership = {
+                                    daoId = dao_id;
+                                    principal = msg.caller;
+                                    role = #CREATOR;
+                                    joinedAt = Time.now() / 1_000_000;
+                                    votingPower = 0; // Will be set based on token allocation
+                                    totalStaked = 0;
+                                };
+                                
+                                daoMembers.put(dao_id, [creatorMembership]);
                                 userMemberships.put(msg.caller, [dao_id]);
                                 totalMembers := 1;
                                 
                                 await syncRegistryMetadata();
                                 Debug.print("DAO registered with registry: " # dao_id);
-                                Debug.print("Creator added as first member");
+                                Debug.print("Creator added as first member with CREATOR role");
                                 #ok(dao_id)
                             };
                             case (#err(error)) #err(error);
@@ -384,7 +445,7 @@ persistent actor DAOMain {
     /**
      * Update DAO statistics in the registry
      */
-    public shared(msg) func updateRegistryStats() : async Result<(), Text> {
+    public shared(_msg) func updateRegistryStats() : async Result<(), Text> {
         if (not registeredInRegistry) {
             return #err("DAO not registered with registry");
         };
@@ -596,7 +657,32 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
+        // Initialize user settings with no fields locked
+        let initialSettings : UserSettings = {
+            displayName = displayName;
+            email = null;
+            bio = bio;
+            website = null;
+            privacy = {
+                showProfile = {
+                    displayName = true;  // Always true
+                    bio = true;          // Default visible
+                    website = true;      // Default visible
+                };
+                showInvestments = false;
+                showActivity = true;
+            };
+            lockedFields = {
+                displayName = false;
+                email = false;
+                bio = false;
+                website = false;
+            };
+            createdAt = Time.now() / 1_000_000;
+        };
+
         userProfiles.put(caller, userProfile);
+        userSettings.put(caller, initialSettings);
         totalMembers += 1;
 
         // Record user registration event
@@ -637,7 +723,32 @@ persistent actor DAOMain {
             votingPower = 0;
         };
 
+        // Initialize user settings
+        let initialSettings : UserSettings = {
+            displayName = displayName;
+            email = null;
+            bio = bio;
+            website = null;
+            privacy = {
+                showProfile = {
+                    displayName = true;  // Always true
+                    bio = true;          // Default visible
+                    website = true;      // Default visible
+                };
+                showInvestments = false;
+                showActivity = true;
+            };
+            lockedFields = {
+                displayName = false;
+                email = false;
+                bio = false;
+                website = false;
+            };
+            createdAt = Time.now() / 1_000_000;
+        };
+
         userProfiles.put(newUser, userProfile);
+        userSettings.put(newUser, initialSettings);
         totalMembers += 1;
 
         // Record user registration event
@@ -658,8 +769,168 @@ persistent actor DAOMain {
         #ok()
     };
 
+    /**
+     * Update user settings with granular field locking
+     * Each field locks independently after first edit
+     * NO ADMIN OVERRIDE - Users have full control
+     */
+    public shared(msg) func updateUserSettings(
+        displayName: Text,
+        email: ?Text,
+        bio: Text,
+        website: ?Text,
+        privacy: {
+            showProfile: {
+                displayName: Bool;
+                bio: Bool;
+                website: Bool;
+            };
+            showInvestments: Bool;
+            showActivity: Bool;
+        }
+    ) : async Result<(), Text> {
+        let caller = msg.caller;
+        
+        switch (userSettings.get(caller)) {
+            case null {
+                // Create new settings if user doesn't have any (backward compatibility)
+                let newSettings : UserSettings = {
+                    displayName = displayName;
+                    email = email;
+                    bio = bio;
+                    website = website;
+                    privacy = privacy;
+                    lockedFields = {
+                        displayName = true;
+                        email = true;
+                        bio = true;
+                        website = true;
+                    };
+                    createdAt = Time.now() / 1_000_000;
+                };
+                userSettings.put(caller, newSettings);
+
+                // Also update the basic profile
+                switch (userProfiles.get(caller)) {
+                    case (?profile) {
+                        let updatedProfile = {
+                            id = profile.id;
+                            displayName = displayName;
+                            bio = bio;
+                            joinedAt = profile.joinedAt;
+                            reputation = profile.reputation;
+                            totalStaked = profile.totalStaked;
+                            votingPower = profile.votingPower;
+                        };
+                        userProfiles.put(caller, updatedProfile);
+                    };
+                    case null {
+                        return #err("User profile not found. Please register first.");
+                    };
+                };
+
+                Debug.print("User settings created for: " # displayName);
+                #ok()
+            };
+            case (?currentSettings) {
+                // Check which fields are being changed and if they're locked
+                var lockedFieldsAttempted : [Text] = [];
+                
+                if (currentSettings.lockedFields.displayName and displayName != currentSettings.displayName) {
+                    lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Display Name"]);
+                };
+                
+                if (currentSettings.lockedFields.email) {
+                    let currentEmail = switch (currentSettings.email) { case (?e) e; case null "" };
+                    let newEmail = switch (email) { case (?e) e; case null "" };
+                    if (currentEmail != newEmail) {
+                        lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Email"]);
+                    };
+                };
+                
+                if (currentSettings.lockedFields.bio and bio != currentSettings.bio) {
+                    lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Bio"]);
+                };
+                
+                if (currentSettings.lockedFields.website) {
+                    let currentWebsite = switch (currentSettings.website) { case (?w) w; case null "" };
+                    let newWebsite = switch (website) { case (?w) w; case null "" };
+                    if (currentWebsite != newWebsite) {
+                        lockedFieldsAttempted := Array.append(lockedFieldsAttempted, ["Website"]);
+                    };
+                };
+                
+                // If any locked fields were attempted to be changed, reject
+                if (lockedFieldsAttempted.size() > 0) {
+                    let fieldsText = Text.join(", ", lockedFieldsAttempted.vals());
+                    return #err("⚠️ These fields cannot be changed: " # fieldsText # ". Each field can only be edited once.");
+                };
+                
+                // Determine which fields are now being locked (first time they're changed)
+                let newLockedFields = {
+                    displayName = currentSettings.lockedFields.displayName or (displayName != currentSettings.displayName);
+                    email = currentSettings.lockedFields.email or (switch (currentSettings.email, email) {
+                        case (?ce, ?ne) ce != ne;
+                        case (null, ?_) true;
+                        case _ false;
+                    });
+                    // Bio NEVER locks - always editable
+                    bio = false;
+                    // Website NEVER locks - always editable
+                    website = false;
+                };
+                
+                // Update settings (privacy can always be updated)
+                let updatedSettings : UserSettings = {
+                    displayName = displayName;
+                    email = email;
+                    bio = bio;
+                    website = website;
+                    privacy = privacy;
+                    lockedFields = newLockedFields;
+                    createdAt = currentSettings.createdAt;
+                };
+                userSettings.put(caller, updatedSettings);
+
+                // Also update the basic profile
+                switch (userProfiles.get(caller)) {
+                    case (?profile) {
+                        let updatedProfile = {
+                            id = profile.id;
+                            displayName = displayName;
+                            bio = bio;
+                            joinedAt = profile.joinedAt;
+                            reputation = profile.reputation;
+                            totalStaked = profile.totalStaked;
+                            votingPower = profile.votingPower;
+                        };
+                        userProfiles.put(caller, updatedProfile);
+                    };
+                    case null {};
+                };
+
+                Debug.print("User settings updated for: " # displayName);
+                #ok()
+            };
+        };
+    };
+
+    // Keep old function for backward compatibility (deprecated)
     public shared(msg) func updateUserProfile(displayName: Text, bio: Text) : async Result<(), Text> {
         let caller = msg.caller;
+        
+        // Check if settings exist and if fields are locked
+        switch (userSettings.get(caller)) {
+            case (?settings) {
+                if (settings.lockedFields.displayName and displayName != settings.displayName) {
+                    return #err("Display Name is locked. Use updateUserSettings.");
+                };
+                if (settings.lockedFields.bio and bio != settings.bio) {
+                    return #err("Bio is locked. Use updateUserSettings.");
+                };
+            };
+            case null {};
+        };
         
         switch (userProfiles.get(caller)) {
             case null return #err("User not found");
@@ -676,6 +947,115 @@ persistent actor DAOMain {
                 userProfiles.put(caller, updatedProfile);
                 #ok()
             };
+        };
+    };
+
+    /**
+     * Auto-create user profile on first login (eager registration)
+     * 
+     * This function is called by the frontend when a user logs in with Internet Identity.
+     * If the user already exists, it returns their existing profile.
+     * If the user is new, it creates a blank profile with default settings.
+     * 
+     * @returns UserProfile - Always returns a valid profile (never null)
+     */
+    public shared(msg) func getOrCreateUserProfile() : async UserProfile {
+        let caller = msg.caller;
+        
+        // Check if user already exists
+        switch (userProfiles.get(caller)) {
+            case (?existingProfile) {
+                // User exists - return their profile
+                Debug.print("Returning existing profile for: " # Principal.toText(caller));
+                return existingProfile;
+            };
+            case null {
+                // New user - create blank profile
+                let newProfile : UserProfile = {
+                    id = caller;
+                    displayName = "";        // Empty (unlocked)
+                    bio = "";                // Empty (unlocked)
+                    joinedAt = Time.now() / 1_000_000;
+                    reputation = 0;
+                    totalStaked = 0;
+                    votingPower = 0;
+                };
+                
+                // Create default user settings (all fields unlocked)
+                let defaultSettings : UserSettings = {
+                    displayName = "";
+                    email = null;
+                    bio = "";
+                    website = null;
+                    privacy = {
+                        showProfile = {
+                            displayName = true;  // Always visible (ignored in practice)
+                            bio = true;          // Default to visible
+                            website = true;      // Default to visible
+                        };
+                        showInvestments = true;
+                        showActivity = true;
+                    };
+                    lockedFields = {
+                        displayName = false;  // Not locked yet
+                        email = false;        // Not locked yet
+                        bio = false;          // Never locks (unlocked forever)
+                        website = false;      // Never locks (unlocked forever)
+                    };
+                    createdAt = Time.now() / 1_000_000;
+                };
+                
+                // Store in HashMaps
+                userProfiles.put(caller, newProfile);
+                userSettings.put(caller, defaultSettings);
+                
+                // Increment total users
+                totalMembers += 1;
+                
+                // Record analytics event
+                switch (analyticsCanister) {
+                    case (?analytics) {
+                        let _ = await analytics.recordEvent(
+                            #USER_JOINED,
+                            null,
+                            ?caller,
+                            [("autoRegistered", "true"), ("method", "getOrCreateUserProfile")],
+                            null
+                        );
+                    };
+                    case null {};
+                };
+                
+                Debug.print("✨ New user auto-registered: " # Principal.toText(caller));
+                
+                return newProfile;
+            };
+        };
+    };
+
+    /**
+     * Mark that the user has seen and dismissed the welcome popup
+     * 
+     * This is called when the user interacts with the welcome popup
+     * (either clicks "Complete Profile" or "Maybe Later").
+     * The popup will never be shown again for this user.
+     */
+    public shared(msg) func markWelcomeAsSeen() : async () {
+        let caller = msg.caller;
+        hasSeenWelcome.put(caller, true);
+        Debug.print("Welcome popup marked as seen for: " # Principal.toText(caller));
+    };
+
+    /**
+     * Check if a user has already seen/dismissed the welcome popup
+     * 
+     * @param userId - Principal of the user to check
+     * @returns Bool - true if user has seen the popup, false otherwise
+     */
+    public query func hasUserSeenWelcome(userId: Principal) : async Bool {
+        switch (hasSeenWelcome.get(userId)) {
+            case (?seen) seen;
+            case null false;
         };
     };
 
@@ -700,6 +1080,53 @@ persistent actor DAOMain {
 
     public query func getUserProfile(userId: Principal) : async ?UserProfile {
         userProfiles.get(userId)
+    };
+
+    // Query function to get user's own settings (full access)
+    public query(msg) func getMySettings() : async ?UserSettings {
+        userSettings.get(msg.caller)
+    };
+
+    // Query function to get public user settings (limited info, respects granular privacy)
+    // displayName always visible, bio/website respect privacy settings
+    public query func getUserSettings(userId: Principal) : async ?{
+        displayName: Text;
+        bio: ?Text;  // Only visible if privacy allows
+        website: ?Text;  // Only visible if privacy allows
+        privacy: {
+            showProfile: {
+                displayName: Bool;
+                bio: Bool;
+                website: Bool;
+            };
+            showInvestments: Bool;
+            showActivity: Bool;
+        };
+    } {
+        switch (userSettings.get(userId)) {
+            case (?settings) {
+                ?{
+                    displayName = settings.displayName;  // Always shown
+                    bio = if (settings.privacy.showProfile.bio) ?settings.bio else null;
+                    website = if (settings.privacy.showProfile.website) settings.website else null;
+                    privacy = settings.privacy;
+                }
+            };
+            case null null;
+        }
+    };
+
+    // Get which fields are locked for current user
+    public query(msg) func getMyLockedFields() : async ?{
+        displayName: Bool;
+        email: Bool;
+        bio: Bool;
+        website: Bool;
+    } {
+        switch (userSettings.get(msg.caller)) {
+            case (?settings) ?settings.lockedFields;
+            case null null;
+        }
     };
 
     public query func getAllUsers() : async [UserProfile] {
@@ -736,6 +1163,41 @@ persistent actor DAOMain {
         // This function will aggregate recent activity from various DAO modules.
         // For now, return an empty list as a placeholder implementation.
         []
+    };
+
+    /**
+     * Get Portfolio Stats for a User
+     * 
+     * Returns aggregated portfolio statistics including:
+     * - Total invested amount (from staking)
+     * - Number of active projects (DAOs user is member of)
+     * - Total returns (from staking rewards)
+     * - Total DAO tokens (from staking)
+     * 
+     * @param userId - Principal ID of the user
+     * @returns Portfolio statistics object
+     */
+    public query func getPortfolioStats(userId: Principal) : async {
+        invested: Nat;
+        projects: Nat;
+        returns: Float;
+        tokens: Nat;
+    } {
+        // Get user's DAO memberships
+        let userDAOs = switch (userMemberships.get(userId)) {
+            case (?daos) daos.size();
+            case null 0;
+        };
+
+        // Return portfolio stats
+        // Note: Staking data would come from staking canister in full implementation
+        // For now, returning basic data that can be enhanced when integrating with staking canister
+        {
+            invested = 0; // Will be fetched from staking canister
+            projects = userDAOs;
+            returns = 0.0; // Will be calculated from staking rewards
+            tokens = 0; // Will be fetched from staking canister
+        }
     };
 
     // Governance operations (temporary implementation until governance canister is ready)
@@ -850,13 +1312,23 @@ persistent actor DAOMain {
             case null [];
         };
         
-        let isMember = Array.find<Principal>(currentMembers, func(p) = Principal.equal(p, caller));
+        let isMember = Array.find<DAOMembership>(currentMembers, func(m) = Principal.equal(m.principal, caller));
         if (isMember != null) {
             return #err("Already a member of this DAO");
         };
         
+        // Create new membership with MEMBER role
+        let newMembership : DAOMembership = {
+            daoId = daoId;
+            principal = caller;
+            role = #MEMBER;
+            joinedAt = Time.now() / 1_000_000;
+            votingPower = 0; // Will be set based on token allocation
+            totalStaked = 0;
+        };
+        
         // Add to DAO members list
-        let updatedMembers = Array.append<Principal>(currentMembers, [caller]);
+        let updatedMembers = Array.append<DAOMembership>(currentMembers, [newMembership]);
         daoMembers.put(daoId, updatedMembers);
         
         // Add to user's memberships
@@ -878,13 +1350,14 @@ persistent actor DAOMain {
         // Record analytics event
         ignore recordAnalyticsEvent(#MEMBER_ADDED, ?daoId, ?caller, [], null);
         
-        Debug.print("User " # Principal.toText(caller) # " joined DAO: " # daoId);
+        Debug.print("User " # Principal.toText(caller) # " joined DAO: " # daoId # " with MEMBER role");
         #ok()
     };
 
     /**
      * Leave a DAO
      * Removes the caller from the DAO's member list
+     * Note: CREATOR cannot leave their own DAO
      */
     public shared(msg) func leaveDAO(daoId: Text) : async Result<(), Text> {
         let caller = msg.caller;
@@ -896,13 +1369,25 @@ persistent actor DAOMain {
         };
         
         // Check if user is a member
-        let isMember = Array.find<Principal>(currentMembers, func(p) = Principal.equal(p, caller));
-        if (isMember == null) {
-            return #err("Not a member of this DAO");
+        let membershipOpt = Array.find<DAOMembership>(currentMembers, func(m) = Principal.equal(m.principal, caller));
+        
+        switch (membershipOpt) {
+            case null {
+                return #err("Not a member of this DAO");
+            };
+            case (?membership) {
+                // Prevent creator from leaving their own DAO
+                switch (membership.role) {
+                    case (#CREATOR) {
+                        return #err("Creator cannot leave their own DAO");
+                    };
+                    case _ {};
+                };
+            };
         };
         
         // Remove from DAO members
-        let updatedMembers = Array.filter<Principal>(currentMembers, func(p) = not Principal.equal(p, caller));
+        let updatedMembers = Array.filter<DAOMembership>(currentMembers, func(m) = not Principal.equal(m.principal, caller));
         daoMembers.put(daoId, updatedMembers);
         
         // Remove from user's memberships
@@ -938,7 +1423,7 @@ persistent actor DAOMain {
             case (?m) m;
             case null return false;
         };
-        let found = Array.find<Principal>(members, func(p) = Principal.equal(p, userId));
+        let found = Array.find<DAOMembership>(members, func(m) = Principal.equal(m.principal, userId));
         found != null
     };
 
@@ -946,10 +1431,11 @@ persistent actor DAOMain {
      * Get all member Principals of a DAO
      */
     public query func getDAOMembers(daoId: Text) : async [Principal] {
-        switch (daoMembers.get(daoId)) {
-            case (?members) members;
-            case null [];
-        }
+        let memberships = switch (daoMembers.get(daoId)) {
+            case (?m) m;
+            case null return [];
+        };
+        Array.map<DAOMembership, Principal>(memberships, func(m) = m.principal)
     };
 
     /**
@@ -974,28 +1460,107 @@ persistent actor DAOMain {
 
     /**
      * Get detailed member profiles for a DAO
-     * Returns UserProfile information for all members
+     * Returns UserProfile information for all members with role and privacy settings
      */
-    public query func getDAOMemberProfiles(daoId: Text) : async [UserProfile] {
-        let members = switch (daoMembers.get(daoId)) {
+    // Extended member profile with role, website and privacy controls
+    public type MemberProfile = {
+        id: Principal;
+        role: Text;  // "Creator", "Admin", "Member", etc. - Always visible (governance data)
+        displayName: Text;
+        bio: Text;
+        website: Text;
+        joinedAt: Int;
+        reputation: Nat;
+        totalStaked: Nat;
+        votingPower: Nat;
+        showProfile: Bool;  // Privacy flag for frontend
+        showBio: Bool;      // Privacy flag for bio
+        showWebsite: Bool;  // Privacy flag for website
+    };
+
+    // Helper function to convert MemberRole to Text
+    private func roleToText(role: MemberRole) : Text {
+        switch (role) {
+            case (#CREATOR) "Creator";
+            case (#ADMIN) "Admin";
+            case (#MEMBER) "Member";
+            case (#TREASURER) "Treasurer";
+            case (#DELEGATE) "Delegate";
+            case (#MULTISIG) "Multisig";
+        }
+    };
+
+    public query func getDAOMemberProfiles(daoId: Text) : async [MemberProfile] {
+        let memberships = switch (daoMembers.get(daoId)) {
             case (?m) m;
             case null return [];
         };
         
-        let profiles = Buffer.Buffer<UserProfile>(0);
-        for (memberId in members.vals()) {
+        let profiles = Buffer.Buffer<MemberProfile>(0);
+        for (membership in memberships.vals()) {
+            let memberId = membership.principal;
+            
             switch (userProfiles.get(memberId)) {
-                case (?profile) profiles.add(profile);
+                case (?profile) {
+                    // Respect granular privacy settings from userSettings
+                    let profileWithPrivacy = switch (userSettings.get(memberId)) {
+                        case (?settings) {
+                            // Apply privacy: role always visible (governance data)
+                            {
+                                id = profile.id;
+                                role = roleToText(membership.role);  // Always visible (governance data)
+                                displayName = if (settings.privacy.showProfile.displayName) profile.displayName else "Anonymous Member";
+                                bio = if (settings.privacy.showProfile.bio) profile.bio else "";
+                                website = if (settings.privacy.showProfile.website) {
+                                    switch (settings.website) {
+                                        case (?w) w;
+                                        case null "";
+                                    }
+                                } else "";
+                                joinedAt = membership.joinedAt;  // Use joinedAt from membership
+                                reputation = profile.reputation;
+                                totalStaked = membership.totalStaked;  // Use from membership
+                                votingPower = membership.votingPower;  // Use from membership
+                                showProfile = settings.privacy.showProfile.displayName;
+                                showBio = settings.privacy.showProfile.bio;
+                                showWebsite = settings.privacy.showProfile.website;
+                            }
+                        };
+                        case null {
+                            // No settings = show full profile (backward compatibility)
+                            {
+                                id = profile.id;
+                                role = roleToText(membership.role);  // Always visible
+                                displayName = profile.displayName;
+                                bio = profile.bio;
+                                website = "";
+                                joinedAt = membership.joinedAt;
+                                reputation = profile.reputation;
+                                totalStaked = membership.totalStaked;
+                                votingPower = membership.votingPower;
+                                showProfile = true;
+                                showBio = true;
+                                showWebsite = true;
+                            }
+                        };
+                    };
+                    profiles.add(profileWithPrivacy);
+                };
                 case null {
                     // Create minimal profile for users without registered profiles
-                    let minimalProfile : UserProfile = {
+                    let minimalProfile : MemberProfile = {
                         id = memberId;
-                        displayName = "";
+                        role = roleToText(membership.role);  // Always visible
+                        displayName = "Anonymous Member";
                         bio = "";
-                        joinedAt = 0;
+                        website = "";
+                        joinedAt = membership.joinedAt;
                         reputation = 0;
-                        totalStaked = 0;
-                        votingPower = 0;
+                        totalStaked = membership.totalStaked;
+                        votingPower = membership.votingPower;
+                        showProfile = false;
+                        showBio = false;
+                        showWebsite = false;
                     };
                     profiles.add(minimalProfile);
                 };
@@ -1021,7 +1586,7 @@ persistent actor DAOMain {
                         case (#ok(_)) {};
                         case (#err(e)) Debug.print("Analytics error: " # e);
                     };
-                } catch (e) {
+                } catch (_) {
                     Debug.print("Failed to record analytics event");
                 };
             };
@@ -1044,13 +1609,23 @@ persistent actor DAOMain {
             case null [];
         };
         
-        let isMember = Array.find<Principal>(currentMembers, func(p) = Principal.equal(p, userId));
+        let isMember = Array.find<DAOMembership>(currentMembers, func(m) = Principal.equal(m.principal, userId));
         if (isMember != null) {
             return #err("User is already a member");
         };
         
+        // Create new membership with MEMBER role
+        let newMembership : DAOMembership = {
+            daoId = daoId;
+            principal = userId;
+            role = #MEMBER;
+            joinedAt = Time.now() / 1_000_000;
+            votingPower = 0;
+            totalStaked = 0;
+        };
+        
         // Add to DAO members list
-        let updatedMembers = Array.append<Principal>(currentMembers, [userId]);
+        let updatedMembers = Array.append<DAOMembership>(currentMembers, [newMembership]);
         daoMembers.put(daoId, updatedMembers);
         
         // Add to user's memberships
@@ -1064,7 +1639,63 @@ persistent actor DAOMain {
         // Update total members count
         totalMembers += 1;
         
-        Debug.print("Admin added user " # Principal.toText(userId) # " to DAO: " # daoId);
+        Debug.print("Admin added user " # Principal.toText(userId) # " to DAO: " # daoId # " with MEMBER role");
+        #ok()
+    };
+
+    /**
+     * ADMIN DEBUG FUNCTION - Fix existing DAOs without members
+     * Adds the DAO creator as the first member with CREATOR role
+     * 
+     * @param daoId - The DAO identifier
+     * @param creatorPrincipal - The principal to add as creator
+     * @return Success or error message
+     */
+    public shared(msg) func fixDAOMembership(daoId: Text, creatorPrincipal: Principal) : async Result<(), Text> {
+        if (not isAdmin(msg.caller)) {
+            return #err("Only admins can fix DAO membership");
+        };
+        
+        // Check if DAO already has members
+        let _currentMembers = switch (daoMembers.get(daoId)) {
+            case (?members) {
+                if (members.size() > 0) {
+                    return #err("DAO already has members. Member count: " # Nat.toText(members.size()));
+                };
+                members
+            };
+            case null [];
+        };
+        
+        // Create creator membership
+        let creatorMembership : DAOMembership = {
+            daoId = daoId;
+            principal = creatorPrincipal;
+            role = #CREATOR;
+            joinedAt = Time.now() / 1_000_000;
+            votingPower = 0;
+            totalStaked = 0;
+        };
+        
+        // Add to DAO members
+        daoMembers.put(daoId, [creatorMembership]);
+        
+        // Add to user's memberships
+        let currentDAOs = switch (userMemberships.get(creatorPrincipal)) {
+            case (?daos) daos;
+            case null [];
+        };
+        
+        // Only add if not already in list
+        let alreadyMember = Array.find<Text>(currentDAOs, func(d) = d == daoId);
+        if (alreadyMember == null) {
+            let updatedDAOs = Array.append<Text>(currentDAOs, [daoId]);
+            userMemberships.put(creatorPrincipal, updatedDAOs);
+        };
+        
+        totalMembers += 1;
+        
+        Debug.print("✅ Fixed membership for DAO: " # daoId # " - Added creator: " # Principal.toText(creatorPrincipal));
         #ok()
     };
 
