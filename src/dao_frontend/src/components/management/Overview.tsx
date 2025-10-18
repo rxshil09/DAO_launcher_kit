@@ -19,15 +19,18 @@ import {
   ArrowDownRight,
   BarChart3,
   PieChart,
-  Target
+  Target,
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useActors } from '../../context/ActorContext';
+import { dao_backend } from '@declarations/dao_backend';
 import type { Activity as ActivityRecord } from '@declarations/dao_backend/dao_backend.did';
 
 const Overview: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  const { daoBackend } = useActors();
+  // const { daoBackend } = useActors();
   const { createProposal } = useProposals();
   const { stake } = useStaking();
   const { getBalance } = useTreasury();
@@ -38,17 +41,17 @@ const Overview: React.FC = () => {
   useEffect(() => {
     const fetchRecentActivity = async () => {
       try {
-        const activity = await daoBackend.getRecentActivity();
+        const activity = await dao_backend.getRecentActivity();
         setRecentActivity(activity || []);
       } catch (err) {
         console.error('Failed to fetch recent activity', err);
       }
     };
 
-    if (daoBackend) {
+    if (dao_backend) {
       fetchRecentActivity();
     }
-  }, [daoBackend]);
+  }, [dao_backend]);
 
   const quickStats = [
     {
@@ -133,11 +136,26 @@ const Overview: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-2 font-mono">OVERVIEW</h2>
-        <p className="text-gray-400">
-          Complete overview of {dao.name} performance and activity
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-2 font-mono">OVERVIEW</h2>
+          <p className="text-gray-400">
+            Complete overview of {dao.name} performance and activity
+          </p>
+        </div>
+        
+        {/* Website Link */}
+        {dao.website && (
+          <a
+            href={dao.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-500/30 transition-colors group"
+          >
+            <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <span className="font-mono text-sm">Visit Website</span>
+          </a>
+        )}
       </div>
 
       {/* Quick Stats Grid */}
@@ -174,12 +192,31 @@ const Overview: React.FC = () => {
 
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Recent Activity */}
-        <div className="lg:col-span-2">
+        {/* Left Column - Description and Recent Activity */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Description Section */}
+          {dao.description && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
+            >
+              <div className="flex items-center space-x-2 mb-3">
+                <Info className="w-5 h-5 text-blue-400" />
+                <h3 className="text-lg font-bold text-white font-mono">DESCRIPTION</h3>
+              </div>
+              <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/50 scrollbar-track-gray-700/30 pr-2">
+                <p className="text-gray-300 leading-relaxed">{dao.description}</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Recent Activity */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.4 }}
             className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -189,7 +226,7 @@ const Overview: React.FC = () => {
               </button>
             </div>
             
-            <div className="space-y-4">
+            <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-500/50 scrollbar-track-gray-700/30 pr-2 space-y-4">
               {recentActivity.map((activity, index) => {
                 const ActivityIcon = getActivityIcon(activity.activityType);
                 return (
@@ -197,7 +234,7 @@ const Overview: React.FC = () => {
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
                     className="flex items-start space-x-4 p-4 bg-gray-900/50 rounded-lg border border-gray-700/30 hover:border-gray-600/50 transition-colors"
                   >
                     <div className={`w-10 h-10 rounded-lg bg-gray-800 border border-gray-600 flex items-center justify-center ${getActivityColor(activity.activityType)}`}>
@@ -224,13 +261,13 @@ const Overview: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Quick Actions & Info */}
+        {/* Right Column - Quick Actions & Info */}
         <div className="space-y-6">
           {/* DAO Info Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
             className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
           >
             <h3 className="text-lg font-bold text-white mb-4 font-mono">DAO INFO</h3>
@@ -258,7 +295,7 @@ const Overview: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.6 }}
             className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
           >
             <h3 className="text-lg font-bold text-white mb-4 font-mono">QUICK ACTIONS</h3>
@@ -291,7 +328,7 @@ const Overview: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.7 }}
             className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
           >
             <h3 className="text-lg font-bold text-white mb-4 font-mono">PERFORMANCE</h3>

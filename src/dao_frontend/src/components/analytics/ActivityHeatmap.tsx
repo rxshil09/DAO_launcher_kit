@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 interface ActivityHeatmapProps {
@@ -6,8 +6,8 @@ interface ActivityHeatmapProps {
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data }) => {
-  // Generate last 365 days
-  const generateHeatmapData = () => {
+  // Memoize heatmap data generation
+  const heatmapData = useMemo(() => {
     const days = [];
     const today = new Date();
     
@@ -15,7 +15,6 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data }) => {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       
-      // Find matching data point
       const dataPoint = data.find(d => {
         const dataDate = new Date(d.timestamp);
         return dataDate.toDateString() === date.toDateString();
@@ -24,20 +23,28 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data }) => {
       days.push({
         date,
         value: dataPoint?.value || 0,
-        intensity: Math.min((dataPoint?.value || 0) / 10, 1) // Normalize to 0-1
+        intensity: Math.min((dataPoint?.value || 0) / 10, 1)
       });
     }
     
     return days;
-  };
+  }, [data]);
 
-  const heatmapData = generateHeatmapData();
-  const weeks = [];
-  
-  // Group days into weeks
-  for (let i = 0; i < heatmapData.length; i += 7) {
-    weeks.push(heatmapData.slice(i, i + 7));
-  }
+  // Memoize month grouping
+  const monthGroups = useMemo(() => {
+    const monthGroups: { [key: string]: typeof heatmapData } = {};
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    heatmapData.forEach(day => {
+      const monthYear = `${monthNames[day.date.getMonth()]} ${day.date.getFullYear()}`;
+      if (!monthGroups[monthYear]) {
+        monthGroups[monthYear] = [];
+      }
+      monthGroups[monthYear].push(day);
+    });
+    
+    return monthGroups;
+  }, [heatmapData]);
 
   const getIntensityColor = (intensity: number) => {
     if (intensity === 0) return 'bg-gray-800';
@@ -47,73 +54,39 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data }) => {
     return 'bg-cyan-400';
   };
 
-  const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
-  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-      className="space-y-4"
+      transition={{ duration: 0.3 }}
+      className="space-y-6"
     >
-      {/* Month labels */}
-      <div className="flex justify-between text-xs text-gray-400 font-mono px-8">
-        {months.map((month) => (
-          <span key={month}>{month}</span>
-        ))}
-      </div>
-
-      {/* Heatmap grid */}
-      <div className="flex space-x-1">
-        {/* Weekday labels */}
-        <div className="flex flex-col space-y-1 mr-2">
-          {weekdays.map((day, index) => (
-            <div
-              key={day}
-              className={`h-3 flex items-center text-xs text-gray-400 font-mono ${
-                index % 2 === 0 ? '' : 'opacity-0'
-              }`}
-            >
-              {index % 2 === 0 ? day : ''}
+      {/* Month sections - Only animate container */}
+      <div className="flex gap-2 justify-between">
+        {Object.entries(monthGroups).map(([monthYear, days]) => (
+          <div key={monthYear} className="flex flex-col flex-shrink-0">
+            {/* Month label */}
+            <div className="text-xs text-gray-300 font-mono mb-1.5 font-semibold text-center">
+              {monthYear.split(' ')[0]}
             </div>
-          ))}
-        </div>
-
-        {/* Activity squares */}
-        <div className="flex space-x-1">
-          {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col space-y-1">
-              {week.map((day, dayIndex) => (
-                <motion.div
-                  key={`${weekIndex}-${dayIndex}`}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ 
-                    delay: 0.8 + (weekIndex * 0.01) + (dayIndex * 0.005),
-                    duration: 0.2 
-                  }}
-                  whileHover={{ 
-                    scale: 1.5,
-                    zIndex: 10,
-                    transition: { duration: 0.1 }
-                  }}
-                  className={`w-3 h-3 rounded-sm ${getIntensityColor(day.intensity)} border border-gray-700/30 cursor-pointer relative group`}
+            
+            {/* Days grid - Use regular divs instead of motion.div */}
+            <div className="grid grid-cols-7 gap-0.5">
+              {days.map((day, dayIndex) => (
+                <div
+                  key={`${monthYear}-${dayIndex}`}
+                  className={`w-2.5 h-2.5 rounded-sm ${getIntensityColor(day.intensity)} border border-gray-700/30 cursor-pointer relative group transition-transform hover:scale-150 hover:z-10`}
                   title={`${day.date.toDateString()}: ${day.value} activities`}
                 >
-                  {/* Tooltip */}
+                  {/* Tooltip - only rendered on hover with CSS */}
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 border border-gray-600 rounded text-xs text-white font-mono opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
                     {day.date.toLocaleDateString()}: {day.value} activities
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
 
       {/* Legend */}
