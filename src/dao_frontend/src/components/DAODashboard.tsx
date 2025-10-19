@@ -201,6 +201,19 @@ const DAODashboard: React.FC = () => {
     const amountStr = approvals[spenderKey + 'Amount' as keyof typeof approvals] as string;
     if (!amountStr) return;
     const amount = parseAmount(amountStr);
+    
+    // Validate amount against user balance
+    const amountNum = parseFloat(amountStr);
+    const userBalanceNum = parseFloat(fmt(balances.user));
+    if (amountNum > userBalanceNum) {
+      setLedgerError(`Cannot approve ${amountStr} tokens - you only have ${fmt(balances.user)} tokens available`);
+      return;
+    }
+    if (amountNum <= 0) {
+      setLedgerError('Amount must be greater than 0');
+      return;
+    }
+    
     const spenderId = (import.meta as any).env[`VITE_CANISTER_ID_${spenderKey.toUpperCase()}`] as string | undefined;
     if (!spenderId) { setLedgerError(`Missing canister id for ${spenderKey}`); return; }
     setApproving((s) => ({ ...s, [spenderKey]: true }));
@@ -211,7 +224,7 @@ const DAODashboard: React.FC = () => {
         amount,
         expires_at: [],
         expected_allowance: [],
-        fee: [],
+        fee: [10_000n], // Approval fee (0.0001 tokens)
         memo: [],
         from_subaccount: [],
         created_at_time: [],
@@ -354,10 +367,14 @@ const DAODashboard: React.FC = () => {
         >
           <div className="bg-gray-900/50 border border-blue-500/30 p-6 rounded-xl">
             <h3 className="text-white font-bold mb-3 font-mono">Approve Treasury</h3>
+            <p className="text-xs text-gray-400 mb-3">
+              Approval allows treasury to spend tokens on your behalf. Only the approval fee (0.0001 tokens) is deducted now.
+            </p>
             <div className="flex items-center gap-3">
               <input
                 type="number"
                 min="0"
+                step="0.01"
                 placeholder="Amount"
                 value={approvals.treasuryAmount}
                 onChange={(e) => setApprovals({ ...approvals, treasuryAmount: e.target.value })}
@@ -366,7 +383,7 @@ const DAODashboard: React.FC = () => {
               <button
                 onClick={() => approveSpender('treasury')}
                 disabled={approving.treasury}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono disabled:opacity-50"
               >
                 {approving.treasury ? 'Approving...' : 'Approve'}
               </button>
@@ -374,10 +391,14 @@ const DAODashboard: React.FC = () => {
           </div>
           <div className="bg-gray-900/50 border border-blue-500/30 p-6 rounded-xl">
             <h3 className="text-white font-bold mb-3 font-mono">Approve Staking</h3>
+            <p className="text-xs text-gray-400 mb-3">
+              Approval allows staking to spend tokens on your behalf. Only the approval fee (0.0001 tokens) is deducted now.
+            </p>
             <div className="flex items-center gap-3">
               <input
                 type="number"
                 min="0"
+                step="0.01"
                 placeholder="Amount"
                 value={approvals.stakingAmount}
                 onChange={(e) => setApprovals({ ...approvals, stakingAmount: e.target.value })}
@@ -386,7 +407,7 @@ const DAODashboard: React.FC = () => {
               <button
                 onClick={() => approveSpender('staking')}
                 disabled={approving.staking}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono disabled:opacity-50"
               >
                 {approving.staking ? 'Approving...' : 'Approve'}
               </button>

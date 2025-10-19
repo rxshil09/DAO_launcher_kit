@@ -305,7 +305,7 @@ persistent actor TreasuryCanister {
                     from_subaccount = null;
                     to = toAcct;
                     amount = faucetAmount;
-                    fee = ?10_000; // ICRC-1 standard transfer fee
+                    fee = null; // Let ledger apply default fee automatically
                     memo = null;
                     created_at_time = null;
                 });
@@ -335,11 +335,29 @@ persistent actor TreasuryCanister {
                         
                         #ok(transactionId)
                     };
+                    case (#Err(#BadFee { expected_fee })) {
+                        #err("Incorrect fee. Expected: " # Nat.toText(expected_fee))
+                    };
                     case (#Err(#InsufficientFunds { balance })) {
                         #err("Faucet is empty. Treasury balance: " # Nat.toText(balance))
                     };
-                    case (#Err(e)) {
-                        #err("Faucet transfer failed: " # debug_show(e))
+                    case (#Err(#BadBurn { min_burn_amount })) {
+                        #err("Amount too low. Minimum: " # Nat.toText(min_burn_amount))
+                    };
+                    case (#Err(#TooOld)) {
+                        #err("Transaction expired. Please try again.")
+                    };
+                    case (#Err(#CreatedInFuture { ledger_time })) {
+                        #err("Transaction timestamp is in the future.")
+                    };
+                    case (#Err(#TemporarilyUnavailable)) {
+                        #err("Ledger temporarily unavailable. Please try again.")
+                    };
+                    case (#Err(#Duplicate { duplicate_of })) {
+                        #err("Duplicate transaction detected.")
+                    };
+                    case (#Err(#GenericError { error_code; message })) {
+                        #err("Faucet transfer failed: " # message)
                     };
                 };
             };
@@ -391,7 +409,7 @@ persistent actor TreasuryCanister {
                     from_subaccount = null;
                     to = toAcct;
                     amount = amount;
-                    fee = ?10_000; // ICRC-1 standard transfer fee
+                    fee = null; // Let ledger apply default fee automatically
                     memo = null;
                     created_at_time = null;
                 });

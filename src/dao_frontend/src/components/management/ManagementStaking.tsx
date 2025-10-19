@@ -69,7 +69,18 @@ const ManagementStaking: React.FC = () => {
     return new Date(millis).toLocaleDateString();
   };
 
-  const formatToken = (amount: bigint): string => amount.toString();
+  const formatToken = (amount: bigint | number, decimals: number = 8): string => {
+    try {
+      const amt = typeof amount === 'bigint' ? amount : BigInt(amount);
+      const s = amt.toString();
+      const pad = s.padStart(decimals + 1, '0');
+      const intPart = pad.slice(0, -decimals);
+      const frac = pad.slice(-decimals).replace(/0+$/, '');
+      return frac ? `${intPart}.${frac}` : intPart;
+    } catch {
+      return '0';
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!actors?.staking) return;
@@ -167,7 +178,7 @@ const ManagementStaking: React.FC = () => {
             <span className="text-sm text-gray-400 font-mono">TOTAL STAKED</span>
           </div>
           <p className="text-2xl font-bold text-white">
-            {stakingStats ? stakingStats.totalStakedAmount.toString() : dao.staking.totalStaked}
+            {stakingStats ? formatToken(stakingStats.totalStakedAmount) : dao.staking.totalStaked}
           </p>
           <p className="text-sm text-green-400 mt-1">+12.5% this month</p>
         </motion.div>
@@ -183,7 +194,7 @@ const ManagementStaking: React.FC = () => {
             <span className="text-sm text-gray-400 font-mono">AVG STAKE</span>
           </div>
           <p className="text-2xl font-bold text-white">
-            {stakingStats ? stakingStats.averageStakeAmount.toFixed(2) : dao.staking.apr}
+            {stakingStats ? formatToken(BigInt(Math.floor(stakingStats.averageStakeAmount))) : dao.staking.apr}
           </p>
           <p className="text-sm text-blue-400 mt-1">Across all pools</p>
         </motion.div>
@@ -199,7 +210,7 @@ const ManagementStaking: React.FC = () => {
             <span className="text-sm text-gray-400 font-mono">YOUR STAKE</span>
           </div>
           <p className="text-2xl font-bold text-white">
-            {userStakes.reduce((acc, s) => acc + Number(s.amount), 0)}
+            {formatToken(userStakes.reduce((acc, s) => acc + s.amount, 0n))}
           </p>
           <p className="text-sm text-purple-400 mt-1">{userStakes.length} active stakes</p>
         </motion.div>
@@ -244,7 +255,7 @@ const ManagementStaking: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-400 text-sm font-mono">Your Stake</span>
-                  <span className="text-blue-400 font-semibold">{pool.userStaked}</span>
+                  <span className="text-blue-400 font-semibold">{formatToken(BigInt(pool.userStaked))}</span>
                 </div>
               </div>
 

@@ -68,7 +68,7 @@ export const useStaking = () => {
    * Stake tokens for a specific period
    * 
    * @async
-   * @param {number} amount - Amount of tokens to stake
+   * @param {number} amount - Amount of tokens to stake (in DAO tokens, not base units)
    * @param {string} period - Staking period: "instant", "locked30", "locked90", "locked180", "locked365"
    * @returns {Promise<number>} Stake ID
    * @throws {Error} If staking fails (insufficient balance, below minimum, etc.)
@@ -77,13 +77,45 @@ export const useStaking = () => {
     setLoading(true);
     setError(null);
     try {
+      // Convert to base units (8 decimals)
+      const amountBigInt = BigInt(Math.floor(parseFloat(amount) * 100_000_000));
+      const transferFee = 10_000n;
+      
+      // Get staking canister ID from environment
+      const stakingCanisterId = import.meta.env.VITE_CANISTER_ID_STAKING;
+      if (!stakingCanisterId) {
+        throw new Error('Staking canister ID not configured');
+      }
+
+      // Step 1: Approve the staking canister to spend tokens (amount + transfer fee)
+      // The approval itself costs a fee
+      const stakingPrincipal = Principal.fromText(stakingCanisterId);
+      
+      const approveRes = await actors.ledger.icrc2_approve({
+        spender: { owner: stakingPrincipal, subaccount: [] },
+        amount: amountBigInt + transferFee, // Include transfer fee in approval
+        fee: [transferFee], // Fee for the approval itself
+        expires_at: [],
+        expected_allowance: [],
+        memo: [],
+        from_subaccount: [],
+        created_at_time: [],
+      });
+
+      if ('Err' in approveRes || 'err' in approveRes) {
+        const error = approveRes.Err || approveRes.err;
+        throw new Error(`Approval failed: ${typeof error === 'object' ? Object.keys(error)[0] : error}`);
+      }
+
+      // Step 2: Call stake function (which will use transfer_from)
       const periodVariant = { [period]: null };
-      const res = await actors.staking.stake(BigInt(amount), periodVariant);
+      const res = await actors.staking.stake(amountBigInt, periodVariant);
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
-      setError(err.message);
-      throw err;
+      const errorMessage = err.message || 'Staking failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }

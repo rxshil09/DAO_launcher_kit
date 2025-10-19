@@ -60,6 +60,8 @@ persistent actor StakingCanister {
 
     // ICRC-1/2 Ledger interface (minimal subset)
     type Account = { owner : Principal; subaccount : ?Blob };
+    
+    // ICRC-1 Transfer Error (for direct transfers)
     type TransferError = {
         #BadFee : { expected_fee : Nat };
         #BadBurn : { min_burn_amount : Nat };
@@ -70,7 +72,21 @@ persistent actor StakingCanister {
         #Duplicate : { duplicate_of : Nat };
         #GenericError : { error_code : Nat; message : Text };
     };
-    type TransferResult = { #ok : Nat; #err : TransferError };
+    
+    // ICRC-2 Transfer From Error (for approved transfers)
+    type TransferFromError = {
+        #BadFee : { expected_fee : Nat };
+        #BadBurn : { min_burn_amount : Nat };
+        #InsufficientFunds : { balance : Nat };
+        #InsufficientAllowance : { allowance : Nat };
+        #TooOld;
+        #CreatedInFuture : { ledger_time : Nat64 };
+        #TemporarilyUnavailable;
+        #Duplicate : { duplicate_of : Nat };
+        #GenericError : { error_code : Nat; message : Text };
+    };
+    type TransferResult = { #Ok : Nat; #Err : TransferError };
+    type TransferFromResult = { #Ok : Nat; #Err : TransferFromError };
     type TransferArg = {
         from_subaccount : ?Blob;
         to : Account;
@@ -90,7 +106,7 @@ persistent actor StakingCanister {
     };
     type Ledger = actor {
         icrc1_transfer : shared TransferArg -> async TransferResult;
-        icrc2_transfer_from : shared TransferFromArgs -> async TransferResult;
+        icrc2_transfer_from : shared TransferFromArgs -> async TransferFromResult;
     };
 
     // Stable storage for upgrade persistence
@@ -109,8 +125,8 @@ persistent actor StakingCanister {
     // Staking configuration parameters
     // These control the economic parameters of the staking system
     private var stakingEnabled : Bool = true;
-    private var minimumStakeAmount : TokenAmount = 10; // Minimum 10 tokens to prevent dust attacks
-    private var maximumStakeAmount : TokenAmount = 1000000; // Maximum 1M tokens to prevent centralization
+    private var minimumStakeAmount : TokenAmount = 1_000_000_000; // Minimum 10 tokens (in base units: 10 * 100_000_000)
+    private var maximumStakeAmount : TokenAmount = 100_000_000_000_000; // Maximum 1M tokens (in base units: 1_000_000 * 100_000_000)
     
     // Analytics integration
     private var analyticsCanisterId : ?Principal = null;
@@ -196,14 +212,27 @@ persistent actor StakingCanister {
                     from = from;
                     to = to;
                     amount = amount;
-                    fee = null;
+                    fee = null; // ICRC-2 transfer_from applies fee automatically
                     memo = null;
                     created_at_time = null;
                     spender_subaccount = null;
                 });
                 switch (tf) {
-                    case (#ok _) {};
-                    case (#err e) { return #err("Ledger transfer_from failed: " # debug_show(e)) };
+                    case (#Ok _) {};
+                    case (#Err e) { 
+                        let errorMsg = switch (e) {
+                            case (#BadFee { expected_fee }) { "Incorrect fee. Expected: " # Nat.toText(expected_fee) };
+                            case (#BadBurn { min_burn_amount }) { "Amount too low. Minimum: " # Nat.toText(min_burn_amount) };
+                            case (#InsufficientFunds { balance }) { "Insufficient balance. Your balance: " # Nat.toText(balance) };
+                            case (#InsufficientAllowance { allowance }) { "Insufficient allowance. Please approve at least: " # Nat.toText(amount + 10_000) };
+                            case (#TooOld) { "Transaction expired. Please try again." };
+                            case (#CreatedInFuture { ledger_time }) { "Transaction timestamp is in the future." };
+                            case (#TemporarilyUnavailable) { "Ledger temporarily unavailable. Please try again." };
+                            case (#Duplicate { duplicate_of }) { "Duplicate transaction detected." };
+                            case (#GenericError { error_code; message }) { "Transfer failed: " # message };
+                        };
+                        return #err(errorMsg);
+                    };
                 };
             };
             case null { return #err("Ledger not configured for staking") };
@@ -295,13 +324,25 @@ persistent actor StakingCanister {
                     from_subaccount = null;
                     to = to;
                     amount = stake.amount;
-                    fee = null;
+                    fee = null; // Let ledger apply default fee automatically
                     memo = null;
                     created_at_time = null;
                 });
                 switch (tr) {
-                    case (#ok _) {};
-                    case (#err e) { return #err("Ledger transfer failed: " # debug_show(e)) };
+                    case (#Ok _) {};
+                    case (#Err e) { 
+                        let errorMsg = switch (e) {
+                            case (#BadFee { expected_fee }) { "Incorrect fee. Expected: " # Nat.toText(expected_fee) };
+                            case (#BadBurn { min_burn_amount }) { "Amount too low. Minimum: " # Nat.toText(min_burn_amount) };
+                            case (#InsufficientFunds { balance }) { "Staking canister has insufficient balance: " # Nat.toText(balance) };
+                            case (#TooOld) { "Transaction expired. Please try again." };
+                            case (#CreatedInFuture { ledger_time }) { "Transaction timestamp is in the future." };
+                            case (#TemporarilyUnavailable) { "Ledger temporarily unavailable. Please try again." };
+                            case (#Duplicate { duplicate_of }) { "Duplicate transaction detected." };
+                            case (#GenericError { error_code; message }) { "Transfer failed: " # message };
+                        };
+                        return #err(errorMsg);
+                    };
                 };
             };
             case null { return #err("Ledger not configured for staking") };
