@@ -37,6 +37,7 @@ const Dashboard = () => {
   const [walletConnected, setWalletConnected] = useState(false);
   const [decimals, setDecimals] = useState(8);
   const [balances, setBalances] = useState({ user: 0n, treasury: 0n, staking: 0n });
+  const [userStats, setUserStats] = useState({ stakedBalance: 0n, daoCount: 0 });
   const [approvals, setApprovals] = useState({ treasuryAmount: '', stakingAmount: '' });
   const [ledgerError, setLedgerError] = useState('');
   const [approving, setApproving] = useState({ treasury: false, staking: false });
@@ -87,6 +88,42 @@ const Dashboard = () => {
     }
   };
 
+  const refreshUserStats = async () => {
+    if (!actors || !principal) return;
+    try {
+      const principalObj = Principal.fromText(principal);
+      
+      // Fetch user's staked balance from staking canister
+      let stakedBalance = 0n;
+      if (actors.staking) {
+        try {
+          const stakes = await actors.staking.getUserStakes(principalObj);
+          // Sum up all active stakes
+          stakedBalance = stakes.reduce((sum, stake) => {
+            return sum + BigInt(stake.amount);
+          }, 0n);
+        } catch (e) {
+          console.log('Could not fetch staked balance:', e);
+        }
+      }
+
+      // Fetch number of DAOs user is member of from dao_backend
+      let daoCount = 0;
+      if (actors.daoBackend) {
+        try {
+          const portfolioStats = await actors.daoBackend.getPortfolioStats(principalObj);
+          daoCount = Number(portfolioStats.projects);
+        } catch (e) {
+          console.log('Could not fetch DAO count:', e);
+        }
+      }
+
+      setUserStats({ stakedBalance, daoCount });
+    } catch (e) {
+      console.error('Failed to fetch user stats', e);
+    }
+  };
+
   const parseAmount = (s) => {
     if (!s) return 0n;
     const d = typeof decimals === 'number' ? decimals : 8;
@@ -134,6 +171,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (actors && principal) {
       refreshBalances();
+      refreshUserStats();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actors, principal]);
@@ -241,9 +279,9 @@ const Dashboard = () => {
 
   const portfolioStats = [
     { label: 'My Token Balance', value: fmt(balances.user), change: '', trend: 'up' },
-    { label: 'Treasury Balance', value: fmt(balances.treasury), change: '', trend: 'up' },
-    { label: 'Staking Balance', value: fmt(balances.staking), change: '', trend: 'up' },
-    { label: 'Decimals', value: String(decimals), change: '', trend: 'up' }
+    { label: 'My Staked Balance', value: fmt(userStats.stakedBalance), change: '', trend: 'up' },
+    { label: 'My DAOs', value: String(userStats.daoCount), change: '', trend: 'up' },
+    { label: 'Token Decimals', value: String(decimals), change: '', trend: 'neutral' }
   ];
 
   const filteredProjects = projects.filter(project => {

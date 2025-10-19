@@ -12,10 +12,6 @@ import {
   Search, 
   Filter, 
   Rocket,
-  Users,
-  TrendingUp,
-  DollarSign,
-  Activity,
   Loader2,
   AlertCircle,
   RefreshCw
@@ -34,6 +30,7 @@ const DAODashboard: React.FC = () => {
   // Ledger balances + approvals
   const [decimals, setDecimals] = useState<number>(8);
   const [balances, setBalances] = useState<{ user: bigint; treasury: bigint; staking: bigint }>({ user: 0n, treasury: 0n, staking: 0n });
+  const [userStats, setUserStats] = useState<{ stakedBalance: bigint; daoCount: number }>({ stakedBalance: 0n, daoCount: 0 });
   const [approvals, setApprovals] = useState<{ treasuryAmount: string; stakingAmount: string }>({ treasuryAmount: '', stakingAmount: '' });
   const [approving, setApproving] = useState<{ treasury: boolean; staking: boolean }>({ treasury: false, staking: false });
   const [ledgerError, setLedgerError] = useState<string>('');
@@ -46,27 +43,6 @@ const DAODashboard: React.FC = () => {
     const matchesCategory = selectedCategory === 'All' || dao.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  const totalStats = {
-    totalDAOs: daos.length,
-    totalMembers: daos.reduce((sum, dao) => sum + dao.memberCount, 0),
-    totalTVL: daos.reduce((sum, dao) => {
-      const value = parseFloat(dao.totalValueLocked.replace(/[$M,K]/g, ''));
-      const multiplier = dao.totalValueLocked.includes('M') ? 1000000 : 
-                        dao.totalValueLocked.includes('K') ? 1000 : 1;
-      return sum + (value * multiplier);
-    }, 0),
-    activeProposals: daos.reduce((sum, dao) => sum + dao.governance.activeProposals, 0)
-  };
-
-  const formatTVL = (amount: number) => {
-    if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      return `$${(amount / 1000).toFixed(1)}K`;
-    }
-    return `$${amount.toFixed(0)}`;
-  };
 
   // Redirect to signin if not authenticated
   React.useEffect(() => {
@@ -128,6 +104,42 @@ const DAODashboard: React.FC = () => {
     }
   };
 
+  const refreshUserStats = async () => {
+    if (!actors || !principal) return;
+    try {
+      const principalObj = Principal.fromText(principal);
+      
+      // Fetch user's staked balance from staking canister
+      let stakedBalance = 0n;
+      if (actors.staking) {
+        try {
+          const stakes = await (actors.staking as any).getUserStakes(principalObj);
+          // Sum up all active stakes
+          stakedBalance = stakes.reduce((sum: bigint, stake: any) => {
+            return sum + BigInt(stake.amount);
+          }, 0n);
+        } catch (e) {
+          console.log('Could not fetch staked balance:', e);
+        }
+      }
+
+      // Fetch number of DAOs user is member of from dao_backend
+      let daoCount = 0;
+      if (actors.daoBackend) {
+        try {
+          const portfolioStats = await (actors.daoBackend as any).getPortfolioStats(principalObj);
+          daoCount = Number(portfolioStats.projects);
+        } catch (e) {
+          console.log('Could not fetch DAO count:', e);
+        }
+      }
+
+      setUserStats({ stakedBalance, daoCount });
+    } catch (e) {
+      console.error('Failed to fetch user stats', e);
+    }
+  };
+
   const approveSpender = async (spenderKey: 'treasury' | 'staking') => {
     if (!actors || !actors.ledger) return;
     const amountStr = approvals[spenderKey + 'Amount' as keyof typeof approvals] as string;
@@ -158,7 +170,10 @@ const DAODashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { refreshBalances(); }, [actors, principal]);
+  useEffect(() => { 
+    refreshBalances();
+    refreshUserStats();
+  }, [actors, principal]);
 
   // Listen for storage changes to update DAOs when created in other tabs
   React.useEffect(() => {
@@ -248,7 +263,7 @@ const DAODashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Token Balances */}
+        {/* Token Balances - User-Specific */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -260,12 +275,12 @@ const DAODashboard: React.FC = () => {
             <div className="text-2xl font-bold">{fmt(balances.user)}</div>
           </div>
           <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-xl">
-            <div className="text-sm text-gray-400 font-mono mb-1">TREASURY BALANCE</div>
-            <div className="text-2xl font-bold">{fmt(balances.treasury)}</div>
+            <div className="text-sm text-gray-400 font-mono mb-1">MY STAKED BALANCE</div>
+            <div className="text-2xl font-bold">{fmt(userStats.stakedBalance)}</div>
           </div>
           <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-xl">
-            <div className="text-sm text-gray-400 font-mono mb-1">STAKING BALANCE</div>
-            <div className="text-2xl font-bold">{fmt(balances.staking)}</div>
+            <div className="text-sm text-gray-400 font-mono mb-1">MY DAOs</div>
+            <div className="text-2xl font-bold">{userStats.daoCount}</div>
           </div>
         </motion.div>
 
@@ -320,47 +335,6 @@ const DAODashboard: React.FC = () => {
         {ledgerError && (
           <div className="mb-8 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-mono">{ledgerError}</div>
         )}
-
-
-        {/* Portfolio Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-        >
-          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <Activity className="w-5 h-5 text-blue-400" />
-              <span className="text-sm text-gray-400 font-mono">TOTAL DAOS</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{totalStats.totalDAOs}</p>
-          </div>
-          
-          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <Users className="w-5 h-5 text-green-400" />
-              <span className="text-sm text-gray-400 font-mono">MEMBERS</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{totalStats.totalMembers.toLocaleString()}</p>
-          </div>
-          
-          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <DollarSign className="w-5 h-5 text-purple-400" />
-              <span className="text-sm text-gray-400 font-mono">TOTAL TVL</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{formatTVL(totalStats.totalTVL)}</p>
-          </div>
-          
-          <div className="bg-gray-900/50 border border-orange-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-orange-400" />
-              <span className="text-sm text-gray-400 font-mono">PROPOSALS</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{totalStats.activeProposals}</p>
-          </div>
-        </motion.div>
 
         {/* Filters and Search */}
         {daos.length > 0 && (
