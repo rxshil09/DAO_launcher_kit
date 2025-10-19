@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOutletContext } from 'react-router-dom';
+import { Principal } from '@dfinity/principal';
 import {
   DollarSign,
   TrendingUp,
@@ -14,10 +15,14 @@ import {
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useTreasury } from '../../hooks/useTreasury';
+import { useActors } from '../../context/ActorContext';
+import { useAuth } from '../../context/AuthContext';
 import { DepositModal, WithdrawModal } from '../modals';
 
 const ManagementTreasury: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
+  const actors = useActors();
+  const { principal } = useAuth();
   const {
     getAuthorizedPrincipals,
     addAuthorizedPrincipal,
@@ -33,6 +38,7 @@ const ManagementTreasury: React.FC = () => {
   const [newPrincipal, setNewPrincipal] = useState('');
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [userBalance, setUserBalance] = useState<string>('0');
 
   useEffect(() => {
     const fetchPrincipals = async () => {
@@ -99,7 +105,7 @@ const ManagementTreasury: React.FC = () => {
           id: Number(tx.id),
           type: isInflow ? 'inflow' : 'outflow',
           description: tx.description,
-          amount: `${isInflow ? '+' : '-'}${tx.amount.toString()}`,
+          amount: `${isInflow ? '+' : '-'}${formatBalance(BigInt(tx.amount), 8)}`,
           timestamp: new Date(
             Number(tx.timestamp / BigInt(1_000_000))
           ).toLocaleString(),
@@ -107,8 +113,35 @@ const ManagementTreasury: React.FC = () => {
         };
       });
       setTransactions(formatted);
-      } catch (e) {
+      
+      // Fetch user balance from ledger
+      if (actors?.ledger && principal) {
+        try {
+          const userAccount = { owner: Principal.fromText(principal), subaccount: [] as [] };
+          const balance = await (actors.ledger as any).icrc1_balance_of(userAccount);
+          const decimals = await (actors.ledger as any).icrc1_decimals();
+          const formattedBalance = formatBalance(BigInt(balance), Number(decimals));
+          setUserBalance(formattedBalance);
+        } catch (e) {
+          console.error('Failed to fetch user balance:', e);
+          setUserBalance('0');
+        }
+      }
+    } catch (e) {
       console.error(e);
+    }
+  };
+
+  // Helper to format balance
+  const formatBalance = (amt: bigint, decimals: number = 8): string => {
+    try {
+      const s = amt.toString();
+      const pad = s.padStart(decimals + 1, '0');
+      const intPart = pad.slice(0, -decimals);
+      const frac = pad.slice(-decimals).replace(/0+$/, '');
+      return frac ? `${intPart}.${frac}` : intPart;
+    } catch {
+      return '0';
     }
   };
 
@@ -122,7 +155,7 @@ const ManagementTreasury: React.FC = () => {
   const treasuryStats = [
     {
       label: 'Total Balance',
-      value: balance ? balance.total.toString() : dao.treasury.balance,
+      value: balance ? formatBalance(BigInt(balance.total), 8) : dao.treasury.balance,
       change: '+0%',
       trend: 'up',
       icon: Wallet,
@@ -130,7 +163,7 @@ const ManagementTreasury: React.FC = () => {
     },
     {
       label: 'Total Deposits',
-      value: stats ? stats.totalDeposits.toString() : dao.treasury.monthlyInflow,
+      value: stats ? formatBalance(BigInt(stats.totalDeposits), 8) : dao.treasury.monthlyInflow,
       change: '+0%',
       trend: 'up',
       icon: TrendingUp,
@@ -138,7 +171,7 @@ const ManagementTreasury: React.FC = () => {
     },
     {
       label: 'Available Funds',
-      value: balance ? balance.available.toString() : '$0',
+      value: balance ? formatBalance(BigInt(balance.available), 8) : '$0',
       change: '+0%',
       trend: 'down',
       icon: DollarSign,
@@ -146,7 +179,7 @@ const ManagementTreasury: React.FC = () => {
     },
     {
       label: 'Locked Funds',
-      value: balance ? balance.locked.toString() : '$0',
+      value: balance ? formatBalance(BigInt(balance.locked), 8) : '$0',
       change: '+0%',
       trend: 'up',
       icon: Lock,
@@ -476,7 +509,7 @@ const ManagementTreasury: React.FC = () => {
         isOpen={showDepositModal}
         onClose={() => setShowDepositModal(false)}
         onSuccess={fetchData}
-        userBalance="10000" // Mock user balance
+        userBalance={userBalance}
         currentTreasuryBalance={balance?.available?.toString() || '0'}
       />
 

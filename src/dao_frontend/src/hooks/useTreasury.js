@@ -76,7 +76,7 @@ export const useTreasury = () => {
    * Deposit tokens to the treasury
    * 
    * @async
-   * @param {number} amount - Amount of tokens to deposit
+   * @param {number} amount - Amount of tokens to deposit  
    * @param {string} description - Description of the deposit
    * @returns {Promise<number>} Transaction ID
    * @throws {Error} If deposit fails
@@ -85,7 +85,31 @@ export const useTreasury = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await actors.treasury.deposit(BigInt(amount), description);
+      // Convert amount to BigInt (assuming 8 decimals)
+      const amountBigInt = BigInt(Math.floor(amount * 100_000_000));
+      const transferFee = 10_000n; // ICRC-1 transfer fee
+      
+      // Step 1: Approve treasury to spend tokens (amount + fee for the transfer_from)
+      const treasuryPrincipal = Principal.fromText(import.meta.env.VITE_CANISTER_ID_TREASURY);
+      
+      const approveRes = await actors.ledger.icrc2_approve({
+        spender: { owner: treasuryPrincipal, subaccount: [] },
+        amount: amountBigInt + transferFee, // Approve amount + transfer fee
+        fee: [transferFee], // Fee for the approval itself
+        expires_at: [],
+        expected_allowance: [],
+        memo: [],
+        from_subaccount: [],
+        created_at_time: [],
+      });
+      
+      if ('Err' in approveRes || 'err' in approveRes) {
+        const error = approveRes.Err || approveRes.err;
+        throw new Error(`Approval failed: ${typeof error === 'object' ? Object.keys(error)[0] : error}`);
+      }
+      
+      // Step 2: Call treasury deposit (which will use transfer_from)
+      const res = await actors.treasury.deposit(amountBigInt, description);
       if ('err' in res) throw new Error(res.err);
       return res.ok;
     } catch (err) {
@@ -410,6 +434,76 @@ export const useTreasury = () => {
     }
   };
 
+  /**
+   * Request test tokens from faucet
+   * 
+   * @async
+   * @returns {Promise<number>} Transaction ID
+   * @throws {Error} If faucet claim fails (cooldown, disabled, or empty)
+   */
+  const requestTestTokens = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await actors.treasury.requestTestTokens();
+      if ('err' in res) throw new Error(res.err);
+      return res.ok;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Check if user can claim from faucet
+   * 
+   * @async
+   * @returns {Promise<boolean>} True if user can claim
+   */
+  const canClaimFaucet = async () => {
+    try {
+      const res = await actors.treasury.canClaimFaucet();
+      if ('err' in res) return false;
+      return res.ok;
+    } catch (err) {
+      console.error('Error checking faucet eligibility:', err);
+      return false;
+    }
+  };
+
+  /**
+   * Get faucet configuration
+   * 
+   * @async
+   * @returns {Promise<{enabled: boolean, amount: bigint, cooldownHours: number}>}
+   */
+  const getFaucetInfo = async () => {
+    try {
+      return await actors.treasury.getFaucetInfo();
+    } catch (err) {
+      console.error('Error fetching faucet info:', err);
+      throw err;
+    }
+  };
+
+  /**
+   * Get time until next faucet claim (in seconds)
+   * 
+   * @async
+   * @returns {Promise<number|null>} Seconds until next claim, 0 if can claim now
+   */
+  const getTimeUntilNextClaim = async () => {
+    try {
+      const time = await actors.treasury.getTimeUntilNextClaim();
+      return time && time.length > 0 ? Number(time[0]) : null;
+    } catch (err) {
+      console.error('Error fetching claim time:', err);
+      return null;
+    }
+  };
+
   return {
     deposit,
     withdraw,
@@ -426,6 +520,10 @@ export const useTreasury = () => {
     addAuthorizedPrincipal,
     removeAuthorizedPrincipal,
     getAuthorizedPrincipals,
+    requestTestTokens,
+    canClaimFaucet,
+    getFaucetInfo,
+    getTimeUntilNextClaim,
     loading,
     error,
   };

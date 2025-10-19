@@ -90,6 +90,22 @@ if [ ! -f third_party/icrc1/ic-icrc1-ledger.wasm.gz ] || [ ! -f third_party/icrc
 fi
 
 DEPLOYER_PRINCIPAL=$(dfx identity get-principal)
+
+# Token distribution for mainnet:
+# Total Supply: 1,000,000,000,000 (1 trillion tokens with 8 decimals = 10,000 DAO tokens)
+# - Treasury: 400,000,000,000 (40% = 4,000 DAO tokens)
+# - Deployer/Founder: 200,000,000,000 (20% = 2,000 DAO tokens)
+# - Community Pool: 400,000,000,000 (40% = 4,000 DAO tokens - goes to treasury)
+
+log_info "Token Distribution:"
+log_info "  Treasury:        400,000,000,000 (40%)"
+log_info "  Deployer:        200,000,000,000 (20%)"
+log_info "  Community Pool:  400,000,000,000 (40%)"
+log_info "  Total:         1,000,000,000,000 (100%)"
+log_info ""
+log_info "  Deployer Principal: ${DEPLOYER_PRINCIPAL}"
+log_info "  Treasury Principal: ${TREASURY_ID}"
+
 LEDGER_INIT=$(cat <<EOF
 (variant { Init = record {
   token_name = "DAO Token";
@@ -99,7 +115,8 @@ LEDGER_INIT=$(cat <<EOF
   transfer_fee = 10000;
   metadata = vec {};
   initial_balances = vec {
-    record { record { owner = principal "${TREASURY_ID}"; subaccount = null }; 1000000000000 : nat }
+    record { record { owner = principal "${TREASURY_ID}"; subaccount = null }; 800000000000 : nat };
+    record { record { owner = principal "${DEPLOYER_PRINCIPAL}"; subaccount = null }; 200000000000 : nat }
   };
   archive_options = record {
     num_blocks_to_archive = 1000 : nat64;

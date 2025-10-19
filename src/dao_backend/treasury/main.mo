@@ -7,7 +7,7 @@ import Principal "mo:base/Principal";
 // import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
 import Float "mo:base/Float";
-// import Int "mo:base/Int";
+import Int "mo:base/Int";
 import Nat "mo:base/Nat";
 import Text "mo:base/Text";
 import Nat32 "mo:base/Nat32";
@@ -73,7 +73,19 @@ persistent actor TreasuryCanister {
         #Duplicate : { duplicate_of : Nat };
         #GenericError : { error_code : Nat; message : Text };
     };
-    type TransferResult = { #ok : Nat; #err : TransferError };
+    type TransferFromError = {
+        #BadFee : { expected_fee : Nat };
+        #BadBurn : { min_burn_amount : Nat };
+        #InsufficientFunds : { balance : Nat };
+        #InsufficientAllowance : { allowance : Nat };
+        #TooOld;
+        #CreatedInFuture : { ledger_time : Nat64 };
+        #Duplicate : { duplicate_of : Nat };
+        #TemporarilyUnavailable;
+        #GenericError : { error_code : Nat; message : Text };
+    };
+    type TransferResult = { #Ok : Nat; #Err : TransferError };
+    type TransferFromResult = { #Ok : Nat; #Err : TransferFromError };
     type TransferArg = {
         from_subaccount : ?Blob;
         to : Account;
@@ -93,7 +105,7 @@ persistent actor TreasuryCanister {
     };
     type Ledger = actor {
         icrc1_transfer : shared TransferArg -> async TransferResult;
-        icrc2_transfer_from : shared TransferFromArgs -> async TransferResult;
+        icrc2_transfer_from : shared TransferFromArgs -> async TransferFromResult;
     };
 
     // Stable storage for upgrade persistence
@@ -115,6 +127,13 @@ persistent actor TreasuryCanister {
     // In production, this would be managed by governance proposals
     private var authorizedPrincipals : [Principal] = [];
     
+    // Faucet system for test token distribution
+    private var faucetClaimsEntries : [(Principal, Time.Time)] = [];
+    private transient var faucetClaims = HashMap.HashMap<Principal, Time.Time>(100, Principal.equal, Principal.hash);
+    private var faucetAmount : TokenAmount = 100_000_000_000; // 100 DAO tokens (with 8 decimals)
+    private var faucetCooldown : Time.Time = 24 * 60 * 60 * 1_000_000_000; // 24 hours in nanoseconds
+    private var faucetEnabled : Bool = true; // Can be disabled in production
+    
     // Analytics integration
     private var analyticsCanisterId : ?Principal = null;
     private transient var analyticsCanister : ?AnalyticsService = null;
@@ -126,6 +145,7 @@ persistent actor TreasuryCanister {
     system func preupgrade() {
         transactionsEntries := Iter.toArray(transactions.entries());
         allowancesEntries := Iter.toArray(allowances.entries());
+        faucetClaimsEntries := Iter.toArray(faucetClaims.entries());
     };
 
     system func postupgrade() {
@@ -138,6 +158,12 @@ persistent actor TreasuryCanister {
         allowances := HashMap.fromIter<Principal, TokenAmount>(
             allowancesEntries.vals(), 
             allowancesEntries.size(), 
+            Principal.equal, 
+            Principal.hash
+        );
+        faucetClaims := HashMap.fromIter<Principal, Time.Time>(
+            faucetClaimsEntries.vals(), 
+            faucetClaimsEntries.size(), 
             Principal.equal, 
             Principal.hash
         );
@@ -187,14 +213,20 @@ persistent actor TreasuryCanister {
                     from = from;
                     to = to;
                     amount = amount;
-                    fee = null;
+                    fee = null; // ICRC-2: ledger applies its own fee automatically
                     memo = null;
                     created_at_time = null;
                     spender_subaccount = null;
                 });
                 switch (tf) {
-                    case (#ok _) {};
-                    case (#err e) { return #err("Ledger transfer_from failed: " # debug_show(e)) };
+                    case (#Ok _) {};
+                    case (#Err(#InsufficientAllowance { allowance })) { 
+                        return #err("Insufficient allowance. You need to approve the treasury canister to spend your tokens first. Current allowance: " # Nat.toText(allowance)) 
+                    };
+                    case (#Err(#InsufficientFunds { balance })) { 
+                        return #err("Insufficient funds. Your balance: " # Nat.toText(balance)) 
+                    };
+                    case (#Err e) { return #err("Ledger transfer_from failed: " # debug_show(e)) };
                 };
             };
             case null { return #err("Ledger not configured for treasury") };
@@ -236,6 +268,83 @@ persistent actor TreasuryCanister {
         };
 
         #ok(transactionId)
+    };
+
+    // Request test tokens from faucet (for development/testing)
+    public shared(msg) func requestTestTokens() : async Result<Nat, Text> {
+        let caller = msg.caller;
+
+        // Check if faucet is enabled
+        if (not faucetEnabled) {
+            return #err("Faucet is currently disabled");
+        };
+
+        // Check if ledger is configured
+        switch (ledger) {
+            case null { return #err("Ledger not configured") };
+            case (?_) {};
+        };
+
+        // Check cooldown period
+        switch (faucetClaims.get(caller)) {
+            case (?lastClaim) {
+                let timeSince = Time.now() - lastClaim;
+                if (timeSince < faucetCooldown) {
+                    let hoursRemaining = (faucetCooldown - timeSince) / (60 * 60 * 1_000_000_000);
+                    return #err("Please wait " # Nat.toText(Int.abs(hoursRemaining)) # " more hours before requesting again");
+                };
+            };
+            case null {};
+        };
+
+        // Transfer tokens from treasury to caller
+        switch (ledger) {
+            case (?l) {
+                let toAcct : Account = { owner = caller; subaccount = null };
+                let tr = await l.icrc1_transfer({
+                    from_subaccount = null;
+                    to = toAcct;
+                    amount = faucetAmount;
+                    fee = ?10_000; // ICRC-1 standard transfer fee
+                    memo = null;
+                    created_at_time = null;
+                });
+                
+                switch (tr) {
+                    case (#Ok(blockIndex)) {
+                        // Record the claim
+                        faucetClaims.put(caller, Time.now());
+                        
+                        // Create transaction record
+                        let transactionId = nextTransactionId;
+                        nextTransactionId += 1;
+                        
+                        let transaction : TreasuryTransaction = {
+                            id = transactionId;
+                            transactionType = #withdrawal;
+                            amount = faucetAmount;
+                            from = null;
+                            to = ?caller;
+                            timestamp = Time.now() / 1_000_000;
+                            proposalId = null;
+                            description = "Faucet: Test tokens distribution";
+                            status = #completed;
+                        };
+                        
+                        transactions.put(transactionId, transaction);
+                        
+                        #ok(transactionId)
+                    };
+                    case (#Err(#InsufficientFunds { balance })) {
+                        #err("Faucet is empty. Treasury balance: " # Nat.toText(balance))
+                    };
+                    case (#Err(e)) {
+                        #err("Faucet transfer failed: " # debug_show(e))
+                    };
+                };
+            };
+            case null { #err("Ledger not configured") };
+        };
     };
 
     // Withdraw tokens from treasury (requires authorization)
@@ -282,12 +391,12 @@ persistent actor TreasuryCanister {
                     from_subaccount = null;
                     to = toAcct;
                     amount = amount;
-                    fee = null;
+                    fee = ?10_000; // ICRC-1 standard transfer fee
                     memo = null;
                     created_at_time = null;
                 });
                 switch (tr) {
-                    case (#ok _) {
+                    case (#Ok _) {
                 // Update balances
                 totalBalance -= amount;
                 availableBalance -= amount;
@@ -321,7 +430,7 @@ persistent actor TreasuryCanister {
                     
                     #ok(transactionId)
                 };
-                    case (#err e) {
+                    case (#Err e) {
                 let failedTransaction = {
                     id = transaction.id;
                     transactionType = transaction.transactionType;
@@ -586,6 +695,77 @@ persistent actor TreasuryCanister {
     // Get authorized principals
     public query func getAuthorizedPrincipals() : async [Principal] {
         authorizedPrincipals
+    };
+
+    // Faucet management functions
+
+    // Check if caller can claim from faucet
+    public query(msg) func canClaimFaucet() : async Result<Bool, Text> {
+        let caller = msg.caller;
+        
+        if (not faucetEnabled) {
+            return #ok(false);
+        };
+        
+        switch (faucetClaims.get(caller)) {
+            case (?lastClaim) {
+                let timeSince = Time.now() - lastClaim;
+                if (timeSince < faucetCooldown) {
+                    #ok(false)
+                } else {
+                    #ok(true)
+                };
+            };
+            case null { #ok(true) };
+        };
+    };
+
+    // Get faucet configuration
+    public query func getFaucetInfo() : async {
+        enabled: Bool;
+        amount: TokenAmount;
+        cooldownHours: Nat;
+    } {
+        {
+            enabled = faucetEnabled;
+            amount = faucetAmount;
+            cooldownHours = Int.abs(faucetCooldown / (60 * 60 * 1_000_000_000));
+        }
+    };
+
+    // Get time until next faucet claim (in seconds)
+    public query(msg) func getTimeUntilNextClaim() : async ?Nat {
+        let caller = msg.caller;
+        
+        switch (faucetClaims.get(caller)) {
+            case (?lastClaim) {
+                let timeSince = Time.now() - lastClaim;
+                if (timeSince < faucetCooldown) {
+                    let remaining = faucetCooldown - timeSince;
+                    ?Int.abs(remaining / 1_000_000_000) // Convert to seconds
+                } else {
+                    ?0
+                };
+            };
+            case null { ?0 };
+        };
+    };
+
+    // Admin: Configure faucet (requires authorization)
+    public shared(msg) func configureFaucet(
+        enabled: Bool,
+        amount: TokenAmount,
+        cooldownHours: Nat
+    ) : async Result<(), Text> {
+        if (not isAuthorized(msg.caller)) {
+            return #err("Not authorized");
+        };
+        
+        faucetEnabled := enabled;
+        faucetAmount := amount;
+        faucetCooldown := cooldownHours * 60 * 60 * 1_000_000_000;
+        
+        #ok()
     };
 
     // Helper functions

@@ -14,7 +14,11 @@ import {
   Rocket,
   Loader2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Zap,
+  Clock,
+  Wallet,
+  Shield
 } from 'lucide-react';
 
 const DAODashboard: React.FC = () => {
@@ -34,6 +38,17 @@ const DAODashboard: React.FC = () => {
   const [approvals, setApprovals] = useState<{ treasuryAmount: string; stakingAmount: string }>({ treasuryAmount: '', stakingAmount: '' });
   const [approving, setApproving] = useState<{ treasury: boolean; staking: boolean }>({ treasury: false, staking: false });
   const [ledgerError, setLedgerError] = useState<string>('');
+  const [faucetState, setFaucetState] = useState<{
+    canClaim: boolean;
+    claiming: boolean;
+    timeUntilNext: number | null;
+    faucetInfo: { enabled: boolean; amount: bigint; cooldownHours: number } | null;
+  }>({
+    canClaim: false,
+    claiming: false,
+    timeUntilNext: null,
+    faucetInfo: null
+  });
 
   const categories = ['All', 'DeFi', 'Gaming', 'Social', 'NFT', 'Infrastructure'];
 
@@ -140,6 +155,47 @@ const DAODashboard: React.FC = () => {
     }
   };
 
+  const refreshFaucetState = async () => {
+    if (!actors || !actors.treasury) return;
+    try {
+      const [canClaim, faucetInfo, timeUntilNext] = await Promise.all([
+        (actors.treasury as any).canClaimFaucet().catch(() => ({ ok: false })),
+        (actors.treasury as any).getFaucetInfo().catch(() => null),
+        (actors.treasury as any).getTimeUntilNextClaim().catch(() => null)
+      ]);
+      
+      setFaucetState({
+        canClaim: canClaim?.ok || false,
+        claiming: false,
+        timeUntilNext: timeUntilNext && timeUntilNext.length > 0 ? Number(timeUntilNext[0]) : null,
+        faucetInfo
+      });
+    } catch (e) {
+      console.error('Failed to fetch faucet state', e);
+    }
+  };
+
+  const claimFaucetTokens = async () => {
+    if (!actors || !actors.treasury || !faucetState.canClaim) return;
+    setFaucetState(s => ({ ...s, claiming: true }));
+    setLedgerError('');
+    try {
+      const res = await (actors.treasury as any).requestTestTokens();
+      if ('err' in res) {
+        throw new Error(res.err);
+      }
+      // Refresh balances and faucet state
+      await Promise.all([refreshBalances(), refreshFaucetState()]);
+      setLedgerError('Successfully claimed 100 DAO tokens!');
+      setTimeout(() => setLedgerError(''), 3000);
+    } catch (e: any) {
+      console.error('Faucet claim failed:', e);
+      setLedgerError(`Faucet claim failed: ${e.message}`);
+    } finally {
+      setFaucetState(s => ({ ...s, claiming: false }));
+    }
+  };
+
   const approveSpender = async (spenderKey: 'treasury' | 'staking') => {
     if (!actors || !actors.ledger) return;
     const amountStr = approvals[spenderKey + 'Amount' as keyof typeof approvals] as string;
@@ -160,8 +216,12 @@ const DAODashboard: React.FC = () => {
         from_subaccount: [],
         created_at_time: [],
       });
-      if ('Err' in res || 'err' in res) throw new Error(JSON.stringify(res));
+      if ('Err' in res || 'err' in res) {
+        const error = res.Err || res.err;
+        throw new Error(`Approval failed: ${typeof error === 'object' ? Object.keys(error)[0] : error}`);
+      }
       await refreshBalances();
+      setLedgerError(''); // Clear any previous errors on success
     } catch (e: any) {
       console.error('Approve failed', e);
       setLedgerError(`Approve failed: ${e.message || e}`);
@@ -173,6 +233,7 @@ const DAODashboard: React.FC = () => {
   useEffect(() => { 
     refreshBalances();
     refreshUserStats();
+    refreshFaucetState();
   }, [actors, principal]);
 
   // Listen for storage changes to update DAOs when created in other tabs
@@ -332,8 +393,64 @@ const DAODashboard: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Faucet Section */}
+        {faucetState.faucetInfo && faucetState.faucetInfo.enabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.17 }}
+            className="bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border border-cyan-500/50 p-6 rounded-xl backdrop-blur-sm mb-8"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-bold mb-2 font-mono flex items-center">
+                  <Zap className="w-5 h-5 mr-2 text-yellow-400"/>
+                  Test Token Faucet
+                </h3>
+                <p className="text-gray-300 font-mono text-sm mb-1">
+                  Get {fmt(faucetState.faucetInfo.amount)} DAO tokens for testing
+                </p>
+                {!faucetState.canClaim && faucetState.timeUntilNext && faucetState.timeUntilNext > 0 && (
+                  <p className="text-gray-400 font-mono text-xs flex items-center">
+                    <Clock className="w-3 h-3 mr-1"/>
+                    Next claim in: {Math.floor(faucetState.timeUntilNext / 3600)}h {Math.floor((faucetState.timeUntilNext % 3600) / 60)}m
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={claimFaucetTokens}
+                disabled={!faucetState.canClaim || faucetState.claiming}
+                className={`px-6 py-3 rounded-lg font-mono font-bold flex items-center space-x-2 transition-all ${
+                  faucetState.canClaim && !faucetState.claiming
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white hover:from-yellow-600 hover:to-orange-700'
+                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {faucetState.claiming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Claiming...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span>{faucetState.canClaim ? 'CLAIM TOKENS' : 'CLAIMED'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {ledgerError && (
-          <div className="mb-8 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-mono">{ledgerError}</div>
+          <div className={`mb-8 p-3 rounded font-mono ${
+            ledgerError.includes('Successfully') 
+              ? 'bg-green-500/10 border border-green-500/30 text-green-300' 
+              : 'bg-red-500/10 border border-red-500/30 text-red-300'
+          }`}>
+            {ledgerError}
+          </div>
         )}
 
         {/* Filters and Search */}
