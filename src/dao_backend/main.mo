@@ -5,6 +5,7 @@ import Result "mo:base/Result";
 import Principal "mo:base/Principal";
 import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
+import Int "mo:base/Int";
 import Text "mo:base/Text";
 import Array "mo:base/Array";
 import Buffer "mo:base/Buffer";
@@ -133,6 +134,7 @@ persistent actor DAOMain {
     private var registryCanisterId : ?Principal = null;
     private var registeredInRegistry : Bool = false;
     private var registryDaoId : ?Text = null;
+    private var daoCreator : ?Principal = null;
 
     // Membership tracking - stable storage for DAO membership system
     private var daoMembersEntries : [(Text, [DAOMembership])] = [];
@@ -283,6 +285,7 @@ persistent actor DAOMain {
 
         // Always add the deployer as an admin for initial setup
         adminPrincipals.put(msg.caller, true);
+        daoCreator := ?msg.caller;
 
         // Set registry canister reference
         switch (registry_id) {
@@ -412,6 +415,9 @@ persistent actor DAOMain {
                             case (#ok(dao_id)) {
                                 registeredInRegistry := true;
                                 registryDaoId := ?dao_id;
+                                if (daoCreator == null) {
+                                    daoCreator := ?msg.caller;
+                                };
                                 
                                 // Add the creator as the first member with CREATOR role when registering
                                 let creatorMembership : DAOMembership = {
@@ -614,28 +620,119 @@ persistent actor DAOMain {
     };
 
     // DAO configuration
-    public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<(), Text> {
+    public shared(msg) func setDAOConfig(config: DAOConfig) : async Result<Text, Text> {
         if (not isAdmin(msg.caller)) {
             return #err("Only admins can set DAO configuration");
         };
+        if (daoCreator == null) {
+            daoCreator := ?msg.caller;
+        };
         persistDAOConfig(config);
         Debug.print("DAO configuration saved");
+        Debug.print("Caller (creator): " # Principal.toText(msg.caller));
         
-        // Auto-register with registry if configured and not already registered
+        // Try to register with registry
         if (not registeredInRegistry) {
+            Debug.print("Attempting registry registration...");
+            
             switch (await registerWithRegistry()) {
                 case (#ok(dao_id)) {
-                    Debug.print("Auto-registered with registry: " # dao_id);
+                    // SUCCESS: registerWithRegistry() already added creator as member
+                    Debug.print("[ok] Registry registration successful!");
+                    Debug.print("   Registry DAO ID: " # dao_id);
+                    Debug.print("   Creator added as member via registerWithRegistry()");
+                    
+                    // Verify member was added
+                    let members = switch (daoMembers.get(dao_id)) {
+                        case (?m) m;
+                        case null [];
+                    };
+                    Debug.print("   Total members now: " # Nat.toText(members.size()));
+                    
+                    // Return the DAO ID so frontend knows what ID to use
+                    #ok(dao_id)
                 };
                 case (#err(error)) {
-                    Debug.print("Failed to auto-register with registry: " # error);
+                    // FAILURE: Registry failed, add creator manually as fallback
+                    Debug.print("[warn] Registry registration failed: " # error);
+                    Debug.print("   Adding creator as member locally (fallback mode)");
+                    
+                    if (daoCreator == null) {
+                        daoCreator := ?msg.caller;
+                    };
+                    
+                    // Generate fallback DAO ID
+                    let timestamp : Int = Time.now() / 1_000_000;
+                    let fallbackDaoId = "dao-" # Int.toText(timestamp);
+                    
+                    Debug.print("   Using fallback DAO ID: " # fallbackDaoId);
+                    
+                    // Check if creator already exists (shouldn't, but be safe)
+                    let existingMembers = switch (daoMembers.get(fallbackDaoId)) {
+                        case (?members) members;
+                        case null [];
+                    };
+                    
+                    let alreadyMember = Array.find<DAOMembership>(
+                        existingMembers,
+                        func(m) = Principal.equal(m.principal, msg.caller)
+                    );
+                    
+                    if (alreadyMember == null) {
+                        // Add creator as CREATOR member
+                        let creatorMembership : DAOMembership = {
+                            daoId = fallbackDaoId;
+                            principal = msg.caller;
+                            role = #CREATOR;
+                            joinedAt = Time.now() / 1_000_000;
+                            votingPower = 0;
+                            totalStaked = 0;
+                        };
+                        
+                        let updatedMembers = Array.append<DAOMembership>(
+                            existingMembers,
+                            [creatorMembership]
+                        );
+                        daoMembers.put(fallbackDaoId, updatedMembers);
+                        
+                        // Add to user's membership list
+                        let currentDAOs = switch (userMemberships.get(msg.caller)) {
+                            case (?daos) daos;
+                            case null [];
+                        };
+                        
+                        let daoInList = Array.find<Text>(currentDAOs, func(d) = d == fallbackDaoId);
+                        if (daoInList == null) {
+                            let updatedDAOs = Array.append<Text>(currentDAOs, [fallbackDaoId]);
+                            userMemberships.put(msg.caller, updatedDAOs);
+                        };
+                        
+                        totalMembers += 1;
+                        registryDaoId := ?fallbackDaoId; // Store fallback ID
+                        
+                        Debug.print("[ok] Creator added as member in fallback mode");
+                        Debug.print("   Principal: " # Principal.toText(msg.caller));
+                        Debug.print("   DAO ID: " # fallbackDaoId);
+                        Debug.print("   Role: CREATOR");
+                        Debug.print("   Total members: " # Nat.toText(updatedMembers.size()));
+                    } else {
+                        Debug.print("   Creator already exists as member");
+                    };
+                    
+                    // Return the fallback DAO ID
+                    #ok(fallbackDaoId)
                 };
             };
         } else {
+            Debug.print("Already registered in registry, syncing metadata...");
             await syncRegistryMetadata();
+            
+            // Return existing registry ID
+            switch (registryDaoId) {
+                case (?id) #ok(id);
+                case null #err("DAO registered but no ID found");
+            };
         };
-        
-        #ok()
     };
 
     // User management
@@ -749,7 +846,57 @@ persistent actor DAOMain {
 
         userProfiles.put(newUser, userProfile);
         userSettings.put(newUser, initialSettings);
-        totalMembers += 1;
+
+        var membershipAdded = false;
+        switch (registryDaoId) {
+            case (?daoId) {
+                let currentMembers = switch (daoMembers.get(daoId)) {
+                    case (?members) members;
+                    case null [];
+                };
+
+                let alreadyMember = Array.find<DAOMembership>(
+                    currentMembers,
+                    func(m) = Principal.equal(m.principal, newUser)
+                );
+
+                if (alreadyMember == null) {
+                    let newMembership : DAOMembership = {
+                        daoId = daoId;
+                        principal = newUser;
+                        role = resolveMemberRole(newUser);
+                        joinedAt = Time.now() / 1_000_000;
+                        votingPower = 0;
+                        totalStaked = 0;
+                    };
+
+                    let updatedMembers = Array.append<DAOMembership>(
+                        currentMembers,
+                        [newMembership]
+                    );
+                    daoMembers.put(daoId, updatedMembers);
+                    membershipAdded := true;
+                };
+
+                let currentDAOs = switch (userMemberships.get(newUser)) {
+                    case (?daos) daos;
+                    case null [];
+                };
+
+                let daoInList = Array.find<Text>(currentDAOs, func(d) = d == daoId);
+                if (daoInList == null) {
+                    let updatedDAOs = Array.append<Text>(currentDAOs, [daoId]);
+                    userMemberships.put(newUser, updatedDAOs);
+                };
+            };
+            case null {
+                Debug.print("Warning: adminRegisterUser called before DAO ID assigned. Membership not recorded.");
+            };
+        };
+
+        if (membershipAdded) {
+            totalMembers += 1;
+        };
 
         // Record user registration event
         switch (analyticsCanister) {
@@ -863,7 +1010,7 @@ persistent actor DAOMain {
                 // If any locked fields were attempted to be changed, reject
                 if (lockedFieldsAttempted.size() > 0) {
                     let fieldsText = Text.join(", ", lockedFieldsAttempted.vals());
-                    return #err("⚠️ These fields cannot be changed: " # fieldsText # ". Each field can only be edited once.");
+                    return #err("[warn] These fields cannot be changed: " # fieldsText # ". Each field can only be edited once.");
                 };
                 
                 // Determine which fields are now being locked (first time they're changed)
@@ -1256,6 +1403,21 @@ persistent actor DAOMain {
         }
     };
 
+    private func resolveMemberRole(userId: Principal) : MemberRole {
+        switch (daoCreator) {
+            case (?creator) {
+                if (Principal.equal(creator, userId)) {
+                    return #CREATOR;
+                };
+            };
+            case null {};
+        };
+        if (isAdmin(userId)) {
+            return #ADMIN;
+        };
+        #MEMBER
+    };
+
     private func isRegisteredUser(principal: Principal) : Bool {
         switch (userProfiles.get(principal)) {
             case (?_) true;
@@ -1614,11 +1776,11 @@ persistent actor DAOMain {
             return #err("User is already a member");
         };
         
-        // Create new membership with MEMBER role
+        let assignedRole = resolveMemberRole(userId);
         let newMembership : DAOMembership = {
             daoId = daoId;
             principal = userId;
-            role = #MEMBER;
+            role = assignedRole;
             joinedAt = Time.now() / 1_000_000;
             votingPower = 0;
             totalStaked = 0;
@@ -1639,7 +1801,9 @@ persistent actor DAOMain {
         // Update total members count
         totalMembers += 1;
         
-        Debug.print("Admin added user " # Principal.toText(userId) # " to DAO: " # daoId # " with MEMBER role");
+        Debug.print(
+            "Admin added user " # Principal.toText(userId) # " to DAO: " # daoId # " with role: " # roleToText(assignedRole)
+        );
         #ok()
     };
 
@@ -1655,6 +1819,7 @@ persistent actor DAOMain {
         if (not isAdmin(msg.caller)) {
             return #err("Only admins can fix DAO membership");
         };
+        daoCreator := ?creatorPrincipal;
         
         // Check if DAO already has members
         let _currentMembers = switch (daoMembers.get(daoId)) {
@@ -1695,11 +1860,19 @@ persistent actor DAOMain {
         
         totalMembers += 1;
         
-        Debug.print("✅ Fixed membership for DAO: " # daoId # " - Added creator: " # Principal.toText(creatorPrincipal));
+        Debug.print("[ok] Fixed membership for DAO: " # daoId # " - Added creator: " # Principal.toText(creatorPrincipal));
         #ok()
     };
 
     // ==================== END MEMBERSHIP MANAGEMENT ====================
+
+    /**
+     * Get the current DAO ID (registry ID if registered, null otherwise)
+     * Useful for frontend to know which ID to use when querying members
+     */
+    public query func getCurrentDAOId() : async ?Text {
+        registryDaoId
+    };
 
     // Health check
     public query func health() : async { status: Text; timestamp: Int } {

@@ -1,4 +1,4 @@
-﻿
+
 // Hook to interact with DAO canisters
 import { useState } from 'react';
 import { useDAOAPI } from '../utils/daoAPI';
@@ -25,6 +25,31 @@ const handleAlreadyInitialized = (error, operationName) => {
         return true;
     }
     return false;
+};
+
+const normalizeDaoId = (value) => {
+    if (value === null || value === undefined) {
+        return null;
+    }
+
+    if (Array.isArray(value)) {
+        return normalizeDaoId(value[0]);
+    }
+
+    if (typeof value === 'object') {
+        if (value && typeof value.toText === 'function') {
+            return value.toText();
+        }
+        if (value && typeof value.toString === 'function') {
+            const stringified = value.toString();
+            if (stringified && stringified !== '[object Object]') {
+                return stringified;
+            }
+        }
+        return null;
+    }
+
+    return String(value);
 };
 
 export const useDAOOperations = () => {
@@ -176,8 +201,9 @@ export const useDAOOperations = () => {
             }
 
             // Step 4: Configure DAO settings (moduleFeatures already defined earlier)
+            let backendDaoId = null;
             try {
-                await daoAPI.setDAOConfig({
+                backendDaoId = await daoAPI.setDAOConfig({
                     category: daoConfig.category,
                     website: daoConfig.website,
                     logoUrl: toOptionalText(rawLogoUrl),
@@ -200,6 +226,13 @@ export const useDAOOperations = () => {
                     termsAccepted: daoConfig.termsAccepted,
                     kycRequired: daoConfig.kycRequired
                 });
+                
+                if (backendDaoId) {
+                    daoConfig.id = backendDaoId;
+                    daoConfig.dao_id = backendDaoId;
+                    daoConfig.registryId = backendDaoId;
+                    console.log('Backend returned DAO ID:', backendDaoId);
+                }
             } catch (configError) {
                 if (!handleAlreadyInitialized(configError, 'Set DAO configuration')) {
                     throw configError;
@@ -207,6 +240,13 @@ export const useDAOOperations = () => {
             }
 
             // Step 5: Register initial users via admin method
+            const daoIdForMembership = normalizeDaoId(
+                backendDaoId ||
+                daoConfig.dao_id ||
+                daoConfig.registryId ||
+                daoConfig.id
+            );
+
             if (creatorPrincipal) {
                 try {
                     // Check if creator is already registered
@@ -217,13 +257,27 @@ export const useDAOOperations = () => {
                             "DAO Creator", // Default display name
                             "DAO Creator and Administrator" // Default bio
                         );
-                        console.log('✅ Registered DAO creator');
+                        console.log('Registered DAO creator');
                     } else {
-                        console.log('✅ DAO creator already registered, skipping');
+                        console.log('DAO creator already registered, skipping');
                     }
                 } catch (err) {
                     console.warn('Failed to register creator:', err);
                     // Continue with the process even if creator registration fails
+                }
+            }
+
+            if (creatorPrincipal && daoIdForMembership) {
+                try {
+                    await daoAPI.addMemberToDAO(daoIdForMembership, creatorPrincipal);
+                    console.log('Creator membership ensured');
+                } catch (err) {
+                    const message = typeof err?.message === 'string' ? err.message.toLowerCase() : '';
+                    if (err?.suppressed || message.includes('already a member')) {
+                        console.log('Creator already recorded as member, skipping duplicate add');
+                    } else {
+                        console.warn('Failed to add creator to DAO membership:', err);
+                    }
                 }
             }
 
@@ -233,17 +287,36 @@ export const useDAOOperations = () => {
                 .map(({ wallet, name, role }) => async () => {
                     try {
                         const memberPrincipal = Principal.fromText(wallet);
-                        
+
                         // Check if user is already registered
                         const existingProfile = await daoAPI.getUserProfile(memberPrincipal);
                         if (!existingProfile) {
-                            const result = await daoAPI.adminRegisterUser(memberPrincipal, name, role);
-                            console.log(`✅ Registered team member: ${name}`);
-                            return result;
+                            await daoAPI.adminRegisterUser(memberPrincipal, name, role);
+                            console.log(`[team] Registered team member: ${name}`);
                         } else {
-                            console.log(`✅ Team member ${name} already registered, skipping`);
-                            return { success: true, skipped: true };
+                            console.log(`[team] Team member ${name} already registered, skipping`);
                         }
+
+                        if (daoIdForMembership) {
+                            try {
+                                await daoAPI.addMemberToDAO(daoIdForMembership, memberPrincipal);
+                                console.log(`[membership] Added ${name} to DAO membership`);
+                            } catch (membershipError) {
+                                const membershipMessage = typeof membershipError?.message === 'string'
+                                    ? membershipError.message.toLowerCase()
+                                    : '';
+
+                                if (membershipError?.suppressed || membershipMessage.includes('already a member')) {
+                                    console.log(`[membership] ${name} already recorded as member, skipping`);
+                                } else {
+                                    throw membershipError;
+                                }
+                            }
+                        } else {
+                            console.warn(`DAO ID unavailable, skipped membership add for ${name}`);
+                        }
+
+                        return { success: true };
                     } catch (err) {
                         console.warn(`Invalid principal for team member ${name}:`, err);
                         throw err;
@@ -257,6 +330,17 @@ export const useDAOOperations = () => {
 
             // Step 7: Return the DAO info
             const daoInfo = await daoAPI.getDAOInfo();
+            if (daoIdForMembership) {
+                if (!daoInfo.dao_id) {
+                    daoInfo.dao_id = daoIdForMembership;
+                }
+                if (!daoInfo.registryId) {
+                    daoInfo.registryId = daoIdForMembership;
+                }
+                if (!daoInfo.id) {
+                    daoInfo.id = daoIdForMembership;
+                }
+            }
             
             // Refresh the DAO list in the management context
             if (fetchDAOs) {
@@ -266,18 +350,12 @@ export const useDAOOperations = () => {
             // Register with global registry if available
             let registryDaoId = null;
             try {
-                const registryResult = await daoAPI.registerWithRegistry();
-                if (registryResult && 'ok' in registryResult) {
-                    registryDaoId = registryResult.ok;
-                    console.log('✅ DAO registered with global registry, ID:', registryDaoId);
-                    
-                    // Update the DAO in DAOManagementContext with the registry ID
-                    if (createDAO && registryDaoId) {
-                        // Store the registry ID for membership tracking
-                        daoInfo.registryId = registryDaoId;
-                        daoInfo.dao_id = registryDaoId;
-                        console.log('✅ Updated DAO with registry ID:', registryDaoId);
-                    }
+                registryDaoId = await daoAPI.registerWithRegistry();
+                if (registryDaoId) {
+                    console.log('DAO registered with global registry, ID:', registryDaoId);
+                    daoInfo.registryId = registryDaoId;
+                    daoInfo.dao_id = registryDaoId;
+                    daoInfo.id = registryDaoId;
                 }
             } catch (registryError) {
                 console.warn('Failed to register with global registry:', registryError);

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 const Settings = () => {
-  const { isAuthenticated, principal, userSettings, logout, loading, userProfile } = useAuth();
+  const { isAuthenticated, principal, userSettings, logout, loading, userProfile, reloadUserProfile } = useAuth();
   const actors = useActors();
   const daoBackend = actors?.daoBackend;
   const navigate = useNavigate();
@@ -183,8 +183,10 @@ const Settings = () => {
           setLockedFields(updatedSettings[0].lockedFields);
         }
         
-        // Profile is automatically updated in AuthContext via getOrCreateUserProfile
-        // No need to manually reload display name
+        // 🔥 RELOAD USER PROFILE to update Navbar display name
+        console.log("🔄 Reloading user profile after save...");
+        await reloadUserProfile();
+        console.log("✅ Profile reloaded - Navbar should update now");
         
         setTimeout(() => setSaveMessage(''), 5000);
       } else {

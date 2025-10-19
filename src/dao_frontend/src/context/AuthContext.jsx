@@ -265,6 +265,63 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Function to reload user profile (call after updating settings)
+  const reloadUserProfile = async () => {
+    if (!isAuthenticated || !authClient) {
+      console.log("Not authenticated, skipping profile reload");
+      return;
+    }
+
+    try {
+      console.log("🔄 Reloading user profile...");
+      const currentIdentity = authClient.getIdentity();
+      const principal = currentIdentity.getPrincipal();
+      const principalId = principal.toString();
+
+      // Create actor to call backend
+      const canisterId = import.meta.env.VITE_CANISTER_ID_DAO_BACKEND;
+      const agent = new HttpAgent({
+        identity: currentIdentity,
+        host: import.meta.env.VITE_DFX_NETWORK === "ic" 
+          ? "https://ic0.app"
+          : `http://localhost:4943`
+      });
+
+      // Fetch root key for local development
+      if (import.meta.env.VITE_DFX_NETWORK !== "ic") {
+        await agent.fetchRootKey();
+      }
+
+      const actor = Actor.createActor(idlFactory, {
+        agent,
+        canisterId
+      });
+
+      // Get fresh profile data
+      const profile = await actor.getOrCreateUserProfile();
+      console.log("✅ Profile reloaded:", profile);
+
+      // Update all states
+      setUserProfile(profile);
+      const name = profile.displayName || `${principalId.slice(0, 5)}...${principalId.slice(-5)}`;
+      setDisplayName(profile.displayName || '');
+      setUserSettings({
+        displayName: name,
+        email: profile.email || '',
+        bio: profile.bio || '',
+        website: profile.website || '',
+        notifications: profile.notifications || false,
+        showBio: profile.showBio || false,
+        showWebsite: profile.showWebsite || false
+      });
+
+      return profile;
+    } catch (error) {
+      console.error('❌ Error reloading profile:', error);
+      return null;
+    }
+  };
+
   // Auth context value
   const value = {
     isAuthenticated,
@@ -276,6 +333,7 @@ export const AuthProvider = ({ children }) => {
     isLoggingIn, // Add login loading state
     login,
     logout,
+    reloadUserProfile, // Add reload function
     dismissWelcomePopup,
     showWelcomePopup,
     hasSeenWelcome,

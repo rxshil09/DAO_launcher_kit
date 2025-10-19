@@ -110,52 +110,107 @@ const MemberDirectory: React.FC = () => {
 
   useEffect(() => {
     loadMembers();
-  }, [daoId]);
+  }, [daoId, actors, dao?.dao_id, dao?.registryId]);
 
   const loadMembers = async () => {
     if (!actors?.daoBackend) return;
-    
+
     setLoading(true);
     try {
-      // Debug logging
-      console.log('Loading members for DAO ID:', daoId);
-      console.log('DAO object:', dao);
-      
-      // Try to get the registry DAO ID if available
-      // Priority: dao_id (registry ID) > registryId > id
-      let registryDaoId = dao?.dao_id || dao?.registryId || daoId;
-      console.log('Attempting with registry DAO ID:', registryDaoId);
-      
-      // TEMPORARY FIX: Map known temp IDs to registry IDs
-      // This should be removed once DAO creation properly stores registry IDs
-      const idMapping: Record<string, string> = {
-        'dao-1760630234914': 'dao_1', // Add your mapping here
+      const unwrapOptional = (value: any) => {
+        if (Array.isArray(value)) {
+          return value.length > 0 ? value[0] : undefined;
+        }
+        return value;
       };
-      
-      if (idMapping[registryDaoId]) {
-        console.log(`Mapping temp ID ${registryDaoId} to registry ID ${idMapping[registryDaoId]}`);
-        registryDaoId = idMapping[registryDaoId];
+
+      let resolvedDaoId =
+        unwrapOptional(dao?.dao_id) ||
+        unwrapOptional(dao?.registryId) ||
+        unwrapOptional(daoId);
+
+      if (!resolvedDaoId || (typeof resolvedDaoId === 'string' && resolvedDaoId.trim() === '')) {
+        try {
+          const backendDaoIdOpt = await actors.daoBackend.getCurrentDAOId();
+          const backendDaoId = unwrapOptional(backendDaoIdOpt);
+          if (backendDaoId) {
+            resolvedDaoId = backendDaoId;
+          }
+        } catch (lookupError) {
+          console.warn('Unable to resolve DAO identifier from backend:', lookupError);
+        }
       }
-      
-      // Get member profiles
-      const profiles = await actors.daoBackend.getDAOMemberProfiles(registryDaoId);
-      console.log('Received profiles:', profiles);
-      
+
+      if (!resolvedDaoId) {
+        console.warn('No DAO identifier available for membership lookup.');
+        setMembers([]);
+        setMemberCount(0);
+        return;
+      }
+
+      const daoIdentifier =
+        typeof resolvedDaoId === 'string' ? resolvedDaoId : resolvedDaoId.toString();
+
+      console.log('Loading members for DAO ID:', daoIdentifier);
+
+      let backendMemberCount: number | null = null;
+      try {
+        const countResult = await actors.daoBackend.getDAOMemberCount(daoIdentifier);
+        if (typeof countResult === 'bigint') {
+          backendMemberCount = Number(countResult);
+        } else if (typeof countResult === 'number') {
+          backendMemberCount = countResult;
+        } else if (countResult != null) {
+          backendMemberCount = Number(countResult);
+        }
+        if (backendMemberCount === 0) {
+          console.warn('No members found for this DAO (backend returned 0).');
+        }
+      } catch (countError) {
+        console.error('Error retrieving member count:', countError);
+      }
+
+      const profiles = await actors.daoBackend.getDAOMemberProfiles(daoIdentifier);
+      const profileCount = Array.isArray(profiles) ? profiles.length : 0;
+      console.log('Received member profiles:', profileCount);
+
       setMembers(profiles as any);
-      setMemberCount(profiles.length);
+      if (backendMemberCount !== null) {
+        setMemberCount(backendMemberCount);
+      } else {
+        setMemberCount(profileCount);
+      }
     } catch (error) {
       console.error('Failed to load members:', error);
       console.error('DAO ID used:', daoId);
       console.error('Full DAO object:', dao);
+      setMembers([]);
+      setMemberCount(0);
     } finally {
       setLoading(false);
     }
   };
 
+  
+  const normalizeTimestamp = (value: number | null | undefined) => {
+    if (!value) return null;
+
+    if (value > 9_999_999_999_999_999) {
+      return Math.floor(value / 1_000_000);
+    }
+
+    if (value > 9_999_999_999_999) {
+      return Math.floor(value / 1_000);
+    }
+
+    return value;
+  };
+
   const formatDate = (timestamp: number) => {
-    if (!timestamp) return 'N/A';
-    const ms = timestamp > 9_999_999_999 ? Math.floor(timestamp / 1_000_000) : timestamp;
-    return new Date(ms).toLocaleDateString('en-US', {
+    const normalized = normalizeTimestamp(timestamp);
+    if (!normalized) return 'N/A';
+
+    return new Date(normalized).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -408,13 +463,13 @@ const MemberDirectory: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white/5 border border-gray-700 rounded-xl overflow-hidden"
+          className="bg-gray-900/60 border border-gray-700/70 rounded-2xl shadow-xl overflow-hidden backdrop-blur"
         >
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-white/5 border-b border-gray-700">
+                <tr className="bg-gray-900/80 border-b border-gray-700/70 text-sm text-gray-300/90">
                   <th className="px-6 py-4 text-left">
                     <button
                       onClick={() => handleSort('displayName')}
@@ -494,6 +549,20 @@ const MemberDirectory: React.FC = () => {
                   const showBio = !isPrivate && member.showBio && member.bio && member.bio.trim() !== '';
                   const showWebsite = !isPrivate && member.showWebsite && member.website && member.website.trim() !== '';
                   const isCurrent = isCurrentUser(member.id);
+                  const rowClasses = [
+                    'group',
+                    'transition-all duration-200',
+                    'border-b border-gray-700/40',
+                    'hover:border-cyan-400/60',
+                    'hover:bg-cyan-500/10',
+                    'last:border-b-0'
+                  ];
+
+                  if (isCurrent) {
+                    rowClasses.push('bg-cyan-500/10', 'border-cyan-400/60', 'ring-1', 'ring-cyan-400/40', 'shadow-inner');
+                  } else {
+                    rowClasses.push(index % 2 === 0 ? 'bg-white/[0.03]' : 'bg-white/[0.015]');
+                  }
 
                   return (
                     <motion.tr
@@ -501,9 +570,7 @@ const MemberDirectory: React.FC = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className={`border-b border-gray-700/50 hover:bg-white/5 transition-colors ${
-                        isCurrent ? 'bg-cyan-500/5' : ''
-                      }`}
+                      className={rowClasses.join(' ')}
                     >
                       {/* Member Name */}
                       <td className="px-6 py-4">
@@ -581,7 +648,7 @@ const MemberDirectory: React.FC = () => {
 
                       {/* Principal */}
                       <td className="px-6 py-4">
-                        <code className="text-gray-400 text-xs font-mono bg-white/5 px-2 py-1 rounded">
+                        <code className="text-gray-300 text-xs font-mono bg-white/10 px-2.5 py-1 rounded whitespace-nowrap tracking-tight">
                           {formatPrincipal(member.id)}
                         </code>
                       </td>

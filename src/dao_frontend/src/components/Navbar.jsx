@@ -29,7 +29,6 @@ import {
   Sparkles,
   Image,
   BarChart3,
-  BookOpen,
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -203,19 +202,6 @@ const Navbar = () => {
                   )}
                 </Link>
               ))}
-              
-              {/* Docs Button */}
-              <a
-                href="http://localhost:4322"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative px-3 lg:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center space-x-2 text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 border border-transparent hover:border-gray-700/50"
-                title="View Documentation"
-              >
-                <BookOpen className="w-4 h-4" />
-                <span className="hidden lg:inline">Docs</span>
-                <ExternalLink className="w-3 h-3 opacity-50" />
-              </a>
             </div>
 
             {/* Enhanced User Actions - Responsive */}
@@ -445,18 +431,6 @@ const Navbar = () => {
                     <span>{item.name}</span>
                   </Link>
                 ))}
-                
-                {/* Mobile Docs Link */}
-                <a
-                  href="http://localhost:4322"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium text-gray-300 hover:text-cyan-400 hover:bg-gray-800/50 border border-transparent"
-                >
-                  <BookOpen className="w-5 h-5" />
-                  <span>Documentation</span>
-                  <ExternalLink className="w-4 h-4 ml-auto opacity-50" />
-                </a>
                 
                 {/* Mobile User Section */}
                 {isAuthenticated ? (

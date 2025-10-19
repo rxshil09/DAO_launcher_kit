@@ -14,12 +14,16 @@ export class DAOAPIWrapper {
      * @param {string} operationName - Name of the operation for logging
      * @returns {Promise} - Standardized response
      */
-    async callAPI(apiCall, operationName) {
+    async callAPI(apiCall, operationName, options = {}) {
+        const {
+            allowedErrors = [],
+            suppressErrorLog = false,
+        } = options;
+
         try {
-            console.log(`🔄 Calling ${operationName}...`);
+            console.log(`[call] ${operationName}...`);
             const result = await apiCall();
-            
-            // Handle Motoko Result type responses
+
             if (result && typeof result === 'object') {
                 if ('err' in result) {
                     const error = new Error(result.err);
@@ -27,17 +31,30 @@ export class DAOAPIWrapper {
                     throw error;
                 }
                 if ('ok' in result) {
-                    console.log(`✅ ${operationName} succeeded`);
+                    console.log(`[ok] ${operationName} succeeded`);
                     return result.ok;
                 }
             }
-            
-            // Handle direct responses
-            console.log(`✅ ${operationName} succeeded`);
+
+            console.log(`[ok] ${operationName} succeeded`);
             return result;
         } catch (error) {
-            console.error(`❌ ${operationName} failed:`, error);
+            const message = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+            const shouldSuppress = allowedErrors.some((allowed) =>
+                message.includes(allowed.toLowerCase())
+            );
+
+            if (!shouldSuppress && !suppressErrorLog) {
+                console.error(`[error] ${operationName} failed:`, error);
+            } else if (shouldSuppress) {
+                console.log(`[info] ${operationName} skipped: ${error.message}`);
+            }
+
             error.operation = operationName;
+            if (shouldSuppress) {
+                error.suppressed = true;
+            }
+
             throw error;
         }
     }
@@ -104,6 +121,17 @@ export class DAOAPIWrapper {
         return this.callAPI(
             () => this.actors.daoBackend.adminRegisterUser(userPrincipal, displayName, bio),
             'Admin Register User'
+        );
+    }
+
+    async addMemberToDAO(daoId, userPrincipal) {
+        return this.callAPI(
+            () => this.actors.daoBackend.addMemberAdmin(daoId, userPrincipal),
+            'Add DAO Member',
+            {
+                allowedErrors: ['already a member'],
+                suppressErrorLog: true,
+            }
         );
     }
 

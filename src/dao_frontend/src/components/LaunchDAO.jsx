@@ -520,9 +520,19 @@ const LaunchDAO = () => {
       console.log("DAO Launch Result:", result);
 
       // Update daoData with registry information
-      daoData.registryId = result.registryId;
-      daoData.name = result.name;
-      daoData.initialized = result.initialized;
+      daoData.registryId = result.registryId ?? daoData.registryId;
+      daoData.name = result.name ?? daoData.name;
+      daoData.initialized = result.initialized ?? daoData.initialized;
+
+      const resolvedDaoId = result?.dao_id || result?.registryId || result?.id;
+      if (resolvedDaoId) {
+        daoData.id = resolvedDaoId;
+        daoData.dao_id = resolvedDaoId;
+        daoData.registryId = resolvedDaoId;
+      }
+      if (typeof result?.totalMembers === "number") {
+        daoData.memberCount = result.totalMembers;
+      }
 
       // Also create in management context for UI
       try {

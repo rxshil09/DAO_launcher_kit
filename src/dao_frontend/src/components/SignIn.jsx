@@ -74,9 +74,24 @@ const SignIn = () => {
       setScale(bounded);
     });
 
-    ro.observe(measureRef.current);
-    window.addEventListener("resize", () => ro.disconnect() || ro.observe(measureRef.current));
-    return () => ro.disconnect();
+    const observe = () => {
+      if (measureRef.current) {
+        ro.observe(measureRef.current);
+      }
+    };
+
+    const handleResize = () => {
+      ro.disconnect();
+      observe();
+    };
+
+    observe();
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
   }, [navHeight]);
 
   const handleLogin = async () => {
