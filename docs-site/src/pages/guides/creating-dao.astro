@@ -1,0 +1,348 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="Creating a DAO" description="Complete guide to launching your first DAO">
+  <article class="prose prose-invert max-w-none">
+    <h1 class="text-4xl font-bold text-white mb-6">Creating Your First DAO</h1>
+    
+    <p class="text-xl text-gray-300 mb-8">
+      Learn how to launch, configure, and initialize a new Decentralized Autonomous Organization 
+      on the Internet Computer.
+    </p>
+
+    <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-6 mb-8">
+      <h3 class="text-cyan-300 font-semibold mb-2">Prerequisites</h3>
+      <ul class="text-gray-300 space-y-1 mb-0">
+        <li>• Internet Identity for authentication</li>
+        <li>• ICP tokens for cycles (if deploying your own)</li>
+        <li>• Clear governance structure and tokenomics</li>
+        <li>• Initial member list (optional)</li>
+      </ul>
+    </div>
+
+    <h2 class="text-3xl font-bold text-white mt-12 mb-6">Understanding DAOs on IC</h2>
+
+    <p class="text-gray-300">
+      In DAO Launcher Kit, DAOs are composed of multiple specialized canisters working together:
+    </p>
+
+    <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 my-6">
+      <h3 class="text-cyan-400 font-semibold mb-4">Core DAO Components</h3>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-2">Treasury</h4>
+          <p class="text-gray-400 text-sm">Manages DAO funds with multi-signature security. All financial operations require governance approval.</p>
+        </div>
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-2">Governance</h4>
+          <p class="text-gray-400 text-sm">Handles proposals, voting mechanisms, and execution of approved decisions through plugin-like architecture.</p>
+        </div>
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-2">Staking</h4>
+          <p class="text-gray-400 text-sm">Token locking for voting power and rewards. Longer stakes earn higher multipliers.</p>
+        </div>
+        <div>
+          <h4 class="text-white font-semibold text-sm mb-2">Members</h4>
+          <p class="text-gray-400 text-sm">Permission management system controlling who can perform actions on behalf of the DAO.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="text-3xl font-bold text-white mt-12 mb-6">Step-by-Step Guide</h2>
+
+    <div class="space-y-8">
+      <!-- Step 1 -->
+      <div class="bg-gray-900 border-l-4 border-cyan-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold mr-4">1</div>
+          <h3 class="text-2xl font-bold text-white">Connect Your Wallet</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Navigate to the DAO Launcher Kit app and authenticate with Internet Identity.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <ol class="text-gray-300 space-y-2 text-sm">
+            <li>1. Visit <a href="https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io" target="_blank" class="text-cyan-400 hover:text-cyan-300">https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io</a></li>
+            <li>2. Click "Connect Wallet" in the top right</li>
+            <li>3. Complete Internet Identity authentication</li>
+            <li>4. Your Principal ID will be displayed in the navbar</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="bg-gray-900 border-l-4 border-green-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold mr-4">2</div>
+          <h3 class="text-2xl font-bold text-white">Navigate to Launch DAO</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Access the DAO creation form from the main navigation.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <p class="text-gray-300 text-sm">
+            Click <strong class="text-cyan-400">"Launch DAO"</strong> in the navbar or dashboard. 
+            This will open a multi-step form to configure your DAO.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="bg-gray-900 border-l-4 border-yellow-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold mr-4">3</div>
+          <h3 class="text-2xl font-bold text-white">Configure Basic Information</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Define your DAO's identity and purpose.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4 space-y-4">
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">DAO Name</h4>
+            <p class="text-gray-400 text-sm">Choose a unique, descriptive name (e.g., "DeFi Innovators DAO", "Climate Action Guild")</p>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Description</h4>
+            <p class="text-gray-400 text-sm">Clearly state your DAO's mission, goals, and what problems it aims to solve (500+ characters recommended)</p>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Logo & Branding</h4>
+            <p class="text-gray-400 text-sm">Upload a logo image (PNG/JPG, max 2MB) to represent your DAO across the platform</p>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Category</h4>
+            <p class="text-gray-400 text-sm">Select from: DeFi, Social, Governance, Investment, Protocol, Community, Education, Gaming, Other</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="bg-gray-900 border-l-4 border-purple-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-4">4</div>
+          <h3 class="text-2xl font-bold text-white">Define Token Economics</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Configure your DAO's native token that will be used for governance and staking.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4 space-y-4">
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Token Name & Symbol</h4>
+            <p class="text-gray-400 text-sm mb-2">Example: "Governance Token" (GOV) or "DAO Shares" (SHARES)</p>
+            <code class="text-xs bg-gray-900 px-2 py-1 rounded text-cyan-300">Symbol should be 3-5 uppercase letters</code>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Initial Supply</h4>
+            <p class="text-gray-400 text-sm">Total tokens to mint at launch. Consider distribution to founders, treasury, community, and future emissions.</p>
+            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 mt-2">
+              <p class="text-yellow-300 text-xs mb-0">
+                ⚠️ <strong>Important:</strong> Supply is immutable after launch. Plan carefully for growth and dilution.
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Token Distribution</h4>
+            <p class="text-gray-400 text-sm">Allocate tokens to:</p>
+            <ul class="text-gray-400 text-sm space-y-1 mt-2">
+              <li>• <strong>Treasury:</strong> 40-60% for future governance decisions</li>
+              <li>• <strong>Founders/Team:</strong> 10-20% with vesting schedule</li>
+              <li>• <strong>Community:</strong> 20-30% for airdrops, rewards</li>
+              <li>• <strong>Initial Members:</strong> 5-10% for early contributors</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="bg-gray-900 border-l-4 border-red-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white font-bold mr-4">5</div>
+          <h3 class="text-2xl font-bold text-white">Set Governance Parameters</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Define how your DAO makes decisions through voting and proposals.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4 space-y-4">
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Voting Period</h4>
+            <p class="text-gray-400 text-sm">How long proposals remain open for voting (recommended: 3-7 days)</p>
+            <code class="text-xs bg-gray-900 px-2 py-1 rounded text-cyan-300">Example: 5 days = 432,000 seconds</code>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Quorum Threshold</h4>
+            <p class="text-gray-400 text-sm">Minimum % of total voting power that must participate (recommended: 10-30%)</p>
+            <p class="text-gray-400 text-xs mt-1">Lower = easier to pass proposals, Higher = ensures broad consensus</p>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Approval Threshold</h4>
+            <p class="text-gray-400 text-sm">% of participating votes needed to approve (recommended: 51-66%)</p>
+            <ul class="text-gray-400 text-xs space-y-1 mt-2">
+              <li>• <strong>Simple Majority (51%):</strong> Most common, faster decisions</li>
+              <li>• <strong>Supermajority (66%):</strong> Critical decisions only</li>
+              <li>• <strong>Unanimous (100%):</strong> Rarely used, for constitutional changes</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Proposal Deposit</h4>
+            <p class="text-gray-400 text-sm">Tokens required to create a proposal (prevents spam, refunded if approved)</p>
+            <code class="text-xs bg-gray-900 px-2 py-1 rounded text-cyan-300">Recommended: 0.1-1% of total supply</code>
+          </div>
+        </div>
+
+        <div class="bg-cyan-500/10 border border-cyan-500/30 rounded p-4 mt-4">
+          <h4 class="text-cyan-300 font-semibold text-sm mb-2">Governance Best Practices</h4>
+          <ul class="text-gray-300 text-sm space-y-1 mb-0">
+            <li>• Start conservative, then loosen restrictions through proposals</li>
+            <li>• Different proposal types can have different thresholds</li>
+            <li>• Consider a time-delay before execution (e.g., 24-48 hours)</li>
+            <li>• Allow proposal cancellation by creator before voting ends</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Step 6 -->
+      <div class="bg-gray-900 border-l-4 border-blue-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-4">6</div>
+          <h3 class="text-2xl font-bold text-white">Add Initial Members (Optional)</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Invite founding members and assign roles before launch.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4 space-y-4">
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Member Roles</h4>
+            <ul class="text-gray-400 text-sm space-y-2">
+              <li><strong class="text-white">Admin:</strong> Full DAO management, can add/remove members, modify settings</li>
+              <li><strong class="text-white">Member:</strong> Can create proposals, vote, participate in governance</li>
+              <li><strong class="text-white">Contributor:</strong> Can comment and view, limited voting power</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-cyan-400 font-semibold text-sm mb-2">Adding Members</h4>
+            <p class="text-gray-400 text-sm mb-2">Enter Principal IDs (one per line):</p>
+            <pre class="bg-gray-900 rounded p-2 text-xs text-cyan-300">rdmx6-jaaaa-aaaaa-aaadq-cai
+2vxsx-fae-iq-oqqqs-qi
+3xwpq-ziaaa-aaaah-qcn4a-cai</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 7 -->
+      <div class="bg-gray-900 border-l-4 border-pink-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white font-bold mr-4">7</div>
+          <h3 class="text-2xl font-bold text-white">Review & Launch</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          Carefully review all settings before deployment. Some parameters cannot be changed later.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4 space-y-3">
+          <h4 class="text-cyan-400 font-semibold text-sm mb-2">Pre-Launch Checklist</h4>
+          <ul class="text-gray-300 text-sm space-y-2">
+            <li class="flex items-start">
+              <span class="text-cyan-400 mr-2">□</span>
+              <span>DAO name and description are accurate and professional</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-cyan-400 mr-2">□</span>
+              <span>Token economics reviewed (supply, distribution, symbol)</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-cyan-400 mr-2">□</span>
+              <span>Governance parameters align with community values</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-cyan-400 mr-2">□</span>
+              <span>Initial members and admins are correct</span>
+            </li>
+            <li class="flex items-start">
+              <span class="text-cyan-400 mr-2">□</span>
+              <span>Have sufficient ICP for cycles (if self-hosting)</span>
+            </li>
+          </ul>
+        </div>
+        
+        <div class="mt-4">
+          <button class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all">
+            Launch DAO
+          </button>
+          <p class="text-gray-400 text-sm mt-2">
+            Deployment takes 30-60 seconds. You'll be redirected to your DAO dashboard once complete.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 8 -->
+      <div class="bg-gray-900 border-l-4 border-cyan-500 rounded-lg p-6">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center text-white font-bold mr-4">8</div>
+          <h3 class="text-2xl font-bold text-white">Initialize Your DAO</h3>
+        </div>
+        <p class="text-gray-300 mb-4">
+          After launch, you must initialize the DAO to activate all features.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <ol class="text-gray-300 text-sm space-y-2">
+            <li>1. Navigate to your Dashboard → "My DAOs"</li>
+            <li>2. Find your newly created DAO (status: "Pending Initialization")</li>
+            <li>3. Click "Initialize DAO" button</li>
+            <li>4. Wait for confirmation (sets up treasury, governance, staking canisters)</li>
+            <li>5. DAO status changes to "Active" ✅</li>
+          </ol>
+        </div>
+
+        <div class="bg-yellow-500/10 border border-yellow-500/30 rounded p-4 mt-4">
+          <p class="text-yellow-300 text-sm mb-0">
+            <strong>Important:</strong> Initialization is required before members can stake tokens or create proposals.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="text-3xl font-bold text-white mt-12 mb-6">After Launch</h2>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-gray-900 border border-cyan-500/30 rounded-lg p-6">
+        <h3 class="text-xl font-semibold text-cyan-400 mb-3">Next Steps</h3>
+        <ul class="text-gray-300 space-y-2 text-sm">
+          <li>• Create your first proposal to test governance</li>
+          <li>• Distribute tokens to initial members</li>
+          <li>• Set up treasury management rules</li>
+          <li>• Invite community members</li>
+          <li>• Configure staking rewards</li>
+          <li>• Publish DAO to registry for discovery</li>
+        </ul>
+      </div>
+
+      <div class="bg-gray-900 border border-cyan-500/30 rounded-lg p-6">
+        <h3 class="text-xl font-semibold text-cyan-400 mb-3">Related Guides</h3>
+        <ul class="text-gray-300 space-y-2 text-sm">
+          <li><a href="/guides/governance" class="text-cyan-400 hover:text-cyan-300">→ Governance & Proposals</a></li>
+          <li><a href="/guides/staking" class="text-cyan-400 hover:text-cyan-300">→ Staking & Rewards</a></li>
+          <li><a href="/guides/treasury" class="text-cyan-400 hover:text-cyan-300">→ Treasury Management</a></li>
+          <li><a href="/api-reference" class="text-cyan-400 hover:text-cyan-300">→ API Reference</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-12 bg-gradient-to-r from-cyan-500/10 to-purple-500/10 border border-cyan-500/20 rounded-xl p-8">
+      <h2 class="text-2xl font-bold text-white mb-4">Congratulations!</h2>
+      <p class="text-gray-300 mb-4">
+        You've successfully created your first DAO on the Internet Computer. Your organization is now ready to 
+        make decentralized decisions, manage funds collectively, and grow your community.
+      </p>
+      <a 
+        href="https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/dashboard" 
+        target="_blank"
+        class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
+      >
+        Go to Your Dashboard
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+      </a>
+    </div>
+  </article>
+</DocsLayout>

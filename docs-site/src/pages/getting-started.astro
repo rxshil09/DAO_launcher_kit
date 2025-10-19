@@ -1,0 +1,123 @@
+---
+import DocsLayout from '../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="Getting Started" description="Get started with DAO Launcher Kit">
+  <article class="prose prose-invert max-w-none">
+    <h1 class="text-4xl font-bold text-white mb-6">Getting Started</h1>
+    
+    <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-6 mb-8">
+      <p class="text-cyan-300 mb-0">
+        <strong>Prerequisites:</strong> Node.js 18+, DFX 0.15.0+, and 10GB free disk space
+      </p>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-4">Quick Start (5 minutes)</h2>
+    
+    <h3 class="text-xl font-semibold text-cyan-400 mt-8 mb-4">1. Clone the Repository</h3>
+    <pre class="bg-gray-900 border border-gray-800 rounded-lg p-4"><code class="text-gray-300">git clone https://github.com/tojo04/DAO_launcher_kit.git
+cd DAO_launcher_kit</code></pre>
+
+    <h3 class="text-xl font-semibold text-cyan-400 mt-8 mb-4">2. Install Dependencies</h3>
+    <pre class="bg-gray-900 border border-gray-800 rounded-lg p-4"><code class="text-gray-300">npm install
+cd src/dao_frontend && npm install && cd ../..</code></pre>
+
+    <h3 class="text-xl font-semibold text-cyan-400 mt-8 mb-4">3. Start Local IC Replica</h3>
+    <pre class="bg-gray-900 border border-gray-800 rounded-lg p-4"><code class="text-gray-300">dfx start --clean --background</code></pre>
+
+    <h3 class="text-xl font-semibold text-cyan-400 mt-8 mb-4">4. Deploy All Canisters</h3>
+    <pre class="bg-gray-900 border border-gray-800 rounded-lg p-4"><code class="text-gray-300">./deploy.sh</code></pre>
+
+    <p class="text-gray-300 mt-4">
+      This script deploys all 9 canisters in the correct order with proper initialization.
+      It takes about 2-3 minutes to complete.
+    </p>
+
+    <h3 class="text-xl font-semibold text-cyan-400 mt-8 mb-4">5. Start Frontend</h3>
+    <pre class="bg-gray-900 border border-gray-800 rounded-lg p-4"><code class="text-gray-300">cd src/dao_frontend
+npm run dev</code></pre>
+
+    <p class="text-gray-300 mt-4">
+      Open <a href="http://localhost:5173" class="text-cyan-400 hover:text-cyan-300">http://localhost:5173</a> in your browser.
+    </p>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-4">What Gets Deployed</h2>
+    
+    <div class="grid gap-4 mt-6">
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h4 class="text-cyan-400 font-semibold mb-2">Core Canisters</h4>
+        <ul class="text-gray-400 space-y-2">
+          <li>✅ <code class="text-cyan-400">dao_backend</code> - Main coordinator (user management, admin)</li>
+          <li>✅ <code class="text-cyan-400">governance</code> - Voting and proposal management</li>
+          <li>✅ <code class="text-cyan-400">staking</code> - Token staking and rewards</li>
+          <li>✅ <code class="text-cyan-400">treasury</code> - Multi-sig financial operations</li>
+        </ul>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h4 class="text-cyan-400 font-semibold mb-2">Support Canisters</h4>
+        <ul class="text-gray-400 space-y-2">
+          <li>✅ <code class="text-cyan-400">dao_registry</code> - Global DAO discovery</li>
+          <li>✅ <code class="text-cyan-400">dao_analytics</code> - Platform metrics</li>
+          <li>✅ <code class="text-cyan-400">proposals</code> - Proposal templates</li>
+          <li>✅ <code class="text-cyan-400">assets</code> - File storage</li>
+          <li>✅ <code class="text-cyan-400">icrc1_ledger</code> - Token standard</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-4">Next Steps</h2>
+    
+    <div class="grid md:grid-cols-2 gap-4 mt-6">
+      <a href="/guides/creating-dao" class="block p-4 bg-gray-900 border border-cyan-500/30 rounded-lg hover:border-cyan-500 transition-colors">
+        <h3 class="text-cyan-400 font-semibold mb-2">Create Your First DAO →</h3>
+        <p class="text-gray-400 text-sm">Step-by-step guide to launching your first DAO</p>
+      </a>
+
+      <a href="/api-reference" class="block p-4 bg-gray-900 border border-cyan-500/30 rounded-lg hover:border-cyan-500 transition-colors">
+        <h3 class="text-cyan-400 font-semibold mb-2">Explore the API →</h3>
+        <p class="text-gray-400 text-sm">Learn about available canister methods</p>
+      </a>
+
+      <a href="/architecture" class="block p-4 bg-gray-900 border border-cyan-500/30 rounded-lg hover:border-cyan-500 transition-colors">
+        <h3 class="text-cyan-400 font-semibold mb-2">Understand Architecture →</h3>
+        <p class="text-gray-400 text-sm">Deep dive into the canister architecture</p>
+      </a>
+
+      <a href="/guides/governance" class="block p-4 bg-gray-900 border border-cyan-500/30 rounded-lg hover:border-cyan-500 transition-colors">
+        <h3 class="text-cyan-400 font-semibold mb-2">Governance Guide →</h3>
+        <p class="text-gray-400 text-sm">Learn about proposal creation and voting</p>
+      </a>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-4">Troubleshooting</h2>
+
+    <div class="space-y-4">
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h4 class="text-cyan-400 font-semibold mb-2">Port Already in Use</h4>
+        <p class="text-gray-400 mb-2">If port 4943 or 5173 is already in use:</p>
+        <pre class="bg-gray-950 rounded p-2 text-sm"><code>dfx stop
+pkill dfx
+./deploy.sh</code></pre>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h4 class="text-cyan-400 font-semibold mb-2">Canister Initialization Failed</h4>
+        <p class="text-gray-400 mb-2">Clean deployment and start fresh:</p>
+        <pre class="bg-gray-950 rounded p-2 text-sm"><code>dfx stop
+rm -rf .dfx
+dfx start --clean --background
+./deploy.sh</code></pre>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h4 class="text-cyan-400 font-semibold mb-2">Frontend Build Errors</h4>
+        <p class="text-gray-400 mb-2">Clear cache and rebuild:</p>
+        <pre class="bg-gray-950 rounded p-2 text-sm"><code>cd src/dao_frontend
+npm run clean:cache
+npm install
+npm run dev</code></pre>
+      </div>
+    </div>
+  </article>
+</DocsLayout>

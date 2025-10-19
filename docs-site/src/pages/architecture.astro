@@ -1,0 +1,224 @@
+---
+import DocsLayout from '../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="Architecture" description="Understanding DAO Launcher Kit Architecture">
+  <article class="prose prose-invert max-w-none">
+    <h1 class="text-4xl font-bold text-white mb-6">Architecture Overview</h1>
+    
+    <p class="text-xl text-gray-300 mb-8">
+      DAO Launcher Kit uses a sophisticated multi-canister microservices architecture 
+      with 9 specialized canisters on the Internet Computer.
+    </p>
+
+    <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-6 mb-8">
+      <h3 class="text-cyan-300 font-semibold mb-2">🏗️ Design Principle</h3>
+      <p class="text-gray-300 mb-0">
+        <strong>Separation of Concerns:</strong> Each canister has a specific responsibility, 
+        enabling independent scaling, upgrades, and maintenance.
+      </p>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-6">System Components</h2>
+
+    <div class="space-y-6">
+      <div class="bg-gray-900 border-l-4 border-cyan-500 rounded-lg p-6">
+        <h3 class="text-xl font-semibold text-cyan-400 mb-3">dao_backend (Coordinator)</h3>
+        <p class="text-gray-300 mb-4">
+          The central coordination hub managing users, permissions, and orchestrating 
+          communication between other canisters.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <h4 class="text-white font-semibold mb-2">Responsibilities:</h4>
+          <ul class="text-gray-400 space-y-1 text-sm list-disc list-inside">
+            <li>User profile management and registration</li>
+            <li>Admin role assignment and permissions</li>
+            <li>Inter-canister communication coordination</li>
+            <li>DAO initialization and configuration</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border-l-4 border-green-500 rounded-lg p-6">
+        <h3 class="text-xl font-semibold text-green-400 mb-3">governance</h3>
+        <p class="text-gray-300 mb-4">
+          Manages the complete proposal lifecycle including creation, voting, and execution.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <h4 class="text-white font-semibold mb-2">Dependencies:</h4>
+          <ul class="text-gray-400 space-y-1 text-sm list-disc list-inside">
+            <li><strong>dao_backend:</strong> User authentication and membership verification</li>
+            <li><strong>staking:</strong> Voting power calculation based on staked tokens</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border-l-4 border-yellow-500 rounded-lg p-6">
+        <h3 class="text-xl font-semibold text-yellow-400 mb-3">staking</h3>
+        <p class="text-gray-300 mb-4">
+          Handles token locking, rewards distribution, and voting power calculations.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <h4 class="text-white font-semibold mb-2">Key Features:</h4>
+          <ul class="text-gray-400 space-y-1 text-sm list-disc list-inside">
+            <li>Lock tokens for specified duration</li>
+            <li>Calculate time-weighted voting power</li>
+            <li>Distribute staking rewards proportionally</li>
+            <li>Automatic reward compounding</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border-l-4 border-red-500 rounded-lg p-6">
+        <h3 class="text-xl font-semibold text-red-400 mb-3">treasury</h3>
+        <p class="text-gray-300 mb-4">
+          Multi-signature wallet for DAO financial operations with balance tracking.
+        </p>
+        <div class="bg-gray-950 rounded-lg p-4">
+          <h4 class="text-white font-semibold mb-2">Security Features:</h4>
+          <ul class="text-gray-400 space-y-1 text-sm list-disc list-inside">
+            <li>Multi-signature approval requirements</li>
+            <li>Transaction history and audit trail</li>
+            <li>Role-based access control</li>
+            <li>Automatic proposal execution integration</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-6">Support Canisters</h2>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-2">dao_registry</h3>
+        <p class="text-gray-400 text-sm mb-3">
+          Global DAO discovery system enabling search, categorization, and trending DAOs across the platform.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-xs">Search</span>
+          <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">Discovery</span>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-2">dao_analytics</h3>
+        <p class="text-gray-400 text-sm mb-3">
+          Tracks platform-wide metrics including time-series data, growth rates, and governance statistics.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">Metrics</span>
+          <span class="px-2 py-1 bg-pink-500/20 text-pink-400 rounded text-xs">Analytics</span>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-2">proposals</h3>
+        <p class="text-gray-400 text-sm mb-3">
+          Manages proposal templates, categorization, and execution logic for different proposal types.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Templates</span>
+          <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">Workflow</span>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-2">assets</h3>
+        <p class="text-gray-400 text-sm mb-3">
+          File storage system with metadata, tags, and public/private access control.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-2 py-1 bg-orange-500/20 text-orange-400 rounded text-xs">Storage</span>
+          <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">Files</span>
+        </div>
+      </div>
+
+      <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-2">icrc1_ledger</h3>
+        <p class="text-gray-400 text-sm mb-3">
+          ICRC1 token standard implementation for balance tracking and token transfers.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">Tokens</span>
+          <span class="px-2 py-1 bg-pink-500/20 text-pink-400 rounded text-xs">ICRC1</span>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-6">Inter-Canister Communication</h2>
+
+    <div class="bg-gray-900 border border-cyan-500/30 rounded-lg p-6">
+      <p class="text-gray-300 mb-4">
+        Canisters communicate using typed actor interfaces in Motoko:
+      </p>
+      <pre class="bg-gray-950 rounded-lg p-4 overflow-x-auto"><code class="text-gray-300">// Example: dao_backend calling staking canister
+let stakingActor = actor("canister:staking") : StakingService;
+let votingPower = await stakingActor.getVotingPower(userPrincipal);</code></pre>
+      
+      <div class="mt-4 bg-cyan-500/10 border border-cyan-500/30 rounded p-4">
+        <p class="text-cyan-300 text-sm mb-0">
+          <strong>Note:</strong> All inter-canister calls are asynchronous and type-safe, 
+          preventing runtime errors from incorrect message formats.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-6">Upgrade Safety</h2>
+
+    <div class="bg-gray-900 border border-yellow-500/30 rounded-lg p-6">
+      <h3 class="text-yellow-400 font-semibold mb-4">Stable Storage Pattern</h3>
+      <p class="text-gray-300 mb-4">
+        All canisters use upgrade-safe state management:
+      </p>
+      <pre class="bg-gray-950 rounded-lg p-4 overflow-x-auto text-sm"><code class="text-gray-300">// Stable storage (persists across upgrades)
+private stable var userEntries : [(Principal, UserProfile)] = [];
+
+// Runtime optimization (rebuilt after upgrade)
+private var users = HashMap.HashMap&lt;Principal, UserProfile&gt;(...);
+
+system func preupgrade() &#123;
+  userEntries := Iter.toArray(users.entries());
+&#125;
+
+system func postupgrade() &#123;
+  users := HashMap.fromIter(userEntries.vals(), ...);
+&#125;</code></pre>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-6">Deployment Order</h2>
+
+    <div class="bg-gray-900 border border-cyan-500/30 rounded-lg p-6">
+      <p class="text-gray-300 mb-4">
+        Correct deployment order is critical due to dependencies:
+      </p>
+      <ol class="text-gray-300 space-y-2 list-decimal list-inside">
+        <li><strong>Base canisters:</strong> dao_backend, dao_registry, dao_analytics, staking, treasury, proposals, assets</li>
+        <li><strong>Governance:</strong> Requires dao_backend and staking Principal IDs as init args</li>
+        <li><strong>ICRC1 Ledger:</strong> Token standard with initialization parameters</li>
+        <li><strong>Wire connections:</strong> Set ledger canister ID in staking</li>
+        <li><strong>Frontend:</strong> Generate declarations, build, and deploy</li>
+      </ol>
+      
+      <div class="mt-4">
+        <p class="text-cyan-400 text-sm">
+          💡 Use <code class="bg-gray-950 px-2 py-1 rounded">./deploy.sh</code> for local or 
+          <code class="bg-gray-950 px-2 py-1 rounded">./scripts/deploy-mainnet.sh</code> for production deployment.
+        </p>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-white mt-12 mb-6">Next Steps</h2>
+    
+    <div class="grid md:grid-cols-2 gap-4">
+      <a href="/getting-started" class="block p-4 bg-gray-900 border border-cyan-500/30 rounded-lg hover:border-cyan-500 transition-colors">
+        <h3 class="text-cyan-400 font-semibold mb-2">Deploy Locally →</h3>
+        <p class="text-gray-400 text-sm">Get the system running on your machine</p>
+      </a>
+
+      <a href="/api-reference" class="block p-4 bg-gray-900 border border-cyan-500/30 rounded-lg hover:border-cyan-500 transition-colors">
+        <h3 class="text-cyan-400 font-semibold mb-2">Explore APIs →</h3>
+        <p class="text-gray-400 text-sm">Learn about each canister's methods</p>
+      </a>
+    </div>
+  </article>
+</DocsLayout>

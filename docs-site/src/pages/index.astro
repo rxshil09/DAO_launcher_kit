@@ -1,0 +1,134 @@
+---
+import DocsLayout from '../layouts/DocsLayout.astro';
+---
+
+<DocsLayout title="Home" description="Welcome to DAO Launcher Kit Documentation">
+  <div class="space-y-12">
+    <!-- Hero Section -->
+    <div class="text-center space-y-4">
+      <h1 class="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+        DAO Launcher Kit
+      </h1>
+      <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+        Complete documentation for building, deploying, and managing DAOs on the Internet Computer
+      </p>
+      <div class="flex justify-center gap-4 pt-6">
+        <a 
+          href="/getting-started" 
+          class="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg text-white font-semibold hover:shadow-lg hover:shadow-cyan-500/50 transition-all"
+        >
+          Get Started
+        </a>
+        <a 
+          href="/api-reference" 
+          class="px-6 py-3 border border-cyan-500/30 rounded-lg text-cyan-400 font-semibold hover:bg-cyan-500/10 transition-all"
+        >
+          API Reference
+        </a>
+      </div>
+    </div>
+
+    <!-- Key Features -->
+    <div class="grid md:grid-cols-3 gap-6 pt-12">
+      <div class="p-6 bg-gray-900 border border-gray-800 rounded-xl hover:border-cyan-500/30 transition-colors">
+        <h3 class="text-xl font-semibold text-cyan-400 mb-2">Quick Start</h3>
+        <p class="text-gray-400">Deploy your DAO in minutes with our comprehensive setup guide and automated scripts.</p>
+      </div>
+
+      <div class="p-6 bg-gray-900 border border-gray-800 rounded-xl hover:border-cyan-500/30 transition-colors">
+        <h3 class="text-xl font-semibold text-cyan-400 mb-2">API Reference</h3>
+        <p class="text-gray-400">Complete API documentation for all 9 specialized canisters with code examples.</p>
+      </div>
+
+      <div class="p-6 bg-gray-900 border border-gray-800 rounded-xl hover:border-cyan-500/30 transition-colors">
+        <h3 class="text-xl font-semibold text-cyan-400 mb-2">Architecture</h3>
+        <p class="text-gray-400">Deep dive into the multi-canister microservices architecture and design patterns.</p>
+      </div>
+    </div>
+
+    <!-- Platform Overview -->
+    <div class="pt-12 space-y-6">
+      <h2 class="text-3xl font-bold text-white">Platform Overview</h2>
+      <div class="prose prose-invert max-w-none">
+        <p class="text-gray-300 text-lg leading-relaxed">
+          DAO Launcher Kit is a production-ready DAO platform built on the Internet Computer. 
+          It features a sophisticated multi-canister architecture with 9 specialized canisters 
+          coordinated by the <code class="text-cyan-400 bg-gray-900 px-2 py-1 rounded">dao_backend</code>.
+        </p>
+        
+        <div class="grid md:grid-cols-2 gap-4 mt-6">
+          <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+            <h4 class="text-cyan-400 font-semibold mb-2">Core Canisters</h4>
+            <ul class="text-gray-400 space-y-1 text-sm">
+              <li>• <strong>dao_backend</strong> - User management & coordination</li>
+              <li>• <strong>governance</strong> - Voting & proposal lifecycle</li>
+              <li>• <strong>staking</strong> - Token locking & rewards</li>
+              <li>• <strong>treasury</strong> - Multi-sig financial operations</li>
+            </ul>
+          </div>
+          
+          <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
+            <h4 class="text-cyan-400 font-semibold mb-2">Support Canisters</h4>
+            <ul class="text-gray-400 space-y-1 text-sm">
+              <li>• <strong>dao_registry</strong> - Global DAO discovery</li>
+              <li>• <strong>dao_analytics</strong> - Platform metrics</li>
+              <li>• <strong>proposals</strong> - Proposal templates</li>
+              <li>• <strong>assets</strong> - File storage system</li>
+              <li>• <strong>icrc1_ledger</strong> - Token standard</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="pt-12 space-y-6">
+      <h2 class="text-3xl font-bold text-white">Popular Topics</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <a href="/getting-started" class="block p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-cyan-500/50 transition-colors group">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-2 group-hover:text-cyan-300">Quick Start Guide →</h3>
+          <p class="text-gray-400 text-sm">Get your development environment set up and deploy locally in under 10 minutes.</p>
+        </a>
+
+        <a href="/guides/creating-dao" class="block p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-cyan-500/50 transition-colors group">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-2 group-hover:text-cyan-300">Creating Your First DAO →</h3>
+          <p class="text-gray-400 text-sm">Step-by-step guide to launching and initializing a new DAO.</p>
+        </a>
+
+        <a href="/architecture" class="block p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-cyan-500/50 transition-colors group">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-2 group-hover:text-cyan-300">Canister Architecture →</h3>
+          <p class="text-gray-400 text-sm">Understand the multi-canister microservices design and inter-canister communication.</p>
+        </a>
+
+        <a href="/api-reference" class="block p-4 bg-gray-900 border border-gray-800 rounded-lg hover:border-cyan-500/50 transition-colors group">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-2 group-hover:text-cyan-300">API Reference →</h3>
+          <p class="text-gray-400 text-sm">Comprehensive API documentation with examples for all canister methods.</p>
+        </a>
+      </div>
+    </div>
+
+    <!-- Deployment Status -->
+    <div class="pt-12 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border border-cyan-500/20 rounded-xl p-8">
+      <h2 class="text-2xl font-bold text-white mb-4">Production Ready</h2>
+      <p class="text-gray-300 mb-4">
+        DAO Launcher Kit is already deployed to IC mainnet and serving production traffic.
+      </p>
+      <div class="flex items-center space-x-4">
+        <a 
+          href="https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io" 
+          target="_blank"
+          class="inline-flex items-center px-4 py-2 bg-cyan-500 rounded-lg text-white font-semibold hover:bg-cyan-600 transition-colors"
+        >
+          Visit Live App
+          <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+        <span class="flex items-center text-green-400">
+          <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+          Mainnet Deployed
+        </span>
+      </div>
+    </div>
+  </div>
+</DocsLayout>
