@@ -130,7 +130,7 @@ persistent actor TreasuryCanister {
     // Faucet system for test token distribution
     private var faucetClaimsEntries : [(Principal, Time.Time)] = [];
     private transient var faucetClaims = HashMap.HashMap<Principal, Time.Time>(100, Principal.equal, Principal.hash);
-    private var faucetAmount : TokenAmount = 100_000_000_000; // 100 DAO tokens (with 8 decimals)
+    private var faucetAmount : TokenAmount = 100_000_000_000; // 1000 DAO tokens (with 8 decimals)
     private var faucetCooldown : Time.Time = 24 * 60 * 60 * 1_000_000_000; // 24 hours in nanoseconds
     private var faucetEnabled : Bool = true; // Can be disabled in production
     

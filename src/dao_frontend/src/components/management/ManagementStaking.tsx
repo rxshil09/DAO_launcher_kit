@@ -30,6 +30,8 @@ const ManagementStaking: React.FC = () => {
   const [stakingPools, setStakingPools] = useState<any[]>([]);
   const [userStakes, setUserStakes] = useState<Stake[]>([]);
   const [stakingStats, setStakingStats] = useState<any>(null);
+  const [previousStakedAmount, setPreviousStakedAmount] = useState<bigint | null>(null);
+  const [stakingGrowth, setStakingGrowth] = useState<number>(0);
   const [showStakeModal, setShowStakeModal] = useState(false);
   const [showUnstakeModal, setShowUnstakeModal] = useState(false);
   const [showClaimModal, setShowClaimModal] = useState(false);
@@ -92,6 +94,17 @@ const ManagementStaking: React.FC = () => {
       ]);
 
       setUserStakes(stakes);
+      
+      // Calculate growth percentage if we have previous data
+      if (previousStakedAmount !== null && previousStakedAmount > 0n) {
+        const current = Number(stats.totalStakedAmount);
+        const previous = Number(previousStakedAmount);
+        const growth = ((current - previous) / previous) * 100;
+        setStakingGrowth(growth);
+      }
+      
+      // Store current amount for next comparison
+      setPreviousStakedAmount(stats.totalStakedAmount);
       setStakingStats(stats);
 
       const computeUserStake = (key: string) =>
@@ -119,7 +132,7 @@ const ManagementStaking: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch staking data', err);
     }
-  }, [actors, principal]);
+  }, [actors, principal, previousStakedAmount]);
 
   useEffect(() => {
     fetchData();
@@ -180,7 +193,13 @@ const ManagementStaking: React.FC = () => {
           <p className="text-2xl font-bold text-white">
             {stakingStats ? formatToken(stakingStats.totalStakedAmount) : dao.staking.totalStaked}
           </p>
-          <p className="text-sm text-green-400 mt-1">+12.5% this month</p>
+          <p className={`text-sm mt-1 ${
+            stakingStats && stakingStats.activeStakes > 0
+              ? 'text-blue-400'
+              : 'text-gray-500'
+          }`}>
+            {stakingStats ? `${stakingStats.activeStakes} active stake${stakingStats.activeStakes !== 1 ? 's' : ''}` : 'No active stakes'}
+          </p>
         </motion.div>
 
         <motion.div

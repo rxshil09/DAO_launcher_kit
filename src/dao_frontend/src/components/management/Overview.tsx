@@ -25,64 +25,131 @@ import {
 } from 'lucide-react';
 import { DAO } from '../../types/dao';
 import { useActors } from '../../context/ActorContext';
-import { dao_backend } from '@declarations/dao_backend';
 import type { Activity as ActivityRecord } from '@declarations/dao_backend/dao_backend.did';
 
 const Overview: React.FC = () => {
   const { dao } = useOutletContext<{ dao: DAO }>();
-  // const { daoBackend } = useActors();
+  const actors = useActors();
   const { createProposal } = useProposals();
   const { stake } = useStaking();
   const { getBalance } = useTreasury();
   const navigate = useNavigate();
 
   const [recentActivity, setRecentActivity] = useState<ActivityRecord[]>([]);
+  const [memberCount, setMemberCount] = useState<number>(0);
+  const [treasuryBalance, setTreasuryBalance] = useState<string>('$0');
+  const [totalStaked, setTotalStaked] = useState<string>('0');
+  const [activeProposals, setActiveProposals] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [governanceParticipation, setGovernanceParticipation] = useState<number>(0);
+  const [treasuryUtilization, setTreasuryUtilization] = useState<number>(0);
+
+  // Helper to format token amounts
+  const formatToken = (amount: bigint | number, decimals: number = 8): string => {
+    try {
+      const amt = typeof amount === 'bigint' ? amount : BigInt(amount);
+      const s = amt.toString();
+      const pad = s.padStart(decimals + 1, '0');
+      const intPart = pad.slice(0, -decimals);
+      const frac = pad.slice(-decimals).replace(/0+$/, '');
+      return frac ? `${intPart}.${frac}` : intPart;
+    } catch {
+      return '0';
+    }
+  };
 
   useEffect(() => {
-    const fetchRecentActivity = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const activity = await dao_backend.getRecentActivity();
+        console.log('Fetching data for DAO ID:', dao.id);
+        
+        // Fetch all data in parallel
+        const [activity, members, treasuryData, stakingStats] = await Promise.all([
+          actors?.daoBackend ? actors.daoBackend.getRecentActivity().catch((err: any) => { console.error('Activity fetch error:', err); return []; }) : Promise.resolve([]),
+          actors?.daoBackend ? actors.daoBackend.getDAOMembers(dao.id).catch((err: any) => { console.error('Members fetch error:', err); return []; }) : Promise.resolve([]),
+          actors?.treasury ? actors.treasury.getBalance().catch((err: any) => { console.error('Treasury fetch error:', err); return null; }) : Promise.resolve(null),
+          actors?.staking ? actors.staking.getStakingStats().catch((err: any) => { console.error('Staking fetch error:', err); return null; }) : Promise.resolve(null)
+        ]);
+
+        console.log('Fetched members:', members);
         setRecentActivity(activity || []);
+        setMemberCount(members?.length || 0);
+        
+        // Format treasury balance
+        if (treasuryData) {
+          const balance = formatToken(treasuryData.available);
+          setTreasuryBalance(`$${balance}`);
+        }
+        
+        // Format total staked
+        if (stakingStats) {
+          setTotalStaked(formatToken(stakingStats.totalStakedAmount));
+        }
+        
+        // For now, set active proposals to 0 since we don't have direct access
+        // This would need a proper governance query method
+        setActiveProposals(0);
+        
+        // Calculate governance participation (if we have members and activity)
+        if (members && members.length > 0 && activity && activity.length > 0) {
+          const participationRate = Math.min(100, (activity.length / members.length) * 100);
+          setGovernanceParticipation(Math.round(participationRate));
+        }
+        
+        // Calculate treasury utilization (available vs total)
+        if (treasuryData) {
+          const total = Number(treasuryData.total);
+          const available = Number(treasuryData.available);
+          if (total > 0) {
+            const utilization = ((total - available) / total) * 100;
+            setTreasuryUtilization(Math.min(100, Math.round(utilization)));
+          }
+        }
       } catch (err) {
-        console.error('Failed to fetch recent activity', err);
+        console.error('Failed to fetch overview data:', err);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (dao_backend) {
-      fetchRecentActivity();
+    if (actors?.daoBackend) {
+      fetchData();
     }
-  }, [dao_backend]);
+  }, [dao.id, actors]);
+
+  console.log('Render state - loading:', loading, 'memberCount:', memberCount);
 
   const quickStats = [
     {
       label: 'Total Members',
-      value: dao.memberCount.toLocaleString(),
-      change: '+12.5%',
+      value: loading ? '...' : memberCount.toLocaleString(),
+      change: memberCount > 0 ? `+${memberCount}` : '0',
       trend: 'up',
       icon: Users,
       color: 'blue'
     },
     {
       label: 'Treasury Balance',
-      value: dao.treasury.balance,
-      change: dao.treasury.monthlyInflow,
-      trend: 'up',
+      value: loading ? '...' : treasuryBalance,
+      change: '$0',
+      trend: 'neutral',
       icon: DollarSign,
       color: 'green'
     },
     {
       label: 'Total Staked',
-      value: dao.staking.totalStaked,
-      change: '+8.2%',
-      trend: 'up',
+      value: loading ? '...' : totalStaked,
+      change: '0',
+      trend: 'neutral',
       icon: Coins,
       color: 'purple'
     },
     {
       label: 'Active Proposals',
-      value: dao.governance.activeProposals.toString(),
-      change: '+2',
-      trend: 'up',
+      value: loading ? '...' : activeProposals.toString(),
+      change: `${activeProposals}`,
+      trend: activeProposals > 0 ? 'up' : 'neutral',
       icon: Vote,
       color: 'orange'
     }
@@ -171,16 +238,18 @@ const Overview: React.FC = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <stat.icon className={`w-8 h-8 ${getColorClasses(stat.color).split(' ')[1]}`} />
-              <div className={`flex items-center space-x-1 text-sm ${
-                stat.trend === 'up' ? 'text-green-400' : 'text-red-400'
-              }`}>
-                <span>{stat.change}</span>
-                {stat.trend === 'up' ? (
-                  <ArrowUpRight className="w-4 h-4" />
-                ) : (
-                  <ArrowDownRight className="w-4 h-4" />
-                )}
-              </div>
+              {stat.trend !== 'neutral' && (
+                <div className={`flex items-center space-x-1 text-sm ${
+                  stat.trend === 'up' ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  <span>{stat.change}</span>
+                  {stat.trend === 'up' ? (
+                    <ArrowUpRight className="w-4 h-4" />
+                  ) : (
+                    <ArrowDownRight className="w-4 h-4" />
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <p className="text-2xl font-bold text-white mb-1">{stat.value}</p>
@@ -336,13 +405,13 @@ const Overview: React.FC = () => {
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-400 font-mono">Governance Participation</span>
-                  <span className="text-blue-400 font-bold">78%</span>
+                  <span className="text-blue-400 font-bold">{governanceParticipation}%</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <motion.div 
                     className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
                     initial={{ width: 0 }}
-                    animate={{ width: '78%' }}
+                    animate={{ width: `${governanceParticipation}%` }}
                     transition={{ duration: 1, delay: 0.8 }}
                   />
                 </div>
@@ -351,13 +420,13 @@ const Overview: React.FC = () => {
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-400 font-mono">Treasury Utilization</span>
-                  <span className="text-green-400 font-bold">45%</span>
+                  <span className="text-green-400 font-bold">{treasuryUtilization}%</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <motion.div 
                     className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full"
                     initial={{ width: 0 }}
-                    animate={{ width: '45%' }}
+                    animate={{ width: `${treasuryUtilization}%` }}
                     transition={{ duration: 1, delay: 1 }}
                   />
                 </div>

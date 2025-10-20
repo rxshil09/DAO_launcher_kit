@@ -161,7 +161,7 @@ const Dashboard = () => {
       }
       // Refresh balances and faucet state
       await Promise.all([refreshBalances(), refreshFaucetState()]);
-      setLedgerError('Successfully claimed 100 DAO tokens!');
+      setLedgerError('Successfully claimed 1000 DAO tokens!');
       setTimeout(() => setLedgerError(''), 3000);
     } catch (e) {
       console.error('Faucet claim failed:', e);
