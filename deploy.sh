@@ -17,7 +17,7 @@ sleep 5
 
 # Deploy base canisters first (no dependencies)
 echo "🏗️ Deploying base canisters..."
-dfx deploy dao_backend
+dfx deploy dao_backend 
 dfx deploy dao_registry
 dfx deploy dao_analytics
 dfx deploy staking
@@ -47,8 +47,8 @@ dfx deploy treasury
 dfx deploy proposals
 dfx deploy assets
 
-## Deploy ICRC-1 Ledger (token) with initial supply to Treasury
-echo "🪙 Deploying ICRC-1 ledger..."
+## Deploy ICRC-1 Ledger (token) with initial supply distributed
+echo "🪙 Deploying ICRC-1 ledger with distributed token allocation..."
 TREASURY_ID=$(dfx canister id treasury)
 DEPLOYER_PRINCIPAL=$(dfx identity get-principal)
 
@@ -60,6 +60,21 @@ if [ ! -f third_party/icrc1/ic-icrc1-ledger.wasm.gz ] || [ ! -f third_party/icrc
   exit 1
 fi
 
+# Token distribution:
+# Total Supply: 1,000,000,000,000 (1 trillion tokens with 8 decimals = 10,000 DAO tokens)
+# - Treasury: 400,000,000,000 (40% = 4,000 DAO tokens)
+# - Deployer/Founder: 200,000,000,000 (20% = 2,000 DAO tokens for testing)
+# - Community Pool: 400,000,000,000 (40% = 4,000 DAO tokens - goes to treasury for distribution)
+
+echo "📊 Token Distribution:"
+echo "   Treasury:        400,000,000,000 (40%)"
+echo "   Deployer:        200,000,000,000 (20%)"
+echo "   Community Pool:  400,000,000,000 (40%)"
+echo "   Total:         1,000,000,000,000 (100%)"
+echo ""
+echo "   Deployer Principal: ${DEPLOYER_PRINCIPAL}"
+echo "   Treasury Principal: ${TREASURY_ID}"
+
 LEDGER_INIT='(variant { Init = record {
   token_name = "DAO Token";
   token_symbol = "DAO";
@@ -68,7 +83,8 @@ LEDGER_INIT='(variant { Init = record {
   transfer_fee = 10000;
   metadata = vec {};
   initial_balances = vec {
-    record { record { owner = principal "'"${TREASURY_ID}"'"; subaccount = null }; 1000000000000 : nat }
+    record { record { owner = principal "'"${TREASURY_ID}"'"; subaccount = null }; 800000000000 : nat };
+    record { record { owner = principal "'"${DEPLOYER_PRINCIPAL}"'"; subaccount = null }; 200000000000 : nat }
   };
   archive_options = record {
     num_blocks_to_archive = 1000 : nat64;

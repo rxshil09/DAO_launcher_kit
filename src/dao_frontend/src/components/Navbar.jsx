@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Principal } from '@dfinity/principal';
 import { useAuth } from '../context/AuthContext';
 import { useDAO } from '../context/DAOContext';
+import { useToast } from '../context/ToastContext';
+import { useActors } from '../context/ActorContext';
 import { 
   Wallet, 
   User, 
@@ -31,10 +34,59 @@ import {
 const Navbar = () => {
   const { isAuthenticated, logout, principal, userSettings } = useAuth();
   const { hasActiveDAO, activeDAO } = useDAO();
+  const actors = useActors();
+  const toast = useToast();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [notificationCount] = useState(3);
+  
+  // Portfolio stats state
+  const [userStats, setUserStats] = useState({
+    invested: 0,
+    projects: 0,
+    returns: 0,
+    tokens: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  // Fetch portfolio stats when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && principal && actors?.daoBackend) {
+      fetchPortfolioStats();
+    }
+  }, [isAuthenticated, principal, actors?.daoBackend]);
+
+  const fetchPortfolioStats = async () => {
+    if (!actors?.daoBackend || !principal) return;
+    
+    try {
+      setStatsLoading(true);
+      
+      // Convert string principal to Principal object
+      const principalObj = Principal.fromText(principal);
+      const stats = await actors.daoBackend.getPortfolioStats(principalObj);
+      
+      // Format the stats for display
+      setUserStats({
+        invested: stats.invested > 0 ? `$${(Number(stats.invested) / 1e8).toLocaleString()}` : '$0',
+        projects: Number(stats.projects),
+        returns: stats.returns > 0 ? `+${Number(stats.returns).toFixed(1)}%` : '+0%',
+        tokens: stats.tokens > 0 ? Number(stats.tokens).toLocaleString() : '0'
+      });
+    } catch (error) {
+      console.error("Failed to fetch portfolio stats:", error);
+      // Keep default values on error
+      setUserStats({
+        invested: '$0',
+        projects: 0,
+        returns: '+0%',
+        tokens: '0'
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   // Base navigation items (always visible)
   const baseNavigation = [
@@ -49,16 +101,26 @@ const Navbar = () => {
 
   const isActive = (path) => location.pathname === path;
 
-  const copyPrincipal = () => {
-    navigator.clipboard.writeText(principal);
-    // You could add a toast notification here
-  };
-
-  const userStats = {
-    totalInvested: '$12,450',
-    activeProjects: 8,
-    totalReturns: '+24.5%',
-    daoTokens: '1,247'
+  const copyPrincipal = async () => {
+    try {
+      await navigator.clipboard.writeText(principal);
+      toast({ type: 'success', message: 'Principal ID copied to clipboard!' });
+    } catch (error) {
+      // Fallback for older browsers or permission issues
+      const textArea = document.createElement('textarea');
+      textArea.value = principal;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({ type: 'success', message: 'Principal ID copied to clipboard!' });
+      } catch (err) {
+        toast({ type: 'error', message: 'Failed to copy to clipboard' });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   // Listen for DAO creation events to update navigation
@@ -227,28 +289,36 @@ const Navbar = () => {
                                   <DollarSign className="w-3 h-3 lg:w-4 lg:h-4 text-green-400" />
                                   <span className="text-xs text-gray-400 font-mono">INVESTED</span>
                                 </div>
-                                <p className="text-sm lg:text-lg font-bold text-white">{userStats.totalInvested}</p>
+                                <p className="text-sm lg:text-lg font-bold text-white">
+                                  {statsLoading ? '...' : userStats.invested}
+                                </p>
                               </div>
                               <div className="bg-gray-800/50 rounded-lg p-2 lg:p-3 border border-gray-700/30">
                                 <div className="flex items-center space-x-1 lg:space-x-2 mb-1">
                                   <Activity className="w-3 h-3 lg:w-4 lg:h-4 text-blue-400" />
                                   <span className="text-xs text-gray-400 font-mono">PROJECTS</span>
                                 </div>
-                                <p className="text-sm lg:text-lg font-bold text-white">{userStats.activeProjects}</p>
+                                <p className="text-sm lg:text-lg font-bold text-white">
+                                  {statsLoading ? '...' : userStats.projects}
+                                </p>
                               </div>
                               <div className="bg-gray-800/50 rounded-lg p-2 lg:p-3 border border-gray-700/30">
                                 <div className="flex items-center space-x-1 lg:space-x-2 mb-1">
                                   <TrendingUp className="w-3 h-3 lg:w-4 lg:h-4 text-green-400" />
                                   <span className="text-xs text-gray-400 font-mono">RETURNS</span>
                                 </div>
-                                <p className="text-sm lg:text-lg font-bold text-green-400">{userStats.totalReturns}</p>
+                                <p className="text-sm lg:text-lg font-bold text-green-400">
+                                  {statsLoading ? '...' : userStats.returns}
+                                </p>
                               </div>
                               <div className="bg-gray-800/50 rounded-lg p-2 lg:p-3 border border-gray-700/30">
                                 <div className="flex items-center space-x-1 lg:space-x-2 mb-1">
                                   <Award className="w-3 h-3 lg:w-4 lg:h-4 text-purple-400" />
                                   <span className="text-xs text-gray-400 font-mono">TOKENS</span>
                                 </div>
-                                <p className="text-sm lg:text-lg font-bold text-white">{userStats.daoTokens}</p>
+                                <p className="text-sm lg:text-lg font-bold text-white">
+                                  {statsLoading ? '...' : userStats.tokens}
+                                </p>
                               </div>
                             </div>
                           </div>
@@ -306,7 +376,7 @@ const Navbar = () => {
                 >
                   <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <Wallet className="w-4 h-4 lg:w-5 lg:h-5 relative z-10" />
-                  <span className="font-semibold relative z-10 hidden sm:inline">Connect Wallet</span>
+                  <span className="font-semibold relative z-10 hidden sm:inline">Connect Identity</span>
                   <span className="font-semibold relative z-10 sm:hidden">Connect</span>
                 </Link>
               )}
@@ -387,11 +457,15 @@ const Navbar = () => {
                     <div className="grid grid-cols-2 gap-2 mb-4">
                       <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
                         <div className="text-xs text-gray-400 font-mono mb-1">INVESTED</div>
-                        <div className="text-base font-bold text-white">{userStats.totalInvested}</div>
+                        <div className="text-base font-bold text-white">
+                          {statsLoading ? '...' : userStats.invested}
+                        </div>
                       </div>
                       <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/30">
                         <div className="text-xs text-gray-400 font-mono mb-1">RETURNS</div>
-                        <div className="text-base font-bold text-green-400">{userStats.totalReturns}</div>
+                        <div className="text-base font-bold text-green-400">
+                          {statsLoading ? '...' : userStats.returns}
+                        </div>
                       </div>
                     </div>
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useAnalytics } from '../hooks/useAnalytics';
-import BackgroundParticles from './BackgroundParticles';
 import MetricsCounter from './analytics/MetricsCounter';
 import TrendChart from './analytics/TrendChart';
 import CategoryChart from './analytics/CategoryChart';
@@ -120,8 +119,7 @@ const MetricsDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <BackgroundParticles />
+    <div className="min-h-screen text-white relative overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}

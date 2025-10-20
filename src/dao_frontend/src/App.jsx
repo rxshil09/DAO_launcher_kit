@@ -12,8 +12,12 @@ import Diagnostics from './components/Diagnostics';
 import Navbar from './components/Navbar';
 import MetricsDashboard from './components/MetricsDashboard';
 import UserRegistrationHandler from './components/UserRegistrationHandler';
+import WelcomePopup from './components/WelcomePopup';
+import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 import { DAOManagementProvider } from './context/DAOManagementContext';
+import { ToastProvider } from './context/ToastContext';
 import Overview from './components/management/Overview';
 import ManagementGovernance from './components/management/ManagementGovernance';
 import ManagementStaking from './components/management/ManagementStaking';
@@ -21,18 +25,41 @@ import ManagementTreasury from './components/management/ManagementTreasury';
 import ManagementProposals from './components/management/ManagementProposals';
 import ManagementAssets from './components/management/ManagementAssets';
 import ManagementAdmins from './components/management/ManagementAdmins';
+import MemberDirectory from './components/MemberDirectory';
+import BackgroundParticles from './components/BackgroundParticles';
 import './app.css';
+import { useAuth } from './context/AuthContext';
 
 function App() {
+  const { isLoggingIn } = useAuth();
   
   return (
     <ErrorBoundary>
-      <DAOManagementProvider>
-        <Router>
+      <ToastProvider>
+        <DAOManagementProvider>
+          <Router>
+          <ScrollToTop />
           <UserRegistrationHandler />
-          <div className="App">
-            <Navbar />
-            <Routes>
+          <WelcomePopup />
+          
+          {/* Show loading overlay during authentication */}
+          {isLoggingIn && (
+            <LoadingSpinner 
+              fullScreen 
+              size="large"
+              text="Authenticating with Internet Identity..."
+            />
+          )}
+          
+          {/* Create a stacking context so the fixed background sits behind everything */}
+          <div className="App relative" style={{ isolation: 'isolate', minHeight: '100vh' }}>
+            {/* Background mounted once, never re-mounts across routes */}
+            <BackgroundParticles zIndex={-1} />
+
+            {/* Foreground UI (Navbar + Routes) */}
+            <div className="relative z-0">
+              <Navbar />
+              <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/dashboard" element={<DAODashboard />} />
               <Route path="/explore" element={<ExplorePage />} />
@@ -50,12 +77,15 @@ function App() {
                 <Route path="treasury" element={<ManagementTreasury />} />
                 <Route path="proposals" element={<ManagementProposals />} />
                 <Route path="assets" element={<ManagementAssets />} />
+                <Route path="members" element={<MemberDirectory />} />
                 <Route path="admins" element={<ManagementAdmins />} />
               </Route>
-            </Routes>
+              </Routes>
+            </div>
           </div>
         </Router>
       </DAOManagementProvider>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useActors } from '../context/ActorContext';
 import { Principal } from '@dfinity/principal';
-import BackgroundParticles from './BackgroundParticles';
 import { 
   TrendingUp, 
   Wallet, 
@@ -38,9 +37,16 @@ const Dashboard = () => {
   const [walletConnected, setWalletConnected] = useState(false);
   const [decimals, setDecimals] = useState(8);
   const [balances, setBalances] = useState({ user: 0n, treasury: 0n, staking: 0n });
+  const [userStats, setUserStats] = useState({ stakedBalance: 0n, daoCount: 0 });
   const [approvals, setApprovals] = useState({ treasuryAmount: '', stakingAmount: '' });
   const [ledgerError, setLedgerError] = useState('');
   const [approving, setApproving] = useState({ treasury: false, staking: false });
+  const [faucetState, setFaucetState] = useState({ 
+    canClaim: false, 
+    claiming: false, 
+    timeUntilNext: null,
+    faucetInfo: null 
+  });
 
   const toAccount = (ownerText) => ({ owner: Principal.fromText(ownerText), subaccount: [] });
   const fmt = (amt) => {
@@ -88,6 +94,83 @@ const Dashboard = () => {
     }
   };
 
+  const refreshUserStats = async () => {
+    if (!actors || !principal) return;
+    try {
+      const principalObj = Principal.fromText(principal);
+      
+      // Fetch user's staked balance from staking canister
+      let stakedBalance = 0n;
+      if (actors.staking) {
+        try {
+          const stakes = await actors.staking.getUserStakes(principalObj);
+          // Sum up all active stakes
+          stakedBalance = stakes.reduce((sum, stake) => {
+            return sum + BigInt(stake.amount);
+          }, 0n);
+        } catch (e) {
+          console.log('Could not fetch staked balance:', e);
+        }
+      }
+
+      // Fetch number of DAOs user is member of from dao_backend
+      let daoCount = 0;
+      if (actors.daoBackend) {
+        try {
+          const portfolioStats = await actors.daoBackend.getPortfolioStats(principalObj);
+          daoCount = Number(portfolioStats.projects);
+        } catch (e) {
+          console.log('Could not fetch DAO count:', e);
+        }
+      }
+
+      setUserStats({ stakedBalance, daoCount });
+    } catch (e) {
+      console.error('Failed to fetch user stats', e);
+    }
+  };
+
+  const refreshFaucetState = async () => {
+    if (!actors || !actors.treasury) return;
+    try {
+      const [canClaim, faucetInfo, timeUntilNext] = await Promise.all([
+        actors.treasury.canClaimFaucet().catch(() => ({ ok: false })),
+        actors.treasury.getFaucetInfo().catch(() => null),
+        actors.treasury.getTimeUntilNextClaim().catch(() => null)
+      ]);
+      
+      setFaucetState({
+        canClaim: canClaim?.ok || false,
+        claiming: false,
+        timeUntilNext: timeUntilNext && timeUntilNext.length > 0 ? Number(timeUntilNext[0]) : null,
+        faucetInfo
+      });
+    } catch (e) {
+      console.error('Failed to fetch faucet state', e);
+    }
+  };
+
+  const claimFaucetTokens = async () => {
+    if (!actors || !actors.treasury || !faucetState.canClaim) return;
+    setFaucetState(s => ({ ...s, claiming: true }));
+    setLedgerError('');
+    try {
+      const res = await actors.treasury.requestTestTokens();
+      if ('err' in res) {
+        throw new Error(res.err);
+      }
+      // Refresh balances and faucet state
+      await Promise.all([refreshBalances(), refreshFaucetState()]);
+      setLedgerError('Successfully claimed 1000 DAO tokens!');
+      setTimeout(() => setLedgerError(''), 3000);
+    } catch (e) {
+      console.error('Faucet claim failed:', e);
+      setLedgerError(`Faucet claim failed: ${e.message}`);
+    } finally {
+      setFaucetState(s => ({ ...s, claiming: false }));
+    }
+  };
+
   const parseAmount = (s) => {
     if (!s) return 0n;
     const d = typeof decimals === 'number' ? decimals : 8;
@@ -116,8 +199,12 @@ const Dashboard = () => {
         from_subaccount: [],
         created_at_time: [],
       });
-      if ('err' in res) throw new Error(JSON.stringify(res.err));
+      if ('Err' in res || 'err' in res) {
+        const error = res.Err || res.err;
+        throw new Error(`Approval failed: ${typeof error === 'object' ? Object.keys(error)[0] : error}`);
+      }
       await refreshBalances();
+      setLedgerError(''); // Clear any previous errors on success
     } catch (e) {
       console.error('Approve failed', e);
       setLedgerError(`Approve failed: ${e.message || e}`);
@@ -135,6 +222,8 @@ const Dashboard = () => {
   useEffect(() => {
     if (actors && principal) {
       refreshBalances();
+      refreshUserStats();
+      refreshFaucetState();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actors, principal]);
@@ -242,9 +331,9 @@ const Dashboard = () => {
 
   const portfolioStats = [
     { label: 'My Token Balance', value: fmt(balances.user), change: '', trend: 'up' },
-    { label: 'Treasury Balance', value: fmt(balances.treasury), change: '', trend: 'up' },
-    { label: 'Staking Balance', value: fmt(balances.staking), change: '', trend: 'up' },
-    { label: 'Decimals', value: String(decimals), change: '', trend: 'up' }
+    { label: 'My Staked Balance', value: fmt(userStats.stakedBalance), change: '', trend: 'up' },
+    { label: 'My DAOs', value: String(userStats.daoCount), change: '', trend: 'up' },
+    { label: 'Token Decimals', value: String(decimals), change: '', trend: 'neutral' }
   ];
 
   const filteredProjects = projects.filter(project => {
@@ -257,8 +346,7 @@ const Dashboard = () => {
   // Show loading spinner while auth is initializing
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
@@ -275,9 +363,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+    <div className="min-h-screen text-white relative overflow-hidden">
       {/* Background Particles */}
-      <BackgroundParticles />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}
@@ -373,8 +460,64 @@ const Dashboard = () => {
             </div>
           </div>
         </motion.div>
+
+        {/* Faucet Section */}
+        {faucetState.faucetInfo && faucetState.faucetInfo.enabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border border-cyan-500/50 p-6 rounded-xl backdrop-blur-sm mb-8"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-bold mb-2 font-mono flex items-center">
+                  <Zap className="w-5 h-5 mr-2 text-yellow-400"/>
+                  Test Token Faucet
+                </h3>
+                <p className="text-gray-300 font-mono text-sm mb-1">
+                  Get {fmt(faucetState.faucetInfo.amount)} DAO tokens for testing
+                </p>
+                {!faucetState.canClaim && faucetState.timeUntilNext > 0 && (
+                  <p className="text-gray-400 font-mono text-xs flex items-center">
+                    <Clock className="w-3 h-3 mr-1"/>
+                    Next claim in: {Math.floor(faucetState.timeUntilNext / 3600)}h {Math.floor((faucetState.timeUntilNext % 3600) / 60)}m
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={claimFaucetTokens}
+                disabled={!faucetState.canClaim || faucetState.claiming}
+                className={`px-6 py-3 rounded-lg font-mono font-bold flex items-center space-x-2 transition-all ${
+                  faucetState.canClaim && !faucetState.claiming
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white hover:from-yellow-600 hover:to-orange-700'
+                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {faucetState.claiming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Claiming...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span>{faucetState.canClaim ? 'CLAIM TOKENS' : 'CLAIMED'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {ledgerError && (
-          <div className="mb-8 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-mono">{ledgerError}</div>
+          <div className={`mb-8 p-3 rounded font-mono ${
+            ledgerError.includes('Successfully') 
+              ? 'bg-green-500/10 border border-green-500/30 text-green-300' 
+              : 'bg-red-500/10 border border-red-500/30 text-red-300'
+          }`}>
+            {ledgerError}
+          </div>
         )}
 
         {/* Portfolio Stats - INSTANT HOVER SCALING */}

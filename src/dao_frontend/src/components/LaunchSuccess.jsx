@@ -1,15 +1,50 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Copy, ExternalLink, ArrowRight, Share2, Twitter, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 const LaunchSuccess = ({ daoData, onClose }) => {
   const navigate = useNavigate();
+  const toast = useToast();
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    // You could add a toast notification here
-    console.log('Copied to clipboard:', text);
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    // Save current scroll position
+    const scrollY = window.scrollY;
+    
+    // Lock scroll
+    document.body.classList.add('modal-open');
+    document.body.style.top = `-${scrollY}px`;
+    
+    // Cleanup: restore scroll on unmount
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ type: 'success', message: 'Copied to clipboard!' });
+    } catch (error) {
+      // Fallback for older browsers or permission issues
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({ type: 'success', message: 'Copied to clipboard!' });
+      } catch (err) {
+        toast({ type: 'error', message: 'Failed to copy to clipboard' });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   const shareOnTwitter = () => {
@@ -31,8 +66,12 @@ const LaunchSuccess = ({ daoData, onClose }) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900 border border-cyan-500/30 rounded-xl p-8 max-w-2xl w-full relative"
+        className="bg-gray-900 border border-cyan-500/30 rounded-xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative my-auto modal-scrollable"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(6, 182, 212, 0.3) rgba(17, 24, 39, 0.5)',
+        }}
       >
         {/* Close button */}
         <button

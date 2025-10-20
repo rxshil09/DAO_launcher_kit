@@ -176,7 +176,7 @@ const ManagementGovernance: React.FC = () => {
             <Users className="w-5 h-5 text-purple-400" />
             <span className="text-sm text-gray-400 font-mono">PARTICIPATION</span>
           </div>
-          <p className="text-2xl font-bold text-white">78%</p>
+          <p className="text-2xl font-bold text-white">0%</p>
         </motion.div>
 
         <motion.div
@@ -189,7 +189,7 @@ const ManagementGovernance: React.FC = () => {
             <TrendingUp className="w-5 h-5 text-orange-400" />
             <span className="text-sm text-gray-400 font-mono">SUCCESS RATE</span>
           </div>
-          <p className="text-2xl font-bold text-white">85%</p>
+          <p className="text-2xl font-bold text-white">0%</p>
         </motion.div>
       </div>
 

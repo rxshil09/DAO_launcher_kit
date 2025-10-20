@@ -4,40 +4,51 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDAOManagement } from '../context/DAOManagementContext';
 import { useActors } from '../context/ActorContext';
+import { useToast } from '../context/ToastContext';
 import { Principal } from '@dfinity/principal';
-import BackgroundParticles from './BackgroundParticles';
 import DAOCard from './DAOCard';
-import Toast from './Toast';
 import { 
   Plus, 
   Search, 
   Filter, 
   Rocket,
-  Users,
-  TrendingUp,
-  DollarSign,
-  Activity,
   Loader2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Zap,
+  Clock,
+  Wallet,
+  Shield
 } from 'lucide-react';
 
 const DAODashboard: React.FC = () => {
   const { isAuthenticated, principal, loading: authLoading } = useAuth();
   const { daos, loading, error, fetchDAOs } = useDAOManagement();
   const actors = useActors();
+  const toast = useToast();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [toast, setToast] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Ledger balances + approvals
   const [decimals, setDecimals] = useState<number>(8);
   const [balances, setBalances] = useState<{ user: bigint; treasury: bigint; staking: bigint }>({ user: 0n, treasury: 0n, staking: 0n });
+  const [userStats, setUserStats] = useState<{ stakedBalance: bigint; daoCount: number }>({ stakedBalance: 0n, daoCount: 0 });
   const [approvals, setApprovals] = useState<{ treasuryAmount: string; stakingAmount: string }>({ treasuryAmount: '', stakingAmount: '' });
   const [approving, setApproving] = useState<{ treasury: boolean; staking: boolean }>({ treasury: false, staking: false });
   const [ledgerError, setLedgerError] = useState<string>('');
+  const [faucetState, setFaucetState] = useState<{
+    canClaim: boolean;
+    claiming: boolean;
+    timeUntilNext: number | null;
+    faucetInfo: { enabled: boolean; amount: bigint; cooldownHours: number } | null;
+  }>({
+    canClaim: false,
+    claiming: false,
+    timeUntilNext: null,
+    faucetInfo: null
+  });
 
   const categories = ['All', 'DeFi', 'Gaming', 'Social', 'NFT', 'Infrastructure'];
 
@@ -47,27 +58,6 @@ const DAODashboard: React.FC = () => {
     const matchesCategory = selectedCategory === 'All' || dao.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  const totalStats = {
-    totalDAOs: daos.length,
-    totalMembers: daos.reduce((sum, dao) => sum + dao.memberCount, 0),
-    totalTVL: daos.reduce((sum, dao) => {
-      const value = parseFloat(dao.totalValueLocked.replace(/[$M,K]/g, ''));
-      const multiplier = dao.totalValueLocked.includes('M') ? 1000000 : 
-                        dao.totalValueLocked.includes('K') ? 1000 : 1;
-      return sum + (value * multiplier);
-    }, 0),
-    activeProposals: daos.reduce((sum, dao) => sum + dao.governance.activeProposals, 0)
-  };
-
-  const formatTVL = (amount: number) => {
-    if (amount >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}M`;
-    } else if (amount >= 1000) {
-      return `$${(amount / 1000).toFixed(1)}K`;
-    }
-    return `$${amount.toFixed(0)}`;
-  };
 
   // Redirect to signin if not authenticated
   React.useEffect(() => {
@@ -129,11 +119,101 @@ const DAODashboard: React.FC = () => {
     }
   };
 
+  const refreshUserStats = async () => {
+    if (!actors || !principal) return;
+    try {
+      const principalObj = Principal.fromText(principal);
+      
+      // Fetch user's staked balance from staking canister
+      let stakedBalance = 0n;
+      if (actors.staking) {
+        try {
+          const stakes = await (actors.staking as any).getUserStakes(principalObj);
+          // Sum up all active stakes
+          stakedBalance = stakes.reduce((sum: bigint, stake: any) => {
+            return sum + BigInt(stake.amount);
+          }, 0n);
+        } catch (e) {
+          console.log('Could not fetch staked balance:', e);
+        }
+      }
+
+      // Fetch number of DAOs user is member of from dao_backend
+      let daoCount = 0;
+      if (actors.daoBackend) {
+        try {
+          const portfolioStats = await (actors.daoBackend as any).getPortfolioStats(principalObj);
+          daoCount = Number(portfolioStats.projects);
+        } catch (e) {
+          console.log('Could not fetch DAO count:', e);
+        }
+      }
+
+      setUserStats({ stakedBalance, daoCount });
+    } catch (e) {
+      console.error('Failed to fetch user stats', e);
+    }
+  };
+
+  const refreshFaucetState = async () => {
+    if (!actors || !actors.treasury) return;
+    try {
+      const [canClaim, faucetInfo, timeUntilNext] = await Promise.all([
+        (actors.treasury as any).canClaimFaucet().catch(() => ({ ok: false })),
+        (actors.treasury as any).getFaucetInfo().catch(() => null),
+        (actors.treasury as any).getTimeUntilNextClaim().catch(() => null)
+      ]);
+      
+      setFaucetState({
+        canClaim: canClaim?.ok || false,
+        claiming: false,
+        timeUntilNext: timeUntilNext && timeUntilNext.length > 0 ? Number(timeUntilNext[0]) : null,
+        faucetInfo
+      });
+    } catch (e) {
+      console.error('Failed to fetch faucet state', e);
+    }
+  };
+
+  const claimFaucetTokens = async () => {
+    if (!actors || !actors.treasury || !faucetState.canClaim) return;
+    setFaucetState(s => ({ ...s, claiming: true }));
+    setLedgerError('');
+    try {
+      const res = await (actors.treasury as any).requestTestTokens();
+      if ('err' in res) {
+        throw new Error(res.err);
+      }
+      // Refresh balances and faucet state
+      await Promise.all([refreshBalances(), refreshFaucetState()]);
+      setLedgerError('Successfully claimed 1000 DAO tokens!');
+      setTimeout(() => setLedgerError(''), 3000);
+    } catch (e: any) {
+      console.error('Faucet claim failed:', e);
+      setLedgerError(`Faucet claim failed: ${e.message}`);
+    } finally {
+      setFaucetState(s => ({ ...s, claiming: false }));
+    }
+  };
+
   const approveSpender = async (spenderKey: 'treasury' | 'staking') => {
     if (!actors || !actors.ledger) return;
     const amountStr = approvals[spenderKey + 'Amount' as keyof typeof approvals] as string;
     if (!amountStr) return;
     const amount = parseAmount(amountStr);
+    
+    // Validate amount against user balance
+    const amountNum = parseFloat(amountStr);
+    const userBalanceNum = parseFloat(fmt(balances.user));
+    if (amountNum > userBalanceNum) {
+      setLedgerError(`Cannot approve ${amountStr} tokens - you only have ${fmt(balances.user)} tokens available`);
+      return;
+    }
+    if (amountNum <= 0) {
+      setLedgerError('Amount must be greater than 0');
+      return;
+    }
+    
     const spenderId = (import.meta as any).env[`VITE_CANISTER_ID_${spenderKey.toUpperCase()}`] as string | undefined;
     if (!spenderId) { setLedgerError(`Missing canister id for ${spenderKey}`); return; }
     setApproving((s) => ({ ...s, [spenderKey]: true }));
@@ -144,13 +224,17 @@ const DAODashboard: React.FC = () => {
         amount,
         expires_at: [],
         expected_allowance: [],
-        fee: [],
+        fee: [10_000n], // Approval fee (0.0001 tokens)
         memo: [],
         from_subaccount: [],
         created_at_time: [],
       });
-      if ('Err' in res || 'err' in res) throw new Error(JSON.stringify(res));
+      if ('Err' in res || 'err' in res) {
+        const error = res.Err || res.err;
+        throw new Error(`Approval failed: ${typeof error === 'object' ? Object.keys(error)[0] : error}`);
+      }
       await refreshBalances();
+      setLedgerError(''); // Clear any previous errors on success
     } catch (e: any) {
       console.error('Approve failed', e);
       setLedgerError(`Approve failed: ${e.message || e}`);
@@ -159,11 +243,15 @@ const DAODashboard: React.FC = () => {
     }
   };
 
-  useEffect(() => { refreshBalances(); }, [actors, principal]);
+  useEffect(() => { 
+    refreshBalances();
+    refreshUserStats();
+    refreshFaucetState();
+  }, [actors, principal]);
 
   // Listen for storage changes to update DAOs when created in other tabs
   React.useEffect(() => {
-    const handleStorageChange = (e) => {
+    const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `user_daos_${principal}` && e.newValue) {
         fetchDAOs();
       }
@@ -177,22 +265,21 @@ const DAODashboard: React.FC = () => {
     setRefreshing(true);
     try {
       await fetchDAOs();
-      setToast({ type: 'success', message: 'DAOs refreshed successfully!' });
+      toast({ type: 'success', message: 'DAOs refreshed successfully!' });
     } catch (err) {
-      setToast({ type: 'error', message: 'Failed to refresh DAOs' });
+      toast({ type: 'error', message: 'Failed to refresh DAOs' });
     } finally {
       setRefreshing(false);
     }
   };
 
-  const showToast = (type, message) => {
-    setToast({ type, message });
+  const showToast = (type: 'success' | 'error' | 'info' | 'warning', message: string) => {
+    toast({ type, message });
   };
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
@@ -208,8 +295,7 @@ const DAODashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <BackgroundParticles />
+    <div className="min-h-screen text-white relative overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}
@@ -251,7 +337,7 @@ const DAODashboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Token Balances */}
+        {/* Token Balances - User-Specific */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -263,12 +349,12 @@ const DAODashboard: React.FC = () => {
             <div className="text-2xl font-bold">{fmt(balances.user)}</div>
           </div>
           <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-xl">
-            <div className="text-sm text-gray-400 font-mono mb-1">TREASURY BALANCE</div>
-            <div className="text-2xl font-bold">{fmt(balances.treasury)}</div>
+            <div className="text-sm text-gray-400 font-mono mb-1">MY STAKED BALANCE</div>
+            <div className="text-2xl font-bold">{fmt(userStats.stakedBalance)}</div>
           </div>
           <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-xl">
-            <div className="text-sm text-gray-400 font-mono mb-1">STAKING BALANCE</div>
-            <div className="text-2xl font-bold">{fmt(balances.staking)}</div>
+            <div className="text-sm text-gray-400 font-mono mb-1">MY DAOs</div>
+            <div className="text-2xl font-bold">{userStats.daoCount}</div>
           </div>
         </motion.div>
 
@@ -281,10 +367,14 @@ const DAODashboard: React.FC = () => {
         >
           <div className="bg-gray-900/50 border border-blue-500/30 p-6 rounded-xl">
             <h3 className="text-white font-bold mb-3 font-mono">Approve Treasury</h3>
+            <p className="text-xs text-gray-400 mb-3">
+              Approval allows treasury to spend tokens on your behalf. Only the approval fee (0.0001 tokens) is deducted now.
+            </p>
             <div className="flex items-center gap-3">
               <input
                 type="number"
                 min="0"
+                step="0.01"
                 placeholder="Amount"
                 value={approvals.treasuryAmount}
                 onChange={(e) => setApprovals({ ...approvals, treasuryAmount: e.target.value })}
@@ -293,7 +383,7 @@ const DAODashboard: React.FC = () => {
               <button
                 onClick={() => approveSpender('treasury')}
                 disabled={approving.treasury}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono disabled:opacity-50"
               >
                 {approving.treasury ? 'Approving...' : 'Approve'}
               </button>
@@ -301,10 +391,14 @@ const DAODashboard: React.FC = () => {
           </div>
           <div className="bg-gray-900/50 border border-blue-500/30 p-6 rounded-xl">
             <h3 className="text-white font-bold mb-3 font-mono">Approve Staking</h3>
+            <p className="text-xs text-gray-400 mb-3">
+              Approval allows staking to spend tokens on your behalf. Only the approval fee (0.0001 tokens) is deducted now.
+            </p>
             <div className="flex items-center gap-3">
               <input
                 type="number"
                 min="0"
+                step="0.01"
                 placeholder="Amount"
                 value={approvals.stakingAmount}
                 onChange={(e) => setApprovals({ ...approvals, stakingAmount: e.target.value })}
@@ -313,57 +407,72 @@ const DAODashboard: React.FC = () => {
               <button
                 onClick={() => approveSpender('staking')}
                 disabled={approving.staking}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 font-mono disabled:opacity-50"
               >
                 {approving.staking ? 'Approving...' : 'Approve'}
               </button>
             </div>
           </div>
         </motion.div>
-        {ledgerError && (
-          <div className="mb-8 p-3 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-mono">{ledgerError}</div>
+
+        {/* Faucet Section */}
+        {faucetState.faucetInfo && faucetState.faucetInfo.enabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.17 }}
+            className="bg-gradient-to-r from-cyan-900/30 to-purple-900/30 border border-cyan-500/50 p-6 rounded-xl backdrop-blur-sm mb-8"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-bold mb-2 font-mono flex items-center">
+                  <Zap className="w-5 h-5 mr-2 text-yellow-400"/>
+                  Test Token Faucet
+                </h3>
+                <p className="text-gray-300 font-mono text-sm mb-1">
+                  Get {fmt(faucetState.faucetInfo.amount)} DAO tokens for testing
+                </p>
+                {!faucetState.canClaim && faucetState.timeUntilNext && faucetState.timeUntilNext > 0 && (
+                  <p className="text-gray-400 font-mono text-xs flex items-center">
+                    <Clock className="w-3 h-3 mr-1"/>
+                    Next claim in: {Math.floor(faucetState.timeUntilNext / 3600)}h {Math.floor((faucetState.timeUntilNext % 3600) / 60)}m
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={claimFaucetTokens}
+                disabled={!faucetState.canClaim || faucetState.claiming}
+                className={`px-6 py-3 rounded-lg font-mono font-bold flex items-center space-x-2 transition-all ${
+                  faucetState.canClaim && !faucetState.claiming
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white hover:from-yellow-600 hover:to-orange-700'
+                    : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {faucetState.claiming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Claiming...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span>{faucetState.canClaim ? 'CLAIM TOKENS' : 'CLAIMED'}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
         )}
 
-
-        {/* Portfolio Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
-        >
-          <div className="bg-gray-900/50 border border-blue-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <Activity className="w-5 h-5 text-blue-400" />
-              <span className="text-sm text-gray-400 font-mono">TOTAL DAOS</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{totalStats.totalDAOs}</p>
+        {ledgerError && (
+          <div className={`mb-8 p-3 rounded font-mono ${
+            ledgerError.includes('Successfully') 
+              ? 'bg-green-500/10 border border-green-500/30 text-green-300' 
+              : 'bg-red-500/10 border border-red-500/30 text-red-300'
+          }`}>
+            {ledgerError}
           </div>
-          
-          <div className="bg-gray-900/50 border border-green-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <Users className="w-5 h-5 text-green-400" />
-              <span className="text-sm text-gray-400 font-mono">MEMBERS</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{totalStats.totalMembers.toLocaleString()}</p>
-          </div>
-          
-          <div className="bg-gray-900/50 border border-purple-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <DollarSign className="w-5 h-5 text-purple-400" />
-              <span className="text-sm text-gray-400 font-mono">TOTAL TVL</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{formatTVL(totalStats.totalTVL)}</p>
-          </div>
-          
-          <div className="bg-gray-900/50 border border-orange-500/30 p-4 rounded-xl backdrop-blur-sm">
-            <div className="flex items-center space-x-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-orange-400" />
-              <span className="text-sm text-gray-400 font-mono">PROPOSALS</span>
-            </div>
-            <p className="text-2xl font-bold text-white">{totalStats.activeProposals}</p>
-          </div>
-        </motion.div>
+        )}
 
         {/* Filters and Search */}
         {daos.length > 0 && (
@@ -485,14 +594,6 @@ const DAODashboard: React.FC = () => {
         )}
       </div>
 
-      {/* Toast Notifications */}
-      {toast && (
-        <Toast
-          type={toast.type}
-          message={toast.message}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 };

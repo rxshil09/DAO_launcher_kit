@@ -131,6 +131,10 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
         name: daoData.name || 'New DAO',
         description: daoData.description || 'A new decentralized autonomous organization',
         tokenSymbol: daoData.tokenSymbol || 'NEW',
+        logoUrl: daoData.logoUrl,
+        logoAssetId: daoData.logoAssetId,
+        logoType: daoData.logoType,
+        website: daoData.website,
         memberCount: 1,
         totalValueLocked: '$0',
         createdAt: new Date(),
@@ -160,7 +164,9 @@ export const DAOManagementProvider: React.FC<DAOManagementProviderProps> = ({ ch
         const existingDAOs = localStorage.getItem(`user_daos_${principal}`);
         const userDAOs = existingDAOs ? JSON.parse(existingDAOs) : [];
         const updatedUserDAOs = [...userDAOs, newDAO];
-        localStorage.setItem(`user_daos_${principal}`, JSON.stringify(updatedUserDAOs));
+        localStorage.setItem(`user_daos_${principal}`, JSON.stringify(updatedUserDAOs, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        ));
       }
       
       console.log('DAO created successfully:', newDAO);

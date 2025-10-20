@@ -29,6 +29,34 @@
   --secondary-900: #0f172a;
 }
 
+/* Modal scroll lock - prevents background scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* Custom scrollbar for modal content */
+.modal-scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-scrollable::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.5);
+  border-radius: 10px;
+}
+
+.modal-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.3);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.modal-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.5);
+}
+
 /* Custom component classes */
 @layer components {
   .btn-primary {
@@ -202,6 +230,11 @@ body {
   .dark-mode {
     @apply bg-gray-900 text-white;
   }
+}
+
+/* Hide scrollbar for modal */
+.overflow-y-auto::-webkit-scrollbar {
+  display: none;
 }
 
 /* Print styles */

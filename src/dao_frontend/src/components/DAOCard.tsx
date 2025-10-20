@@ -4,14 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   DollarSign, 
-  TrendingUp, 
-  Calendar,
   ArrowRight,
-  Star,
-  Activity,
-  Shield
+  Shield,
+  Globe
 } from 'lucide-react';
 import { DAO } from '../types/dao';
+import { useLogoImage } from '../hooks/useLogoImage';
 
 interface DAOCardProps {
   dao: DAO;
@@ -20,6 +18,12 @@ interface DAOCardProps {
 
 const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
   const navigate = useNavigate();
+  const { imageUrl, handleImageError } = useLogoImage({
+    logoType: dao.logoType,
+    logoAssetId: dao.logoAssetId,
+    logoUrl: dao.logoUrl,
+    legacyLogo: dao.logo,
+  });
 
   const handleManage = () => {
     navigate(`/dao/${dao.id}/manage/overview`);
@@ -68,11 +72,16 @@ const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
       {/* Header with Logo and Status */}
       <div className="relative h-48 overflow-hidden">
         <div className={`absolute inset-0 bg-gradient-to-br ${getCategoryColor(dao.category)} opacity-20`}></div>
-        {dao.logo ? (
+        {imageUrl ? (
           <img 
-            src={dao.logo} 
+            src={imageUrl} 
             alt={dao.name}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Image failed to load:', imageUrl);
+              e.currentTarget.style.display = 'none';
+              handleImageError();
+            }}
           />
         ) : (
           <div className={`w-full h-full bg-gradient-to-br ${getCategoryColor(dao.category)} flex items-center justify-center`}>
@@ -111,9 +120,35 @@ const DAOCard: React.FC<DAOCardProps> = ({ dao, index }) => {
         </div>
 
         {/* Description */}
-        <p className="text-gray-400 text-sm mb-4 line-clamp-2 leading-relaxed">
-          {dao.description}
-        </p>
+        <div className="mb-4 min-h-[3.5rem] flex items-start">
+          <p className="text-gray-400 text-sm leading-relaxed w-full overflow-hidden break-words" style={{
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word'
+          }}>
+            {dao.description || <span>&nbsp;</span>}
+          </p>
+        </div>
+
+        {/* Website Link (always reserve space for 1 line) */}
+        <div className="mb-4 min-h-[1.5rem] flex items-center">
+          {dao.website ? (
+            <a
+              href={dao.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-cyan-500 hover:text-cyan-300 text-sm transition-colors group/link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Globe className="w-3 h-3 mr-1" />
+              <span className="break-all">DAO Website</span>
+            </a>
+          ) : (
+            <span>&nbsp;</span>
+          )}
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4 mb-6">

@@ -1,0 +1,15 @@
+{
+  "canisters": {
+    "docs_frontend": {
+      "type": "assets",
+      "source": ["dist"]
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "version": 1
+}

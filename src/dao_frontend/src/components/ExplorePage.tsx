@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useActors } from '../context/ActorContext';
 import { useDAODiscovery } from '../hooks/useDAODiscovery';
-import BackgroundParticles from './BackgroundParticles';
+import { useToast } from '../context/ToastContext';
 import ExploreDAOCard from './ExploreDAOCard';
-import Toast from './Toast';
 import { 
   Search, 
   Filter, 
@@ -28,6 +28,7 @@ import { DAOMetadata, SearchFilters, SortOption } from '../types/dao';
 
 const ExplorePage: React.FC = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const actors = useActors();
   const {
     getAllPublicDAOs,
     searchDAOs,
@@ -39,6 +40,7 @@ const ExplorePage: React.FC = () => {
     error
   } = useDAODiscovery();
   
+  const toast = useToast();
   const navigate = useNavigate();
   
   // State management
@@ -53,7 +55,6 @@ const ExplorePage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [toast, setToast] = useState<{ type: string; message: string } | null>(null);
   
   // Advanced filters
   const [filters, setFilters] = useState<SearchFilters>({});
@@ -158,17 +159,41 @@ const ExplorePage: React.FC = () => {
   };
 
   const showToast = (type: string, message: string) => {
-    setToast({ type, message });
+    toast({ type, message });
   };
 
-  const handleJoinDAO = (dao: DAOMetadata) => {
+  const handleJoinDAO = async (dao: DAOMetadata) => {
     if (!isAuthenticated) {
       navigate('/signin');
       return;
     }
+
+    if (!actors?.daoBackend) {
+      showToast('error', 'Backend not available. Please try again.');
+      return;
+    }
     
-    // Navigate to DAO management page
-    navigate(`/dao/${dao.dao_id}/manage/overview`);
+    try {
+      showToast('info', 'Joining DAO...');
+      
+      // Actually join the DAO via backend
+      const result = await actors.daoBackend.joinDAO(dao.dao_id);
+      
+      if ('ok' in result) {
+        showToast('success', `Successfully joined ${dao.name}! 🎉`);
+        
+        // Refresh DAOs to update member count
+        await loadDAOs(currentPage, false);
+        
+        // Navigate to DAO management page
+        navigate(`/dao/${dao.dao_id}/manage/overview`);
+      } else {
+        showToast('error', `Failed to join: ${result.err}`);
+      }
+    } catch (error) {
+      console.error('Join DAO failed:', error);
+      showToast('error', 'Failed to join DAO. Please try again.');
+    }
   };
 
   const sortOptions = [
@@ -181,8 +206,7 @@ const ExplorePage: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-cyan-400 mx-auto mb-4" />
@@ -203,8 +227,7 @@ const ExplorePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <BackgroundParticles />
+    <div className="min-h-screen text-white relative overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header */}
@@ -554,16 +577,6 @@ const ExplorePage: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* Toast Notifications */}
-      <AnimatePresence>
-        {toast && (
-          <Toast
-            type={toast.type}
-            message={toast.message}
-            onClose={() => setToast(null)}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };

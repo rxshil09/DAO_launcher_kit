@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Outlet, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useDAOManagement } from '../context/DAOManagementContext';
-import BackgroundParticles from './BackgroundParticles';
 import { 
   ArrowLeft,
   Settings,
@@ -20,6 +19,7 @@ import {
   AlertCircle,
   ExternalLink
 } from 'lucide-react';
+import { useLogoImage } from '../hooks/useLogoImage';
 
 const DAOManagement: React.FC = () => {
   const { daoId } = useParams<{ daoId: string }>();
@@ -27,7 +27,18 @@ const DAOManagement: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [dao, setDAO] = useState(selectedDAO);
+  const {
+    imageUrl: headerLogoUrl,
+    handleImageError: handleHeaderLogoError,
+  } = useLogoImage({
+    logoType: dao?.logoType,
+    logoAssetId: dao?.logoAssetId,
+    logoUrl: dao?.logoUrl,
+    legacyLogo: dao?.logo,
+  });
 
+  // TODO: Filter tabs based on dao.selectedModules from backend config
+  // For now, showing all tabs. Should fetch DAO config and filter based on enabled modules
   const tabs = [
     { id: 'overview', name: 'Overview', icon: BarChart3, path: 'overview' },
     { id: 'governance', name: 'Governance', icon: Vote, path: 'governance' },
@@ -35,7 +46,8 @@ const DAOManagement: React.FC = () => {
     { id: 'treasury', name: 'Treasury', icon: DollarSign, path: 'treasury' },
     { id: 'proposals', name: 'Proposals', icon: FileText, path: 'proposals' },
     { id: 'assets', name: 'Assets', icon: Image, path: 'assets' },
-    { id: 'admins', name: 'Admins', icon: Users, path: 'admins' }
+    { id: 'members', name: 'Members', icon: Users, path: 'members' },
+    { id: 'admins', name: 'Admins', icon: Shield, path: 'admins' }
   ];
 
   useEffect(() => {
@@ -60,8 +72,7 @@ const DAOManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
@@ -74,8 +85,7 @@ const DAOManagement: React.FC = () => {
 
   if (!dao) {
     return (
-      <div className="min-h-screen bg-black text-white relative overflow-hidden">
-        <BackgroundParticles />
+      <div className="min-h-screen text-white relative overflow-hidden">
         <div className="relative min-h-screen flex items-center justify-center px-4 z-10">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
@@ -95,8 +105,7 @@ const DAOManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <BackgroundParticles />
+    <div className="min-h-screen text-white relative overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10 pt-24 sm:pt-28">
         {/* Header with Breadcrumb */}
@@ -121,14 +130,22 @@ const DAOManagement: React.FC = () => {
 
           {/* DAO Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-            <div className="flex items-center space-x-4 mb-4 md:mb-0">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                {dao.logo ? (
-                  <img src={dao.logo} alt={dao.name} className="w-full h-full object-cover rounded-xl" />
-                ) : (
-                  <Shield className="w-8 h-8 text-white" />
-                )}
-              </div>
+              <div className="flex items-center space-x-4 mb-4 md:mb-0">
+               <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                 {headerLogoUrl ? (
+                   <img
+                     src={headerLogoUrl}
+                     alt={dao.name}
+                     className="w-full h-full object-cover"
+                     onError={(e) => {
+                       e.currentTarget.style.display = 'none';
+                       handleHeaderLogoError();
+                     }}
+                   />
+                 ) : (
+                   <Shield className="w-8 h-8 text-white" />
+                 )}
+               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white font-mono">{dao.name}</h1>
                 <div className="flex items-center space-x-4 text-sm">
@@ -149,13 +166,6 @@ const DAOManagement: React.FC = () => {
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back to Dashboard</span>
               </Link>
-              <button
-                onClick={() => navigate('/settings')}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors font-mono"
-              >
-                <Settings className="w-4 h-4" />
-                <span>Settings</span>
-              </button>
             </div>
           </div>
         </motion.div>
