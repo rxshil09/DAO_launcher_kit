@@ -12,41 +12,41 @@ A comprehensive DAO (Decentralized Autonomous Organization) creation and managem
 
 **DAOVerse is now live on IC Mainnet!**
 
-🚀 **Frontend Application**: https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/
+🚀 **Frontend Application**: https://oz5vx-7qaaa-aaaah-qqgca-cai.icp0.io/
 
 ### Mainnet Canister Links
 
 #### **Frontend Interface**
-- **🎯 DAOVerse Application**: https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/
-- **🔐 Internet Identity**: https://7wzyf-fiaaa-aaaao-a4pca-cai.icp0.io/
+- **🎯 DAOVerse Application**: https://oz5vx-7qaaa-aaaah-qqgca-cai.icp0.io/
+- **🔐 Internet Identity**: https://p5q2f-gqaaa-aaaah-qqgea-cai.icp0.io/
 
 #### **Backend Candid Interfaces**
-- **🏛️ DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7k5cu-siaaa-aaaao-a4paa-cai
-- **🗳️ Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=7d6ji-eaaaa-aaaao-a4pbq-cai
-- **📈 Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6suxx-4iaaa-aaaao-a4pea-cai
-- **💰 Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=6vvrd-rqaaa-aaaao-a4peq-cai
-- **📋 Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=772tz-taaaa-aaaao-a4pdq-cai
-- **📁 Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=uulqk-jaaaa-aaaao-a4o7q-cai
-- **🔍 DAO Registry**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=5mfqz-3yaaa-aaaao-a4pna-cai
-- **📊 DAO Analytics**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=5fg3f-nqaaa-aaaao-a4pmq-cai
-- **🪙 ICRC1 Ledger**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=zpwzl-tiaaa-aaaao-a4pwa-cai
+- **🏛️ DAO Backend**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=om2e2-6yaaa-aaaah-qqgbq-cai
+- **🗳️ Governance**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=ox7y7-eaaaa-aaaah-qqgda-cai
+- **📈 Staking**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=ptsxn-5aaaa-aaaah-qqgfa-cai
+- **💰 Treasury**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=putrz-qyaaa-aaaah-qqgfq-cai
+- **📋 Proposals**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=p2r4r-liaaa-aaaah-qqgeq-cai
+- **📁 Assets**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=ocyjs-fiaaa-aaaah-qqgaq-cai
+- **🔍 DAO Registry**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=o64td-siaaa-aaaah-qqgcq-cai
+- **📊 DAO Analytics**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=ol3co-taaaa-aaaah-qqgba-cai
+- **🪙 ICRC1 Ledger**: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=oq66l-jyaaa-aaaah-qqgdq-cai
 
 ### Mainnet Canister IDs
 ```
-DAO Backend:     7k5cu-siaaa-aaaao-a4paa-cai
-Frontend:        7e7p4-jyaaa-aaaao-a4pba-cai
-Governance:      7d6ji-eaaaa-aaaao-a4pbq-cai
-Staking:         6suxx-4iaaa-aaaao-a4pea-cai
-Treasury:        6vvrd-rqaaa-aaaao-a4peq-cai
-Proposals:       772tz-taaaa-aaaao-a4pdq-cai
-Assets:          uulqk-jaaaa-aaaao-a4o7q-cai
-DAO Registry:    5mfqz-3yaaa-aaaao-a4pna-cai
-DAO Analytics:   5fg3f-nqaaa-aaaao-a4pmq-cai
-ICRC1 Ledger:    zpwzl-tiaaa-aaaao-a4pwa-cai
-Internet Identity: 7wzyf-fiaaa-aaaao-a4pca-cai
+DAO Backend:     om2e2-6yaaa-aaaah-qqgbq-cai
+Frontend:        oz5vx-7qaaa-aaaah-qqgca-cai
+Governance:      ox7y7-eaaaa-aaaah-qqgda-cai
+Staking:         ptsxn-5aaaa-aaaah-qqgfa-cai
+Treasury:        putrz-qyaaa-aaaah-qqgfq-cai
+Proposals:       p2r4r-liaaa-aaaah-qqgeq-cai
+Assets:          ocyjs-fiaaa-aaaah-qqgaq-cai
+DAO Registry:    o64td-siaaa-aaaah-qqgcq-cai
+DAO Analytics:   ol3co-taaaa-aaaah-qqgba-cai
+ICRC1 Ledger:    oq66l-jyaaa-aaaah-qqgdq-cai
+Internet Identity: p5q2f-gqaaa-aaaah-qqgea-cai
 ```
 
-> 🎯 **Quick Start**: Visit [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/) to start using DAOVerse immediately!
+> 🎯 **Quick Start**: Visit [https://oz5vx-7qaaa-aaaah-qqgca-cai.icp0.io/](https://oz5vx-7qaaa-aaaah-qqgca-cai.icp0.io/) to start using DAOVerse immediately!
 
 > 📖 **For Developers**: Follow the [Quick Start](#quick-start) section below to deploy your own instance.
 ## Key Features
@@ -236,16 +236,16 @@ VITE_DFX_NETWORK=local
 **Mainnet Production** (`.env.production`):
 ```env
 # Mainnet Production Configuration
-VITE_CANISTER_ID_DAO_BACKEND=7k5cu-siaaa-aaaao-a4paa-cai
-VITE_CANISTER_ID_GOVERNANCE=7d6ji-eaaaa-aaaao-a4pbq-cai
-VITE_CANISTER_ID_STAKING=6suxx-4iaaa-aaaao-a4pea-cai
-VITE_CANISTER_ID_TREASURY=6vvrd-rqaaa-aaaao-a4peq-cai
-VITE_CANISTER_ID_PROPOSALS=772tz-taaaa-aaaao-a4pdq-cai
-VITE_CANISTER_ID_ASSETS=uulqk-jaaaa-aaaao-a4o7q-cai
-VITE_CANISTER_ID_DAO_REGISTRY=5mfqz-3yaaa-aaaao-a4pna-cai
-VITE_CANISTER_ID_DAO_ANALYTICS=5fg3f-nqaaa-aaaao-a4pmq-cai
-VITE_CANISTER_ID_ICRC1_LEDGER=zpwzl-tiaaa-aaaao-a4pwa-cai
-VITE_CANISTER_ID_INTERNET_IDENTITY=7wzyf-fiaaa-aaaao-a4pca-cai
+VITE_CANISTER_ID_DAO_BACKEND=om2e2-6yaaa-aaaah-qqgbq-cai
+VITE_CANISTER_ID_GOVERNANCE=ox7y7-eaaaa-aaaah-qqgda-cai
+VITE_CANISTER_ID_STAKING=ptsxn-5aaaa-aaaah-qqgfa-cai
+VITE_CANISTER_ID_TREASURY=putrz-qyaaa-aaaah-qqgfq-cai
+VITE_CANISTER_ID_PROPOSALS=p2r4r-liaaa-aaaah-qqgeq-cai
+VITE_CANISTER_ID_ASSETS=ocyjs-fiaaa-aaaah-qqgaq-cai
+VITE_CANISTER_ID_DAO_REGISTRY=o64td-siaaa-aaaah-qqgcq-cai
+VITE_CANISTER_ID_DAO_ANALYTICS=ol3co-taaaa-aaaah-qqgba-cai
+VITE_CANISTER_ID_ICRC1_LEDGER=oq66l-jyaaa-aaaah-qqgdq-cai
+VITE_CANISTER_ID_INTERNET_IDENTITY=p5q2f-gqaaa-aaaah-qqgea-cai
 VITE_HOST=https://icp0.io
 VITE_DFX_NETWORK=ic
 VITE_IC_HOST=https://icp0.io
@@ -564,7 +564,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **DAOVerse** - Democratizing DAO creation on the Internet Computer
 
-🌐 **Live on IC Mainnet**: [https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/](https://7e7p4-jyaaa-aaaao-a4pba-cai.icp0.io/)
+🌐 **Live on IC Mainnet**: [https://oz5vx-7qaaa-aaaah-qqgca-cai.icp0.io/](https://oz5vx-7qaaa-aaaah-qqgca-cai.icp0.io/)
 
 
 
