@@ -9,6 +9,9 @@ import mdx from '@astrojs/mdx';
 export default defineConfig({
   integrations: [react(), mdx()],
 
+  // Production site URL - update when deploying docs to mainnet
+  site: 'https://zlxjo-taaaa-aaaan-qz72a-cai.icp0.io',
+
   vite: {
     plugins: [tailwindcss()]
   }

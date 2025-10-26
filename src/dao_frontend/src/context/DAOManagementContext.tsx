@@ -4,81 +4,82 @@ import { DAO, DAOContextType } from '../types/dao';
 
 const DAOManagementContext = createContext<DAOContextType | undefined>(undefined);
 
-// Mock data for demonstration
-const mockDAOs: DAO[] = [
-  {
-    id: 'defi-protocol-1',
-    name: 'DeFi Protocol Alpha',
-    description: 'A revolutionary decentralized finance protocol focused on yield optimization and automated market making strategies.',
-    tokenSymbol: 'DPA',
-    logo: 'https://images.pexels.com/photos/730547/pexels-photo-730547.jpeg?auto=compress&cs=tinysrgb&w=400',
-    memberCount: 1247,
-    totalValueLocked: '$2.4M',
-    createdAt: new Date('2024-01-15'),
-    category: 'DeFi',
-    status: 'active',
-    governance: {
-      totalProposals: 23,
-      activeProposals: 3
-    },
-    treasury: {
-      balance: '$850K',
-      monthlyInflow: '+$45K'
-    },
-    staking: {
-      totalStaked: '$1.2M',
-      apr: '18.5%'
-    }
-  },
-  {
-    id: 'gaming-dao-2',
-    name: 'MetaVerse Gaming DAO',
-    description: 'Community-owned gaming ecosystem with play-to-earn mechanics and NFT integration for the next generation of gamers.',
-    tokenSymbol: 'MVG',
-    logo: 'https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=400',
-    memberCount: 3456,
-    totalValueLocked: '$5.7M',
-    createdAt: new Date('2024-02-20'),
-    category: 'Gaming',
-    status: 'active',
-    governance: {
-      totalProposals: 45,
-      activeProposals: 7
-    },
-    treasury: {
-      balance: '$2.1M',
-      monthlyInflow: '+$120K'
-    },
-    staking: {
-      totalStaked: '$3.6M',
-      apr: '22.3%'
-    }
-  },
-  {
-    id: 'social-dao-3',
-    name: 'Creator Economy DAO',
-    description: 'Empowering content creators through decentralized governance and fair revenue sharing mechanisms.',
-    tokenSymbol: 'CED',
-    logo: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=400',
-    memberCount: 892,
-    totalValueLocked: '$1.8M',
-    createdAt: new Date('2024-03-10'),
-    category: 'Social',
-    status: 'active',
-    governance: {
-      totalProposals: 12,
-      activeProposals: 2
-    },
-    treasury: {
-      balance: '$650K',
-      monthlyInflow: '+$28K'
-    },
-    staking: {
-      totalStaked: '$1.1M',
-      apr: '15.7%'
-    }
-  }
-];
+// Mock data for demonstration - COMMENTED OUT TO REMOVE DEMO DAOs
+// const mockDAOs: DAO[] = [
+//   {
+//     id: 'defi-protocol-1',
+//     name: 'DeFi Protocol Alpha',
+//     description: 'A revolutionary decentralized finance protocol focused on yield optimization and automated market making strategies.',
+//     tokenSymbol: 'DPA',
+//     logo: 'https://images.pexels.com/photos/730547/pexels-photo-730547.jpeg?auto=compress&cs=tinysrgb&w=400',
+//     memberCount: 1247,
+//     totalValueLocked: '$2.4M',
+//     createdAt: new Date('2024-01-15'),
+//     category: 'DeFi',
+//     status: 'active',
+//     governance: {
+//       totalProposals: 23,
+//       activeProposals: 3
+//     },
+//     treasury: {
+//       balance: '$850K',
+//       monthlyInflow: '+$45K'
+//     },
+//     staking: {
+//       totalStaked: '$1.2M',
+//       apr: '18.5%'
+//     }
+//   },
+//   {
+//     id: 'gaming-dao-2',
+//     name: 'MetaVerse Gaming DAO',
+//     description: 'Community-owned gaming ecosystem with play-to-earn mechanics and NFT integration for the next generation of gamers.',
+//     tokenSymbol: 'MVG',
+//     logo: 'https://images.pexels.com/photos/442576/pexels-photo-442576.jpeg?auto=compress&cs=tinysrgb&w=400',
+//     memberCount: 3456,
+//     totalValueLocked: '$5.7M',
+//     createdAt: new Date('2024-02-20'),
+//     category: 'Gaming',
+//     status: 'active',
+//     governance: {
+//       totalProposals: 45,
+//       activeProposals: 7
+//     },
+//     treasury: {
+//       balance: '$2.1M',
+//       monthlyInflow: '+$120K'
+//     },
+//     staking: {
+//       totalStaked: '$3.6M',
+//       apr: '22.3%'
+//     }
+//   },
+//   {
+//     id: 'social-dao-3',
+//     name: 'Creator Economy DAO',
+//     description: 'Empowering content creators through decentralized governance and fair revenue sharing mechanisms.',
+//     tokenSymbol: 'CED',
+//     logo: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=400',
+//     memberCount: 892,
+//     totalValueLocked: '$1.8M',
+//     createdAt: new Date('2024-03-10'),
+//     category: 'Social',
+//     status: 'active',
+//     governance: {
+//       totalProposals: 12,
+//       activeProposals: 2
+//     },
+//     treasury: {
+//       balance: '$650K',
+//       monthlyInflow: '+$28K'
+//     },
+//     staking: {
+//       totalStaked: '$1.1M',
+//       apr: '15.7%'
+//     }
+//   }
+// ];
+const mockDAOs: DAO[] = []; // Empty array - no demo DAOs
 
 interface DAOManagementProviderProps {
   children: ReactNode;
