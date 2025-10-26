@@ -91,12 +91,24 @@ export const useLogoImage = (
           try {
             const assetsCanisterId = (import.meta as any)?.env?.VITE_CANISTER_ID_ASSETS;
             if (assetsCanisterId) {
-              // Prefer local replica gateway in dev; window.location is fine to build absolute URL
-              const localGateway = 'http://127.0.0.1:4943';
-              const base = localGateway; // keep simple and predictable for dev
-              const httpUrl = `${base}/?canisterId=${assetsCanisterId}&file=${encodeURIComponent(
-                normalizedAssetId
-              )}`;
+              // Use environment-specific host (local for dev, IC mainnet for production)
+              const host = (import.meta as any)?.env?.VITE_HOST || 'http://127.0.0.1:4943';
+              const network = (import.meta as any)?.env?.VITE_DFX_NETWORK || 'local';
+              
+              // Build the appropriate gateway URL
+              let httpUrl: string;
+              if (network === 'ic') {
+                // On IC mainnet, use the raw.icp0.io subdomain with query parameter
+                httpUrl = `https://${assetsCanisterId}.raw.icp0.io/?file=${encodeURIComponent(
+                  normalizedAssetId
+                )}`;
+              } else {
+                // Local development - use query parameter pattern
+                httpUrl = `${host}/?canisterId=${assetsCanisterId}&file=${encodeURIComponent(
+                  normalizedAssetId
+                )}`;
+              }
+              
               applyImage(httpUrl, false);
               return;
             }

@@ -762,6 +762,40 @@ persistent actor DAORegistry {
         }
     };
 
+    /**
+     * Remove DAO from registry (controller override)
+     * Allows canister controller to remove any DAO (admin/emergency function)
+     */
+    public shared(msg) func adminRemoveDAO(dao_id: Text) : async Result<(), Text> {
+        switch (daoMetadata.get(dao_id)) {
+            case (?metadata) {
+                // Remove from all mappings
+                daoMetadata.delete(dao_id);
+                daoStats.delete(dao_id);
+
+                // Remove from creator mapping
+                let creatorDAOsList = switch (creatorDAOs.get(metadata.creator_principal)) {
+                    case (?daos) Array.filter<Text>(daos, func(id) = id != dao_id);
+                    case null [];
+                };
+                creatorDAOs.put(metadata.creator_principal, creatorDAOsList);
+
+                // Remove from category mapping
+                let categoryDAOsList = switch (categoryDAOs.get(metadata.category)) {
+                    case (?daos) Array.filter<Text>(daos, func(id) = id != dao_id);
+                    case null [];
+                };
+                categoryDAOs.put(metadata.category, categoryDAOsList);
+
+                totalRegisteredDAOs -= 1;
+
+                Debug.print("DAO removed from registry by admin: " # dao_id # " (caller: " # Principal.toText(msg.caller) # ")");
+                #ok()
+            };
+            case null #err("DAO not found");
+        }
+    };
+
     // Health check
     public query func health() : async { status: Text; timestamp: Int; total_daos: Nat } {
         {

@@ -99,7 +99,7 @@ const createActor = async <T>(
 
     const agent = new HttpAgent({
       host: host,
-      verifyQuerySignatures: false,
+      verifyQuerySignatures: false, // Disabled for mainnet compatibility after upgrades
       identity,
     });
 
